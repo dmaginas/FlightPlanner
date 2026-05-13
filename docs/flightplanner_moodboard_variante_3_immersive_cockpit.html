@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FlightPlanner Moodboard Variante 3 - Immersive Cockpit</title>
+<style>
+:root{
+--bg:radial-gradient(circle at 20% 8%,rgba(255,109,74,.20),transparent 25%),radial-gradient(circle at 75% 0%,rgba(23,209,255,.25),transparent 32%),linear-gradient(155deg,#02070B 0%,#06151A 42%,#11110B 100%);
+--grid:radial-gradient(circle,rgba(23,209,255,.10) 1px,transparent 1px);background-size:26px 26px;
+--text:#ECFEFF;--muted:rgba(236,254,255,.68);--accent:#17D1FF;--accent-soft:rgba(23,209,255,.55);--line:rgba(236,254,255,.16);--glass:rgba(7,25,30,.72);--display:"IBM Plex Sans Condensed",Inter,sans-serif;--warn-soft:rgba(255,109,74,.32);--warn-bg:rgba(255,109,74,.08);--mark:linear-gradient(135deg,#17D1FF,#FF6D4A);--visual:radial-gradient(circle at 30% 45%,rgba(23,209,255,.45),transparent 22%),linear-gradient(135deg,rgba(255,109,74,.22),rgba(7,25,30,.8));
+}
+h1,h2,h3{text-transform:uppercase;letter-spacing:-.025em}.lead{text-transform:none}.kicker{color:#17D1FF}
+
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--bg);min-height:100vh}
+body:before{content:"";position:fixed;inset:0;background:var(--grid);pointer-events:none;opacity:.65}
+.wrap{position:relative;max-width:1220px;margin:auto;padding:56px 6vw 80px}
+.kicker{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--accent);background:var(--glass);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.dot{width:8px;height:8px;border-radius:99px;background:var(--accent);box-shadow:0 0 20px var(--accent)}
+h1{font-family:var(--display);font-size:clamp(46px,7vw,96px);line-height:.95;letter-spacing:-.065em;margin:24px 0 18px;max-width:980px}
+.lead{font-size:clamp(18px,2vw,22px);line-height:1.6;color:var(--muted);max-width:780px}
+.section{margin-top:28px;border:1px solid var(--line);border-radius:32px;background:var(--glass);backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.28)}
+.head{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;padding:28px;border-bottom:1px solid var(--line)}
+h2{font-family:var(--display);font-size:clamp(28px,3vw,44px);letter-spacing:-.045em;margin:0}
+.note{color:var(--muted);line-height:1.55;max-width:440px;font-size:14px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:28px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:28px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:28px}
+.card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.055);padding:20px;min-height:210px;transition:.2s}
+.card:hover{transform:translateY(-4px);border-color:var(--accent-soft);background:rgba(255,255,255,.09)}
+.swatch{height:92px;border-radius:18px;border:1px solid rgba(255,255,255,.18);margin-bottom:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 16px 34px rgba(0,0,0,.25)}
+.hex{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#fff;margin-bottom:8px}
+.label{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.13em;margin-bottom:10px;display:block}
+h3{font-family:var(--display);font-size:22px;letter-spacing:-.035em;margin:0 0 8px}
+p{color:var(--muted);line-height:1.55;margin:0}
+.sample{border:1px solid var(--line);border-radius:20px;background:rgba(0,0,0,.22);padding:22px;margin:16px 0}
+.sample-title{font-family:var(--display);font-size:34px;line-height:1;letter-spacing:-.055em;color:#fff}
+.sample-body{margin-top:12px;color:var(--muted)}
+.visual{height:130px;border-radius:20px;border:1px solid var(--line);margin-bottom:16px;position:relative;overflow:hidden;background:var(--visual)}
+.visual:after{content:attr(data-label);position:absolute;left:16px;bottom:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#fff;letter-spacing:.04em}
+.pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:9px 12px;color:#fff;background:rgba(255,255,255,.07)}
+.avoid .pill{color:rgba(255,255,255,.72);border-color:var(--warn-soft);background:var(--warn-bg)}
+.refmark{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:var(--mark);font-family:var(--display);font-size:24px;color:#fff;margin-bottom:16px}
+footer{color:var(--muted);font-size:13px;margin-top:28px}
+@media(max-width:900px){.grid5{grid-template-columns:repeat(2,1fr)}.grid3,.grid2{grid-template-columns:1fr}.head{display:block}.note{margin-top:12px}}
+@media(max-width:560px){.grid5{grid-template-columns:1fr}.wrap{padding-top:38px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="kicker"><span class="dot"></span> Variante 03 · Immersive Cockpit Experience</div>
+<h1>Vom Gate direkt in den Flight‑State.</h1>
+<p class="lead">Diese Richtung testet, ob dein ICP stärker auf Realismus, Cockpit-Gefühl und operative Immersion reagiert — also auf das emotionale Versprechen, sich professionell und „flugbereit“ zu fühlen.</p>
+
+<section class="section">
+  <div class="head"><h2>Farbpalette</h2><p class="note">Mehr Simulator, mehr Atmosphäre. Die Palette wirkt wie ein modernes Nacht-Cockpit mit lebendigen Systemsignalen.</p></div>
+  <div class="grid5">
+    <div class="card"><div class="swatch" style="background:#02070B"></div><div class="hex">#02070B</div><h3>Black Box</h3><p>Maximale Immersion für Nutzer, die abends in den Simulator eintauchen.</p></div>
+    <div class="card"><div class="swatch" style="background:#17D1FF"></div><div class="hex">#17D1FF</div><h3>Instrument Cyan</h3><p>Erinnert an Displays, Navigation und technische Präzision.</p></div>
+    <div class="card"><div class="swatch" style="background:#FF6D4A"></div><div class="hex">#FF6D4A</div><h3>Engine Glow</h3><p>Bringt Wärme, Energie und Startbereitschaft in die sonst kühle Welt.</p></div>
+    <div class="card"><div class="swatch" style="background:#ECFEFF"></div><div class="hex">#ECFEFF</div><h3>HUD White</h3><p>Sorgt für gute Lesbarkeit bei Daten, Briefings und Systemstatus.</p></div>
+    <div class="card"><div class="swatch" style="background:#B7FF5A"></div><div class="hex">#B7FF5A</div><h3>Go Green</h3><p>Ideal für Freigaben, Ready-Zustände und positive Checks.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Typografie</h2><p class="note">Kompakter, instrumenteller und stärker „operational“ als die erste Variante.</p></div>
+  <div class="grid2">
+    <div class="card"><span class="label">Paar 01</span><h3>IBM Plex Sans Condensed + IBM Plex Mono</h3><div class="sample"><div class="sample-title">Flight Plan Armed</div><div class="sample-body">SID · WIND · ROUTE · EXPORT · READY</div></div><p>Wirkt wie moderne Instrumentenbeschriftung und passt zu Statusanzeigen.</p></div>
+    <div class="card"><span class="label">Paar 02</span><h3>Rajdhani + Inter</h3><div class="sample"><div class="sample-title">Ready for departure</div><div class="sample-body">Komplexe Flugplanung wird zu einem geführten Cockpit-Flow.</div></div><p>Rajdhani bringt technische Spannung; Inter verhindert, dass lange Texte schwer lesbar werden.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Bildsprache</h2><p class="note">Der Interviewtest: Macht diese Richtung mehr Lust auf den Flug als nur Vertrauen in das Tool?</p></div>
+  <div class="grid3">
+    <div class="card"><div class="visual" data-label="NIGHT OPS"></div><h3>Nacht‑Cockpit‑Momente</h3><p>Adjektive: konzentriert, dunkel, leuchtend, immersiv, taktil.</p></div>
+    <div class="card"><div class="visual" data-label="WEATHER RADAR"></div><h3>Radar- und Wetterflächen</h3><p>Adjektive: atmosphärisch, aktiv, kontrollierbar, lebendig, systemisch.</p></div>
+    <div class="card"><div class="visual" data-label="PUSHBACK READY"></div><h3>Pre‑Flight Rituale</h3><p>Adjektive: erwartungsvoll, professionell, fokussiert, realistisch, emotional.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Tonalität</h2><p class="note">Knapper, operativer, stärker aus dem Flugmoment heraus.</p></div>
+  <div class="grid2">
+    <div class="card"><span class="label">Klingen wie</span><h3>operativ, fokussiert, immersiv, direkt, startklar</h3><div class="pills"><span class="pill">operativ</span><span class="pill">fokussiert</span><span class="pill">immersiv</span><span class="pill">direkt</span><span class="pill">startklar</span></div></div>
+    <div class="card avoid"><span class="label">Nicht klingen wie</span><h3>casual, niedlich, werblich, chaotisch, trocken</h3><div class="pills"><span class="pill">casual</span><span class="pill">niedlich</span><span class="pill">werblich</span><span class="pill">chaotisch</span><span class="pill">trocken</span></div></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Design‑Referenzen</h2><p class="note">Emotionale Welt: hochimmersive, kontrollierte, technisch schöne Interfaces.</p></div>
+  <div class="grid3">
+    <div class="card"><div class="refmark">T</div><h3>Tesla UI</h3><p>Für technische Kontrolle, große Visuals und reduzierte Bedienlogik.</p></div>
+    <div class="card"><div class="refmark">P</div><h3>Playdate</h3><p>Nicht wegen Look, sondern wegen starker Geräte-Identität und haptischem Produktgefühl.</p></div>
+    <div class="card"><div class="refmark">D</div><h3>Darkroom</h3><p>Für konzentrierte, dunkle Arbeitsflächen mit kreativem Premium-Gefühl.</p></div>
+  </div>
+</section>
+
+<footer>FlightPlanner Moodboard Variante · Für Kundeninterviews: Bitte zeigen, Reaktion beobachten und nach Präferenz, Vertrauen, Zahlungsbereitschaft und Nutzungsabsicht fragen.</footer>
+</div>
+</body>
+</html>

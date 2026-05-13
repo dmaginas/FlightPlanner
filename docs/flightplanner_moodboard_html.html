@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlightPlanner Moodboard</title>
+  <style>
+    :root {
+      --night: #07111F;
+      --radar: #00E5A8;
+      --storm: #2D6CDF;
+      --cloud: #E8F1FF;
+      --amber: #FFB84D;
+      --panel: rgba(255, 255, 255, 0.075);
+      --panel-strong: rgba(255, 255, 255, 0.13);
+      --line: rgba(232, 241, 255, 0.18);
+      --muted: rgba(232, 241, 255, 0.68);
+      --text: #E8F1FF;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(0, 229, 168, 0.20), transparent 28%),
+        radial-gradient(circle at 85% 0%, rgba(45, 108, 223, 0.35), transparent 34%),
+        linear-gradient(145deg, #040914 0%, #07111F 45%, #0C1728 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(232, 241, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232, 241, 255, 0.05) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 85%);
+    }
+
+    .orb {
+      position: fixed;
+      width: 480px;
+      height: 480px;
+      right: -180px;
+      top: 120px;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 229, 168, 0.16);
+      background: radial-gradient(circle, rgba(0, 229, 168, 0.10), transparent 68%);
+      animation: pulse 7s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.65; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+
+    header {
+      position: relative;
+      padding: 72px 6vw 36px;
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(18px);
+      color: var(--radar);
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 22px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      background: var(--radar);
+      border-radius: 50%;
+      box-shadow: 0 0 22px var(--radar);
+    }
+
+    h1 {
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-size: clamp(48px, 8vw, 112px);
+      line-height: 0.92;
+      letter-spacing: -0.07em;
+      margin: 0 0 24px;
+      max-width: 1000px;
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+      line-height: 1.6;
+    }
+
+    .hero-panel {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--panel);
+      backdrop-filter: blur(20px);
+    }
+
+    .metric strong {
+      display: block;
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-size: 28px;
+      color: white;
+      margin-bottom: 5px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    main {
+      position: relative;
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 20px 6vw 90px;
+    }
+
+    section {
+      margin-top: 34px;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.035));
+      box-shadow: 0 30px 80px rgba(0,0,0,0.28);
+      backdrop-filter: blur(22px);
+      overflow: hidden;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      padding: 28px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h2 {
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-size: clamp(28px, 3.2vw, 46px);
+      letter-spacing: -0.05em;
+      margin: 0;
+    }
+
+    .section-note {
+      max-width: 440px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+      padding: 28px;
+    }
+
+    .color-card, .card, .type-card, .reference-card {
+      position: relative;
+      padding: 20px;
+      min-height: 210px;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background: rgba(255,255,255,0.055);
+      transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+    }
+
+    .color-card:hover, .card:hover, .type-card:hover, .reference-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0, 229, 168, 0.45);
+      background: rgba(255,255,255,0.09);
+    }
+
+    .swatch {
+      height: 96px;
+      border-radius: 20px;
+      margin-bottom: 18px;
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 18px 38px rgba(0,0,0,0.26);
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--radar);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-size: 22px;
+      letter-spacing: -0.035em;
+      margin: 0 0 8px;
+    }
+
+    p { color: var(--muted); line-height: 1.55; margin: 0; }
+
+    .hex {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 13px;
+      color: white;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 28px;
+    }
+
+    .type-sample {
+      margin: 18px 0;
+      padding: 22px;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid var(--line);
+    }
+
+    .type-sample .headline-a {
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-size: 34px;
+      line-height: 1;
+      letter-spacing: -0.06em;
+      color: white;
+    }
+
+    .type-sample .body-a {
+      margin-top: 12px;
+      font-family: Inter, sans-serif;
+      color: var(--muted);
+    }
+
+    .type-sample .headline-b {
+      font-family: "IBM Plex Sans Condensed", Inter, sans-serif;
+      font-size: 36px;
+      line-height: 0.95;
+      letter-spacing: -0.025em;
+      color: white;
+      text-transform: uppercase;
+    }
+
+    .type-sample .body-b {
+      margin-top: 12px;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      padding: 28px;
+    }
+
+    .visual {
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .visual-art {
+      height: 130px;
+      border-radius: 22px;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(145deg, rgba(45,108,223,0.45), rgba(0,229,168,0.1));
+    }
+
+    .visual-art.map::before {
+      content: "";
+      position: absolute;
+      inset: 22px;
+      border: 1px dashed rgba(232,241,255,0.32);
+      border-radius: 999px;
+      transform: rotate(-12deg);
+    }
+
+    .visual-art.map::after {
+      content: "EDDF  →  LOWW";
+      position: absolute;
+      bottom: 16px;
+      left: 18px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      color: white;
+    }
+
+    .visual-art.weather {
+      background: radial-gradient(circle at 25% 30%, rgba(255,184,77,0.4), transparent 18%), radial-gradient(circle at 70% 50%, rgba(0,229,168,0.35), transparent 20%), linear-gradient(140deg, #07111F, #2D6CDF);
+    }
+
+    .visual-art.weather::after {
+      content: "METAR / WIND / TURB";
+      position: absolute;
+      bottom: 16px;
+      left: 18px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      color: white;
+    }
+
+    .visual-art.cockpit {
+      background: linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.02)), #07111F;
+    }
+
+    .visual-art.cockpit::before {
+      content: "";
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      border-radius: 999px;
+      border: 3px solid rgba(0,229,168,0.55);
+      left: 20px;
+      top: 18px;
+      box-shadow: 0 0 35px rgba(0,229,168,0.18);
+    }
+
+    .visual-art.cockpit::after {
+      content: "READY FOR PUSHBACK";
+      position: absolute;
+      bottom: 16px;
+      left: 18px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 13px;
+      color: white;
+    }
+
+    .tone-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      padding: 28px;
+    }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+
+    .pill {
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      font-size: 14px;
+    }
+
+    .avoid .pill {
+      color: rgba(255,255,255,0.72);
+      background: rgba(255,184,77,0.06);
+      border-color: rgba(255,184,77,0.22);
+    }
+
+    .references {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      padding: 28px;
+    }
+
+    .brand-mark {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 24px;
+      color: white;
+      background: linear-gradient(135deg, rgba(0,229,168,0.7), rgba(45,108,223,0.9));
+      box-shadow: 0 18px 40px rgba(0,0,0,0.22);
+    }
+
+    .principle {
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .route-card {
+      min-height: 360px;
+      border-radius: 32px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at 22% 36%, rgba(0,229,168,0.35), transparent 12%),
+        radial-gradient(circle at 70% 60%, rgba(45,108,223,0.55), transparent 16%),
+        linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.025));
+      position: relative;
+      overflow: hidden;
+    }
+
+    .route-card::before {
+      content: "";
+      position: absolute;
+      inset: 50px;
+      border-top: 2px dashed rgba(232,241,255,0.44);
+      transform: rotate(18deg);
+    }
+
+    .route-card::after {
+      content: "AUTO ROUTE · WEATHER OPTIMIZED · 00:30";
+      position: absolute;
+      left: 24px;
+      bottom: 24px;
+      font-family: "IBM Plex Mono", monospace;
+      color: white;
+      font-size: 13px;
+      letter-spacing: 0.05em;
+    }
+
+    .principle-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .principle-item {
+      padding: 18px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.055);
+    }
+
+    .principle-item strong { color: white; display: block; margin-bottom: 6px; }
+
+    footer {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 6vw 60px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .hero-panel, .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col, .image-grid, .tone-grid, .references, .principle { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      header { padding-top: 44px; }
+      .hero-panel, .grid { grid-template-columns: 1fr; }
+      .section-head { display: block; }
+      .section-note { margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb"></div>
+
+  <header>
+    <div class="eyebrow"><span class="dot"></span> Moodboard · FlightPlanner</div>
+    <h1>Premium Pre‑Flight, ohne Cockpit‑Overload.</h1>
+    <p class="hero-copy">Diese Designrichtung entsteht aus dem emotionalen Kern deines ICPs: Er will sich kompetent, vorbereitet und wie ein echter Pilot fühlen — aber ohne 40 Minuten Tool‑Wechsel, Tabellenfrust und manuelle Wetterinterpretation.</p>
+
+    <div class="hero-panel">
+      <div class="metric"><strong>30 Sek.</strong><span>Gefühl von Geschwindigkeit statt Planungslast</span></div>
+      <div class="metric"><strong>Dark UI</strong><span>Abendlicher Simulator-Kontext und Cockpit-Atmosphäre</span></div>
+      <div class="metric"><strong>Visuell</strong><span>Maps, Wetter-Layer, Routen statt Tabellen</span></div>
+      <div class="metric"><strong>Premium</strong><span>Professionell wirken auf VATSIM/IVAO</span></div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="section-head">
+        <h2>Farbpalette</h2>
+        <p class="section-note">Die Palette übersetzt den Charakter des ICPs: technikaffin, realismusverliebt, stolz auf professionelle Vorbereitung und stark angezogen von moderner Cockpit-Ästhetik.</p>
+      </div>
+      <div class="grid">
+        <div class="color-card">
+          <div class="swatch" style="background:#07111F"></div>
+          <div class="hex">#07111F</div>
+          <h3>Cockpit Night</h3>
+          <p>Passt zum abendlichen Flightsim-Kontext und schafft sofort Immersion. Dunkel wirkt konzentriert, technisch und weniger spielerisch.</p>
+        </div>
+        <div class="color-card">
+          <div class="swatch" style="background:#00E5A8"></div>
+          <div class="hex">#00E5A8</div>
+          <h3>Radar Mint</h3>
+          <p>Signalisiert Präzision, Status und aktive Systeme. Für Nutzer, die sich wie echte Piloten fühlen wollen, wirkt es kompetent statt dekorativ.</p>
+        </div>
+        <div class="color-card">
+          <div class="swatch" style="background:#2D6CDF"></div>
+          <div class="hex">#2D6CDF</div>
+          <h3>Flight Blue</h3>
+          <p>Verbindet Vertrauen, Navigation und digitale Karten. Ideal für Routen, aktive Auswahlzustände und ruhige Premium-Flächen.</p>
+        </div>
+        <div class="color-card">
+          <div class="swatch" style="background:#E8F1FF"></div>
+          <div class="hex">#E8F1FF</div>
+          <h3>Cloud White</h3>
+          <p>Gibt Lesbarkeit und Klarheit in einer komplexen Datenwelt. Der ICP braucht Orientierung, nicht noch mehr kognitive Last.</p>
+        </div>
+        <div class="color-card">
+          <div class="swatch" style="background:#FFB84D"></div>
+          <div class="hex">#FFB84D</div>
+          <h3>Warning Amber</h3>
+          <p>Erzeugt Aviation-nahe Dringlichkeit ohne Alarmismus. Perfekt für Wetterhinweise, Turbulenzen oder Entscheidungen mit Aufmerksamkeit.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Typografie</h2>
+        <p class="section-note">Die Schriftpaare müssen gleichzeitig Premium, technisch und zugänglich wirken. Kein nerdiges Terminal-Design als Default — sondern klare Kontrolle.</p>
+      </div>
+      <div class="two-col">
+        <div class="type-card">
+          <span class="label">Schriftpaar 01</span>
+          <h3>Space Grotesk + Inter</h3>
+          <div class="type-sample">
+            <div class="headline-a">Route ready in seconds.</div>
+            <div class="body-a">Wetter, Route und Export werden visuell geführt, damit Piloten schneller ins Cockpit kommen.</div>
+          </div>
+          <p><strong>Begründung:</strong> Space Grotesk wirkt modern, präzise und leicht futuristisch. Inter bleibt extrem lesbar für lange Erklärungen, Tooltips und Formularstrecken.</p>
+        </div>
+        <div class="type-card">
+          <span class="label">Schriftpaar 02</span>
+          <h3>IBM Plex Sans Condensed + IBM Plex Mono</h3>
+          <div class="type-sample">
+            <div class="headline-b">Pre‑Flight Control</div>
+            <div class="body-b">EDDF → LOWW · WIND 270/18 · OPTIMAL ROUTE FOUND</div>
+          </div>
+          <p><strong>Begründung:</strong> Condensed Headlines fühlen sich wie Instrumentenlabels an. Mono-Text passt zu Daten, METARs und Statusmeldungen — aber dosiert, damit es nicht altbacken wird.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Bildsprache</h2>
+        <p class="section-note">Die Bildwelt soll nicht „Flugzeug-Foto-Stock“ sein. Sie soll den Moment vor dem Flug emotionalisieren: Fokus, Kontrolle, Erwartung, technische Eleganz.</p>
+      </div>
+      <div class="image-grid">
+        <div class="card visual">
+          <div>
+            <div class="visual-art map"></div>
+            <span class="label">Bildtyp 01</span>
+            <h3>Abstrakte Routenwelten</h3>
+            <p>Adjektive: präzise, reduziert, leuchtend, kuratiert, navigierend.</p>
+          </div>
+          <p>Für einen ICP, der visuelle Führung statt Tabellen will. Karten und Linien machen Fortschritt sichtbar.</p>
+        </div>
+        <div class="card visual">
+          <div>
+            <div class="visual-art weather"></div>
+            <span class="label">Bildtyp 02</span>
+            <h3>Wetter als verständliche Layer</h3>
+            <p>Adjektive: atmosphärisch, dynamisch, transparent, intelligent, beruhigend.</p>
+          </div>
+          <p>Wetter ist Schmerzpunkt. Die Website sollte Wetter nicht bedrohlich zeigen, sondern beherrschbar machen.</p>
+        </div>
+        <div class="card visual">
+          <div>
+            <div class="visual-art cockpit"></div>
+            <span class="label">Bildtyp 03</span>
+            <h3>Cockpit‑nahe Interface Details</h3>
+            <p>Adjektive: fokussiert, hochwertig, taktil, systemisch, professionell.</p>
+          </div>
+          <p>Der Nutzer will sich wie ein echter Pilot fühlen. Kleine Instrumenten-Momente erzeugen Stolz und Realismus.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Tonalität</h2>
+        <p class="section-note">Die Sprache muss Kompetenz geben, ohne den Nutzer zu belehren. Sie soll wie ein ruhiger, smarter Dispatcher klingen — nicht wie Gaming-Marketing.</p>
+      </div>
+      <div class="tone-grid">
+        <div class="card">
+          <span class="label">So soll es klingen</span>
+          <h3>Website-Tonalität</h3>
+          <div class="pill-row">
+            <span class="pill">präzise</span>
+            <span class="pill">ruhig</span>
+            <span class="pill">kompetent</span>
+            <span class="pill">immersiv</span>
+            <span class="pill">effizient</span>
+          </div>
+          <p style="margin-top:18px;">Begründung: Der ICP sucht professionelle Vorbereitung, weniger Frust und das Gefühl, kontrolliert in den Flug zu starten.</p>
+        </div>
+        <div class="card avoid">
+          <span class="label">Ausdrücklich vermeiden</span>
+          <h3>Nicht so klingen</h3>
+          <div class="pill-row">
+            <span class="pill">verspielt</span>
+            <span class="pill">überdreht</span>
+            <span class="pill">belehrend</span>
+            <span class="pill">bürokratisch</span>
+            <span class="pill">nerdig-kompliziert</span>
+          </div>
+          <p style="margin-top:18px;">Begründung: Zu viel Spielsprache zerstört Realismus; zu viel Fachsprache verstärkt genau den Komplexitätsfrust, den FlightPlanner lösen soll.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Design‑Referenzen</h2>
+        <p class="section-note">Nicht aus der Aviation-Branche, sondern aus derselben emotionalen Welt: Kontrolle, Präzision, Premium-Software, Geschwindigkeit und ästhetische Technik.</p>
+      </div>
+      <div class="references">
+        <div class="reference-card">
+          <div class="brand-mark">L</div>
+          <h3>Linear</h3>
+          <p><strong>Warum passend:</strong> Linear spricht Menschen an, die Effizienz, Kontrolle und schöne Produktivität lieben. Für FlightPlanner ist das relevant, weil der ICP aus Komplexität einen klaren Flow machen will.</p>
+        </div>
+        <div class="reference-card">
+          <div class="brand-mark">R</div>
+          <h3>Raycast</h3>
+          <p><strong>Warum passend:</strong> Raycast fühlt sich schnell, keyboard-nah und power-user-orientiert an. Diese Energie passt zu Flightsim-Enthusiasten, die Tools beherrschen und trotzdem Geschwindigkeit wollen.</p>
+        </div>
+        <div class="reference-card">
+          <div class="brand-mark">A</div>
+          <h3>Apple Weather</h3>
+          <p><strong>Warum passend:</strong> Wetter wird dort visuell, ruhig und emotional zugänglich. FlightPlanner braucht genau diese Übersetzung: komplexe Atmosphäre verständlich und schön machen.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Gestaltungsprinzip</h2>
+        <p class="section-note">Die Leitidee für deinen Vibe-Coding-Prototypen: Nicht mehr Daten zeigen, sondern mehr Sicherheit erzeugen.</p>
+      </div>
+      <div class="principle">
+        <div class="route-card"></div>
+        <div class="principle-list">
+          <div class="principle-item"><strong>1. Visual first, tables second.</strong><p>Der ICP leidet unter vielen Datenquellen. Zeige Route, Wetter und Entscheidung zuerst visuell — Details erst bei Bedarf.</p></div>
+          <div class="principle-item"><strong>2. Premium durch Ruhe.</strong><p>Keine lauten Gaming-Effekte. Premium entsteht durch Raum, Fokus, klare Hierarchie und präzise Mikrointeraktionen.</p></div>
+          <div class="principle-item"><strong>3. Kompetenz statt Komplexität.</strong><p>Der Nutzer soll professionell wirken, ohne sich durch Aviation-Fachsprache kämpfen zu müssen.</p></div>
+          <div class="principle-item"><strong>4. Jeder Screen muss Fluglust erzeugen.</strong><p>FlightPlanner verkauft nicht nur Planung, sondern den Moment: „Ich bin bereit für einen realistischen Flug.“</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Moodboard für FlightPlanner · Abgeleitet aus ICP: virtuelle Piloten, Realismus, Premium-UX, Wetterintegration, schnelle Flugplanung und immersive Cockpit-Ästhetik.
+  </footer>
+</body>
+</html>

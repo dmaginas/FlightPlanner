@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FlightPlanner Moodboard Variante 2 - AI Dispatcher</title>
+<style>
+:root{
+--bg:radial-gradient(circle at 15% 5%,rgba(118,91,255,.28),transparent 28%),radial-gradient(circle at 85% 8%,rgba(0,229,168,.18),transparent 30%),linear-gradient(145deg,#070716 0%,#10152B 48%,#07111F 100%);
+--grid:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:44px 44px;
+--text:#F4F7FF;--muted:rgba(244,247,255,.68);--accent:#8B7CFF;--accent-soft:rgba(139,124,255,.55);--line:rgba(244,247,255,.16);--glass:rgba(255,255,255,.065);--display:"Space Grotesk",Inter,sans-serif;--warn-soft:rgba(255,196,87,.28);--warn-bg:rgba(255,196,87,.07);--mark:linear-gradient(135deg,#8B7CFF,#00E5A8);--visual:linear-gradient(135deg,rgba(139,124,255,.55),rgba(0,229,168,.14));
+}
+
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:var(--bg);min-height:100vh}
+body:before{content:"";position:fixed;inset:0;background:var(--grid);pointer-events:none;opacity:.65}
+.wrap{position:relative;max-width:1220px;margin:auto;padding:56px 6vw 80px}
+.kicker{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--accent);background:var(--glass);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.dot{width:8px;height:8px;border-radius:99px;background:var(--accent);box-shadow:0 0 20px var(--accent)}
+h1{font-family:var(--display);font-size:clamp(46px,7vw,96px);line-height:.95;letter-spacing:-.065em;margin:24px 0 18px;max-width:980px}
+.lead{font-size:clamp(18px,2vw,22px);line-height:1.6;color:var(--muted);max-width:780px}
+.section{margin-top:28px;border:1px solid var(--line);border-radius:32px;background:var(--glass);backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.28)}
+.head{display:flex;justify-content:space-between;gap:24px;align-items:flex-end;padding:28px;border-bottom:1px solid var(--line)}
+h2{font-family:var(--display);font-size:clamp(28px,3vw,44px);letter-spacing:-.045em;margin:0}
+.note{color:var(--muted);line-height:1.55;max-width:440px;font-size:14px}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:28px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:28px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:28px}
+.card{border:1px solid var(--line);border-radius:24px;background:rgba(255,255,255,.055);padding:20px;min-height:210px;transition:.2s}
+.card:hover{transform:translateY(-4px);border-color:var(--accent-soft);background:rgba(255,255,255,.09)}
+.swatch{height:92px;border-radius:18px;border:1px solid rgba(255,255,255,.18);margin-bottom:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 16px 34px rgba(0,0,0,.25)}
+.hex{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:#fff;margin-bottom:8px}
+.label{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.13em;margin-bottom:10px;display:block}
+h3{font-family:var(--display);font-size:22px;letter-spacing:-.035em;margin:0 0 8px}
+p{color:var(--muted);line-height:1.55;margin:0}
+.sample{border:1px solid var(--line);border-radius:20px;background:rgba(0,0,0,.22);padding:22px;margin:16px 0}
+.sample-title{font-family:var(--display);font-size:34px;line-height:1;letter-spacing:-.055em;color:#fff}
+.sample-body{margin-top:12px;color:var(--muted)}
+.visual{height:130px;border-radius:20px;border:1px solid var(--line);margin-bottom:16px;position:relative;overflow:hidden;background:var(--visual)}
+.visual:after{content:attr(data-label);position:absolute;left:16px;bottom:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#fff;letter-spacing:.04em}
+.pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:9px 12px;color:#fff;background:rgba(255,255,255,.07)}
+.avoid .pill{color:rgba(255,255,255,.72);border-color:var(--warn-soft);background:var(--warn-bg)}
+.refmark{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:var(--mark);font-family:var(--display);font-size:24px;color:#fff;margin-bottom:16px}
+footer{color:var(--muted);font-size:13px;margin-top:28px}
+@media(max-width:900px){.grid5{grid-template-columns:repeat(2,1fr)}.grid3,.grid2{grid-template-columns:1fr}.head{display:block}.note{margin-top:12px}}
+@media(max-width:560px){.grid5{grid-template-columns:1fr}.wrap{padding-top:38px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="kicker"><span class="dot"></span> Variante 02 · AI Dispatcher Premium</div>
+<h1>Der ruhige Co‑Pilot, der Planung entscheidet.</h1>
+<p class="lead">Diese Richtung testet, ob dein ICP stärker auf intelligente Entlastung, Entscheidungssicherheit und Premium-SaaS-Vertrauen reagiert als auf reine Cockpit-Immersion.</p>
+
+<section class="section">
+  <div class="head"><h2>Farbpalette</h2><p class="note">Mehr AI, weniger Radar. Die Farben wirken smart, ruhig und hochwertig — passend für Nutzer, die Komplexität abgeben möchten, aber Kontrolle behalten wollen.</p></div>
+  <div class="grid5">
+    <div class="card"><div class="swatch" style="background:#070716"></div><div class="hex">#070716</div><h3>Deep Console</h3><p>Dunkel genug für den Simulator-Kontext, aber weniger militärisch. Es fühlt sich wie modernes SaaS an.</p></div>
+    <div class="card"><div class="swatch" style="background:#8B7CFF"></div><div class="hex">#8B7CFF</div><h3>AI Violet</h3><p>Signalisiert intelligente Unterstützung und Zukunft, ohne nach Gaming-Neon zu klingen.</p></div>
+    <div class="card"><div class="swatch" style="background:#00E5A8"></div><div class="hex">#00E5A8</div><h3>Confirmed Mint</h3><p>Für positive Systemzustände: Route optimiert, Wetter geprüft, Export bereit.</p></div>
+    <div class="card"><div class="swatch" style="background:#F4F7FF"></div><div class="hex">#F4F7FF</div><h3>Briefing White</h3><p>Gibt Klarheit in Briefings und reduziert die gefühlte Komplexität.</p></div>
+    <div class="card"><div class="swatch" style="background:#FFC457"></div><div class="hex">#FFC457</div><h3>Decision Amber</h3><p>Hebt AI-Hinweise hervor, ohne Alarmgefühl zu erzeugen.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Typografie</h2><p class="note">Schriften mit Software-Premium-Charakter: präzise, zugänglich, kontrolliert.</p></div>
+  <div class="grid2">
+    <div class="card"><span class="label">Paar 01</span><h3>Space Grotesk + Inter</h3><div class="sample"><div class="sample-title">Weather-aware route found.</div><div class="sample-body">Dein Flugplan ist vorbereitet, erklärt und bereit zum Export.</div></div><p>Ideal für eine AI-Assistenz, die modern und vertrauenswürdig statt nerdig wirken soll.</p></div>
+    <div class="card"><span class="label">Paar 02</span><h3>Sora + Source Sans 3</h3><div class="sample"><div class="sample-title">Plan smarter. Fly sooner.</div><div class="sample-body">Routenlogik, Wetter und Alternativen werden leicht verständlich geführt.</div></div><p>Sora wirkt weich-futuristisch; Source Sans 3 hält längere Texte freundlich und klar.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Bildsprache</h2><p class="note">Nicht „Aviation-Dashboard“, sondern „intelligente Entscheidungshilfe“.</p></div>
+  <div class="grid3">
+    <div class="card"><div class="visual" data-label="AI ROUTE OPTIONS"></div><h3>Entscheidungskarten</h3><p>Adjektive: kuratiert, erklärend, intelligent, priorisiert, ruhig. Zeigt: Das Tool denkt mit.</p></div>
+    <div class="card"><div class="visual" data-label="RISK LOW · CONFIDENCE HIGH"></div><h3>Confidence-Indikatoren</h3><p>Adjektive: vertrauensbildend, klar, validiert, messbar, sicher. Stärkt Vertrauen in Auto-Routing.</p></div>
+    <div class="card"><div class="visual" data-label="ALT ROUTE · WEATHER SAFE"></div><h3>Alternative Szenarien</h3><p>Adjektive: flexibel, rational, vorbereitet, vorausschauend, souverän. Passt zu Piloten, die Kontrolle behalten wollen.</p></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Tonalität</h2><p class="note">Wie ein Dispatcher, der knapp, ruhig und hilfreich entscheidet.</p></div>
+  <div class="grid2">
+    <div class="card"><span class="label">Klingen wie</span><h3>präzise, beratend, souverän, klar, entlastend</h3><div class="pills"><span class="pill">präzise</span><span class="pill">beratend</span><span class="pill">souverän</span><span class="pill">klar</span><span class="pill">entlastend</span></div></div>
+    <div class="card avoid"><span class="label">Nicht klingen wie</span><h3>mystisch, hype-lastig, arrogant, verspielt, kompliziert</h3><div class="pills"><span class="pill">mystisch</span><span class="pill">hype-lastig</span><span class="pill">arrogant</span><span class="pill">verspielt</span><span class="pill">kompliziert</span></div></div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="head"><h2>Design‑Referenzen</h2><p class="note">Emotionale Welt: smarte Premium-Software, Entscheidungssicherheit, produktive Geschwindigkeit.</p></div>
+  <div class="grid3">
+    <div class="card"><div class="refmark">L</div><h3>Linear</h3><p>Für fokussierte, ruhige Produktivität und starke visuelle Hierarchie.</p></div>
+    <div class="card"><div class="refmark">N</div><h3>Notion AI</h3><p>Für AI als zugängliche Entlastung, nicht als überwältigende Black Box.</p></div>
+    <div class="card"><div class="refmark">S</div><h3>Stripe</h3><p>Für technisches Vertrauen, klare Systeme und hochwertige B2B-Ästhetik.</p></div>
+  </div>
+</section>
+
+<footer>FlightPlanner Moodboard Variante · Für Kundeninterviews: Bitte zeigen, Reaktion beobachten und nach Präferenz, Vertrauen, Zahlungsbereitschaft und Nutzungsabsicht fragen.</footer>
+</div>
+</body>
+</html>
