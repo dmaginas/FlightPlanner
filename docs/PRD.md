@@ -110,7 +110,20 @@ Ein typischer Nutzer:
 
 ---
 
-## 5. Jobs to be Done (JTBD)
+## 5. Technischer Stack
+
+| Bereich | Technologie | Beschreibung |
+|---------|-------------|--------------|
+| **Frontend-Framework** | React | Komponentenbasierte UI-Entwicklung |
+| **Kartenvisualisierung** | Leaflet.js | Interaktive Karte mit OpenStreetMap |
+| **Kartendaten** | OpenStreetMap | Freies, offenes Karten-Basislayer |
+| **Routing-API** | SimBrief API | Automatische Flugroutenberechnung |
+| **Flughafendaten** | OpenAIP / AviationStack | Flughafensuche und -informationen |
+| **Hosting** | Vercel / GitHub Pages | Kostenloses Deployment |
+
+---
+
+## 6. Jobs to be Done (JTBD)
 
 ### Funktionale Jobs
 - Flugroute von A nach B erstellen
@@ -136,7 +149,7 @@ Ein typischer Nutzer:
 
 ---
 
-## 6. Features & Anforderungen
+## 7. Features & Anforderungen
 
 ### MVP — Must-Have
 
@@ -165,7 +178,7 @@ Ein typischer Nutzer:
 
 ---
 
-## 7. UX & Design Anforderungen
+## 8. UX & Design Anforderungen
 
 ### Designprinzipien
 
@@ -218,7 +231,7 @@ Ein typischer Nutzer:
 
 ---
 
-## 8. Technischer Rahmen
+## 9. Technischer Rahmen
 
 ### Frontend
 - **Framework:** React
@@ -238,7 +251,7 @@ Ein typischer Nutzer:
 
 ---
 
-## 9. Risiken & offene Fragen
+## 10. Risiken & offene Fragen
 
 ### Kritische Risiken
 
@@ -264,7 +277,7 @@ Diese Frage muss durch Discovery Interviews beantwortet werden, bevor der Entwic
 
 ---
 
-## 10. Erfolgsmetriken
+## 11. Erfolgsmetriken
 
 ### Business-Metriken
 - Anzahl aktiver Nutzer (DAU/MAU)
@@ -291,7 +304,7 @@ Diese Frage muss durch Discovery Interviews beantwortet werden, bevor der Entwic
 
 ---
 
-## 11. Nächste Schritte
+## 12. Nächste Schritte
 
 ### Validierung (vor Entwicklung)
 1. Discovery Interviews mit 5–8 virtuellen Piloten durchführen
