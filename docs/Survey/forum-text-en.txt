@@ -1,0 +1,10 @@
+Hello everyone! ✈️
+
+I’m currently working on FlightPlanner, a new free web project for virtual pilots. The goal is to create a modern platform that makes virtual flying easier, more organized, and more enjoyable — whether you fly on VATSIM, IVAO, or in singleplayer.
+
+To make sure the platform is truly built around the community’s needs, I’d really appreciate your participation in a short survey. It only takes a few minutes and would greatly help with the development of the project.
+
+📝 Survey link:
+https://forms.gle/fH7wTSFDzaPb7chy7
+
+Every response and piece of feedback is highly appreciated. Thanks a lot for supporting the project! 🙌
