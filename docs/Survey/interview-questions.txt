@@ -1,0 +1,129 @@
+---- EN ----
+
+How do you currently plan your flights?
+Which tools do you use simultaneously during planning?
+How long does your typical flight planning take?
+Which steps do you find annoying or time-consuming?
+What would a new tool need to do significantly better for you to switch?
+When was the last time you tried a new flight sim tool?
+Why did you stick with your current workflow?
+What frustrates you about SimBrief or similar tools?
+Are there moments when flight planning prevents you from actually flying?
+
+What makes a flight planning tool truly good for you?
+How important is the visual quality of such a tool to you?
+How should flight planning ideally feel?
+Are there tools outside of aviation whose UX you would like to see in aviation tools?
+When does an aviation tool feel “professional” to you?
+
+How important is weather in your flight planning?
+Which weather information do you actively check?
+What part of that is currently tedious?
+When does weather actually influence your route?
+Do you use external weather websites or tools?
+How often do you change your flight plan because of weather?
+If FlightPlanner could solve only ONE problem:
+ - Weather
+ - Speed
+ - Clarity
+ - Routing
+which would be the most valuable?
+
+Which parts of flight planning do you want to control yourself?
+Which tasks would you like to automate?
+When does automation feel “wrong” to you?
+Would you trust an automatically generated route?
+What would need to happen for you to trust AI recommendations?
+Would you want to understand WHY a route is being suggested?
+
+How often do you fly per week?
+How often do you actively plan new routes?
+How much time do you spend overall on pre-flight preparation?
+Would you open FlightPlanner before EVERY flight?
+For which flights would the tool be unnecessary?
+Which types of flights require the most planning?
+
+What makes an aviation tool feel high-quality?
+When does a tool feel “serious” or “realistic”?
+Which products feel premium to you?
+Which features do you automatically expect from a professional tool?
+Which missing features would be an immediate dealbreaker?
+
+Which tools MUST a new product support?
+Which integration would be absolutely essential for you?
+What would happen if a tool didn’t support SimBrief export?
+Which existing habits would be hard to replace?
+What must never become more complicated?
+
+What types of flights do you do most often?
+What does “flying realistically” mean to you?
+Which simulators do you use?
+Are you more casual or hardcore simulation-oriented?
+Which users would benefit the most from FlightPlanner?
+Who would the product be rather uninteresting for?
+
+
+---- DE ----
+Wie planst du aktuell deine Flüge?
+Welche Tools nutzt du dabei gleichzeitig?
+Wie lange dauert deine typische Flugplanung?
+Welche Schritte empfindest du als nervig oder aufwendig?
+Was müsste ein neues Tool deutlich besser machen, damit du wechselst?
+Wann hast du zuletzt ein neues Flightsim-Tool ausprobiert?
+Warum bist du bei deinem aktuellen Workflow geblieben?
+Was frustriert dich an SimBrief oder ähnlichen Tools?
+Gibt es Momente, in denen Flugplanung dich vom eigentlichen Fliegen abhält?
+
+Was macht ein Flight-Planning-Tool für dich wirklich gut?
+Wie wichtig ist dir die visuelle Qualität eines solchen Tools?
+Wie soll sich Flugplanung idealerweise anfühlen?
+Gibt es Tools außerhalb von Aviation, deren UX du dir wünschen würdest?
+Wann wirkt ein Aviation-Tool „professionell“ für dich?
+
+Wie wichtig ist Wetter in deiner Flugplanung?
+Welche Wetterinformationen prüfst du aktiv?
+Was daran ist aktuell mühsam?
+Wann beeinflusst Wetter tatsächlich deine Route?
+Nutzt du externe Wetterseiten oder Tools?
+Wie oft änderst du wegen Wetter deinen Flugplan?
+Wenn FlightPlanner nur EIN Problem lösen könnte:
+ - Wetter
+ - Geschwindigkeit
+ - Übersichtlichkeit
+ - Routing
+was wäre am wertvollsten?
+
+Welche Teile der Flugplanung möchtest du selbst kontrollieren?
+Welche Aufgaben würdest du gerne automatisieren?
+Wann fühlt sich Automatisierung „falsch“ an?
+Würdest du einer automatisch generierten Route vertrauen?
+Was müsste passieren, damit du AI-Empfehlungen vertraust?
+Möchtest du verstehen WARUM eine Route vorgeschlagen wird?
+
+Wie oft fliegst du pro Woche?
+Wie oft planst du aktiv neue Routen?
+Wie viel Zeit investierst du insgesamt in Pre-Flight Preparation?
+Würdest du FlightPlanner vor JEDEM Flug öffnen?
+Für welche Flüge wäre das Tool unnötig?
+Welche Arten von Flügen brauchen die meiste Planung?
+
+Was macht ein Aviation-Tool hochwertig?
+Wann wirkt ein Tool „seriös“ oder „realistisch“?
+Welche Produkte fühlen sich für dich premium an?
+Welche Features erwartest du automatisch von einem professionellen Tool?
+Welche fehlenden Features wären ein sofortiger Dealbreaker?
+
+Welche Tools MUSS ein neues Produkt unterstützen?
+Welche Integration wäre für dich unverzichtbar?
+Was würde passieren, wenn ein Tool keinen SimBrief-Export hätte?
+Welche bestehenden Gewohnheiten wären schwer zu ersetzen?
+Was darf auf keinen Fall komplizierter werden?
+
+Welche Art von Flügen machst du am häufigsten?
+Was bedeutet „realistisch fliegen“ für dich?
+Welche Simulatoren nutzt du?
+Spielst du eher casual oder hardcore-simulationsorientiert?
+Welche Nutzer würden am meisten von FlightPlanner profitieren?
+Für wen wäre das Produkt eher uninteressant?
+
+
