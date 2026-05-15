@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
-import TopBar from './components/TopBar.jsx'
-import MainScreen from './components/MainScreen.jsx'
-import SIDScreen from './components/SIDScreen.jsx'
-import STARScreen from './components/STARScreen.jsx'
-import { getAirport } from './data/airports.js'
-import { getRoute, generateDynamicRoute } from './data/mockData.js'
+import TopBar from './components/TopBar.tsx'
+import MainScreen from './components/MainScreen.tsx'
+import SIDScreen from './components/SIDScreen.tsx'
+import STARScreen from './components/STARScreen.tsx'
+import { getAirport } from './data/airports.ts'
+import { getRoute, generateDynamicRoute } from './data/mockData.ts'
 
 export default function App() {
   const [screen, setScreen]           = useState('plan')

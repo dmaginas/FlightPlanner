@@ -1,8 +1,8 @@
-import FlightInput   from './FlightInput.jsx'
-import WeatherPanel  from './WeatherPanel.jsx'
-import AIPanel       from './AIPanel.jsx'
-import WaypointTable from './WaypointTable.jsx'
-import RouteMap      from './RouteMap.jsx'
+import FlightInput   from './FlightInput.tsx'
+import WeatherPanel  from './WeatherPanel.tsx'
+import AIPanel       from './AIPanel.tsx'
+import WaypointTable from './WaypointTable.tsx'
+import RouteMap      from './RouteMap.tsx'
 
 export default function MainScreen({
   departure, arrival, route, selectedSID, selectedSTAR, routeState,

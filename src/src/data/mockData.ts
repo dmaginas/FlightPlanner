@@ -1,4 +1,4 @@
-import { haversineNm } from './airports.js';
+import { haversineNm } from './airports.ts';
 
 // ─── Pre-defined routes ───────────────────────────────────────────────────────
 

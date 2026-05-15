@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { searchAirports } from '../data/airports.js'
+import { searchAirports } from '../data/airports.ts'
 
 function AirportSearch({ label, role, value, onChange }) {
   const [query, setQuery]       = useState(value ? `${value.icao} — ${value.name}` : '')
