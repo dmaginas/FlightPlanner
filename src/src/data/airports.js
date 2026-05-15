@@ -2,23 +2,26 @@ const OPENAIP_BASE_URL = (import.meta.env.VITE_OPENAIP_BASE_URL ?? 'https://api.
 const OPENAIP_API_KEY = import.meta.env.VITE_OPENAIP_API_KEY
 
 function normalizeAirport(feature) {
-  const props = feature?.properties ?? {}
-  const geom = feature?.geometry
-  const coords = Array.isArray(geom?.coordinates) ? geom.coordinates : []
-  const icao = (props.icaoCode ?? '').toUpperCase()
-  const iata = (props.iataCode ?? '').toUpperCase()
+  const props = feature?.properties ?? feature ?? {}
+  const coords =
+    (Array.isArray(feature?.geometry?.coordinates) && feature.geometry.coordinates) ||
+    (Array.isArray(feature?.location?.coordinates) && feature.location.coordinates) ||
+    (Array.isArray(props?.geometry?.coordinates) && props.geometry.coordinates) ||
+    []
+  const icao = (props.icaoCode ?? props.icao ?? props.ident ?? '').toUpperCase()
+  const iata = (props.iataCode ?? props.iata ?? '').toUpperCase()
 
   if (!icao || coords.length < 2) return null
 
   return {
     icao,
     iata,
-    name: props.name ?? icao,
-    city: props.city ?? 'Unknown',
-    country: props.country ?? 'Unknown',
+    name: props.name ?? props.title ?? icao,
+    city: props.city ?? props.municipality ?? 'Unknown',
+    country: props.country ?? props.countryCode ?? props.isoCountry ?? 'Unknown',
     lat: coords[1],
     lon: coords[0],
-    elevation: props.elevation?.value ?? 0,
+    elevation: props.elevation?.value ?? props.elevation ?? 0,
   }
 }
 
