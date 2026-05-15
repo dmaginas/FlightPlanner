@@ -32,7 +32,7 @@ function WindBadge({ score }) {
 }
 
 export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onBack }) {
-  const stars = getSTARs(arrival?.icao ?? '')
+  const stars = getSTARs(arrival?.icao ?? '', arrival, route)
   const [hover, setHover] = useState(null)
   const active = hover ?? selectedSTAR
 

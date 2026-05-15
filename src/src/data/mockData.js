@@ -130,6 +130,70 @@ export function getWeather(icao) {
 
 // ─── SIDs ─────────────────────────────────────────────────────────────────────
 
+
+function createFallbackSIDs(icao, weather) {
+  const wind = weather?.wind?.dir ?? 0;
+  const runwayPref = wind >= 180 ? '27' : '09';
+  const suffixes = ['A', 'B'];
+  return suffixes.map((suffix, idx) => ({
+    id: `${icao}-GEN-SID-${idx + 1}`,
+    name: `${icao.slice(-2)}EXI ${idx + 1}${suffix}`,
+    runway: `${runwayPref}${idx === 0 ? 'L' : 'R'}`,
+    initialAlt: idx === 0 ? 'FL070' : 'FL090',
+    confidence: idx === 0 ? 78 : 69,
+    windScore: idx === 0 ? 'Favorable' : 'Crosswind',
+    note: 'Fallback procedure generated from current route and wind data.',
+    path: [],
+  }));
+}
+
+function createFallbackSTARs(icao, weather) {
+  const wind = weather?.wind?.dir ?? 0;
+  const runwayPref = wind >= 180 ? '27' : '09';
+  const suffixes = ['A', 'B'];
+  return suffixes.map((suffix, idx) => ({
+    id: `${icao}-GEN-STAR-${idx + 1}`,
+    name: `${icao.slice(-2)}ARR ${idx + 1}${suffix}`,
+    runway: `${runwayPref}${idx === 0 ? 'L' : 'R'}`,
+    finalAlt: idx === 0 ? '4000ft' : '5000ft',
+    confidence: idx === 0 ? 76 : 68,
+    windScore: idx === 0 ? 'Favorable' : 'Headwind',
+    note: 'Fallback arrival generated because no curated STAR dataset exists for this airport.',
+    path: [],
+  }));
+}
+
+function withFallbackPath(procedures, airport, route, mode) {
+  if (!airport?.lat || !airport?.lon) return procedures;
+  const routePoints = route?.waypoints ?? [];
+
+  return procedures.map((proc, idx) => {
+    if (proc.path?.length) return proc;
+    if (mode === 'sid') {
+      const target = routePoints.find((w) => w.type === 'fix') ?? routePoints[1] ?? { lat: airport.lat + 0.3, lon: airport.lon + 0.3 };
+      return {
+        ...proc,
+        path: [
+          [airport.lat, airport.lon],
+          [airport.lat + 0.08 + idx * 0.04, airport.lon + 0.10 - idx * 0.03],
+          [target.lat, target.lon],
+        ],
+      };
+    }
+
+    const fixes = routePoints.filter((w) => w.type === 'fix');
+    const entry = fixes.length ? fixes[fixes.length - 1] : routePoints.at(-2) ?? { lat: airport.lat - 0.3, lon: airport.lon - 0.3 };
+    return {
+      ...proc,
+      path: [
+        [entry.lat, entry.lon],
+        [airport.lat - 0.10 - idx * 0.03, airport.lon - 0.08 + idx * 0.04],
+        [airport.lat, airport.lon],
+      ],
+    };
+  });
+}
+
 const SIDS = {
   EDDF: [
     { id: 'ANEKI1G', name: 'ANEKI 1G', runway: '07L', initialAlt: 'FL080', confidence: 92, windScore: 'Favorable', note: 'Wind aligned with runway heading. Recommended.', path: [[50.0379, 8.5622], [50.08, 8.32], [50.112, 8.020]] },
@@ -151,8 +215,10 @@ const SIDS = {
   ],
 };
 
-export function getSIDs(icao) {
-  return SIDS[icao] ?? [];
+export function getSIDs(icao, airport = null, route = null) {
+  const weather = getWeather(icao)
+  const curated = SIDS[icao] ?? createFallbackSIDs(icao, weather)
+  return withFallbackPath(curated, airport, route, 'sid')
 }
 
 // ─── STARs ────────────────────────────────────────────────────────────────────
@@ -178,6 +244,8 @@ const STARS = {
   ],
 };
 
-export function getSTARs(icao) {
-  return STARS[icao] ?? [];
+export function getSTARs(icao, airport = null, route = null) {
+  const weather = getWeather(icao)
+  const curated = STARS[icao] ?? createFallbackSTARs(icao, weather)
+  return withFallbackPath(curated, airport, route, 'star')
 }

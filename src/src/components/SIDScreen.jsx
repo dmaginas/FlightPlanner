@@ -32,7 +32,7 @@ function WindBadge({ score }) {
 }
 
 export default function SIDScreen({ departure, route, selectedSID, onSelect, onBack }) {
-  const sids = getSIDs(departure?.icao ?? '')
+  const sids = getSIDs(departure?.icao ?? '', departure, route)
   const [hover, setHover] = useState(null)
   const active = hover ?? selectedSID
 
