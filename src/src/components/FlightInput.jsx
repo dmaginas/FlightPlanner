@@ -12,12 +12,18 @@ function AirportSearch({ label, role, value, onChange }) {
     setQuery(value ? `${value.icao} — ${value.name}` : '')
   }, [value])
 
-  function handleInput(e) {
+  async function handleInput(e) {
     const q = e.target.value
     setQuery(q)
-    const found = searchAirports(q)
-    setResults(found)
-    setOpen(found.length > 0)
+
+    try {
+      const found = await searchAirports(q)
+      setResults(found)
+      setOpen(found.length > 0)
+    } catch {
+      setResults([])
+      setOpen(false)
+    }
   }
 
   function select(apt) {
@@ -29,10 +35,7 @@ function AirportSearch({ label, role, value, onChange }) {
 
   function handleFocus() {
     setFocused(true)
-    if (value) {
-      setQuery('')
-      setResults(searchAirports(''))
-    }
+    if (value) setQuery('')
   }
 
   function handleBlur() {

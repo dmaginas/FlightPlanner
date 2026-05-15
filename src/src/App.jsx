@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import TopBar from './components/TopBar.jsx'
 import MainScreen from './components/MainScreen.jsx'
 import SIDScreen from './components/SIDScreen.jsx'
@@ -8,11 +8,25 @@ import { getRoute, generateDynamicRoute } from './data/mockData.js'
 
 export default function App() {
   const [screen, setScreen]           = useState('plan')
-  const [departure, setDeparture]     = useState(() => getAirport('EDDF'))
-  const [arrival, setArrival]         = useState(() => getAirport('EGLL'))
+  const [departure, setDeparture]     = useState(null)
+  const [arrival, setArrival]         = useState(null)
   const [selectedSID, setSelectedSID] = useState(null)
   const [selectedSTAR, setSelectedSTAR] = useState(null)
   const [routeState, setRouteState]   = useState('ready') // idle | loading | ready
+
+  useEffect(() => {
+    let active = true
+
+    async function loadDefaults() {
+      const [dep, arr] = await Promise.all([getAirport('EDDF'), getAirport('EGLL')])
+      if (!active) return
+      setDeparture(dep)
+      setArrival(arr)
+    }
+
+    loadDefaults()
+    return () => { active = false }
+  }, [])
 
   const route = useCallback(() => {
     if (!departure || !arrival) return null
