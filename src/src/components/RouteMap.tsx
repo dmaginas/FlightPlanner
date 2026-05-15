@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 
@@ -9,15 +9,41 @@ L.Icon.Default.mergeOptions({ iconUrl: null, iconRetinaUrl: null, shadowUrl: nul
 const TILE_URL   = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
 
-function MapController({ departure, arrival, route }) {
+function buildRouteCoords(route, selectedSID, selectedSTAR) {
+  if (!route?.waypoints?.length) return []
+
+  const dedupePush = (acc, coord) => {
+    const last = acc[acc.length - 1]
+    if (!last || last[0] !== coord[0] || last[1] !== coord[1]) acc.push(coord)
+  }
+
+  const coords = []
+  const sidPath = selectedSID?.path ?? []
+  const starPath = selectedSTAR?.path ?? []
+
+  if (sidPath.length) sidPath.forEach((coord) => dedupePush(coords, coord))
+  else dedupePush(coords, [route.waypoints[0].lat, route.waypoints[0].lon])
+
+  route.waypoints
+    .filter((w) => w.type === 'fix')
+    .map((w) => [w.lat, w.lon])
+    .forEach((coord) => dedupePush(coords, coord))
+
+  if (starPath.length) starPath.forEach((coord) => dedupePush(coords, coord))
+  else dedupePush(coords, [route.waypoints[route.waypoints.length - 1].lat, route.waypoints[route.waypoints.length - 1].lon])
+
+  return coords
+}
+
+function MapController({ departure, arrival, routeCoords }) {
   const map = useMap()
 
   useEffect(() => {
-    if (!route?.waypoints?.length) return
-    const pts = route.waypoints.map(w => [w.lat, w.lon])
+    if (!routeCoords?.length) return
+    const pts = routeCoords
     const bounds = L.latLngBounds(pts).pad(0.18)
     map.fitBounds(bounds, { animate: true, duration: 0.8 })
-  }, [departure?.icao, arrival?.icao, map])
+  }, [departure?.icao, arrival?.icao, routeCoords, map])
 
   return null
 }
@@ -61,7 +87,7 @@ export default function RouteMap({ departure, arrival, route, selectedSID, selec
     ? [departure.lat, departure.lon]
     : [51.0, 10.0]
 
-  const routeCoords = route?.waypoints?.map(w => [w.lat, w.lon]) ?? []
+  const routeCoords = buildRouteCoords(route, selectedSID, selectedSTAR)
 
   const airportStyle = (isActive) => ({
     color: isActive ? '#fff' : 'rgba(255,255,255,.5)',
@@ -145,7 +171,7 @@ export default function RouteMap({ departure, arrival, route, selectedSID, selec
           </CircleMarker>
         )}
 
-        <MapController departure={departure} arrival={arrival} route={route} />
+        <MapController departure={departure} arrival={arrival} routeCoords={routeCoords} />
       </MapContainer>
 
       {/* Loading overlay */}
