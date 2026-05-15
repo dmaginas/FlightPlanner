@@ -1,4 +1,4 @@
-import { getWeather } from '../data/mockData.js'
+import { getWeather } from '../data/mockData.ts'
 
 function WindArrow({ dir, speed }) {
   return (
