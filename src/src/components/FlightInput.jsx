@@ -7,8 +7,10 @@ function AirportSearch({ label, role, value, onChange }) {
   const [open, setOpen]         = useState(false)
   const [focused, setFocused]   = useState(false)
   const inputRef = useRef()
+  const valueRef = useRef(value)
 
   useEffect(() => {
+    valueRef.current = value
     setQuery(value ? `${value.icao} — ${value.name}` : '')
   }, [value])
 
@@ -35,15 +37,16 @@ function AirportSearch({ label, role, value, onChange }) {
 
   function handleFocus() {
     setFocused(true)
-    if (value) setQuery('')
+    if (valueRef.current) setQuery('')
   }
 
   function handleBlur() {
     setFocused(false)
     setTimeout(() => {
+      const currentValue = valueRef.current
       setOpen(false)
-      if (!value) setQuery('')
-      else setQuery(`${value.icao} — ${value.name}`)
+      if (!currentValue) setQuery('')
+      else setQuery(`${currentValue.icao} — ${currentValue.name}`)
     }, 160)
   }
 
