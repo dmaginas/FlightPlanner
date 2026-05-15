@@ -2,10 +2,6 @@
 
 > Intelligente Reise- und Flugplanung für moderne Entwickler:innen und Vielreisende.
 
-![GitHub last commit](https://img.shields.io/github/last-commit/USERNAME/FlightPlanner)
-![GitHub repo size](https://img.shields.io/github/repo-size/USERNAME/FlightPlanner)
-![License](https://img.shields.io/github/license/USERNAME/FlightPlanner)
-
 ---
 
 ## 📌 Übersicht
