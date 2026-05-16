@@ -68,23 +68,39 @@ function enrichWaypoints(waypoints) {
   });
 }
 
-export function getRoute(depIcao, arrIcao) {
+function applyAircraftProfile(route, aircraftProfile) {
+  const totalDist = route.waypoints[route.waypoints.length - 1]?.distCum ?? 0
+  if (!aircraftProfile) return route
+  const eteMinutes = Math.round((totalDist / aircraftProfile.cruiseSpeedKts) * 60)
+  const fuelEstimateTons = Number(((eteMinutes / 60) * aircraftProfile.fuelBurnTonPerHour).toFixed(1))
+  return {
+    ...route,
+    aircraft: aircraftProfile.icaoCode,
+    aircraftProfile,
+    altitude: `FL${Math.round(aircraftProfile.preferredCruiseAltitudeFt / 100)}`,
+    routeDistanceNm: totalDist,
+    etaMinutes: eteMinutes,
+    fuelEstimateTons,
+  }
+}
+
+export function getRoute(depIcao, arrIcao, aircraftProfile) {
   const key    = `${depIcao}-${arrIcao}`;
   const revKey = `${arrIcao}-${depIcao}`;
 
   if (ROUTES[key]) {
     const r = ROUTES[key];
-    return { ...r, waypoints: enrichWaypoints(r.waypoints) };
+    return applyAircraftProfile({ ...r, waypoints: enrichWaypoints(r.waypoints) }, aircraftProfile);
   }
   if (ROUTES[revKey]) {
     const r   = ROUTES[revKey];
     const wps = [...r.waypoints].reverse();
-    return { ...r, waypoints: enrichWaypoints(wps) };
+    return applyAircraftProfile({ ...r, waypoints: enrichWaypoints(wps) }, aircraftProfile);
   }
   return null; // caller generates dynamic route
 }
 
-export function generateDynamicRoute(dep, arr) {
+export function generateDynamicRoute(dep, arr, aircraftProfile) {
   const total = Math.round(haversineNm(dep.lat, dep.lon, arr.lat, arr.lon));
   const n = total > 800 ? 5 : total > 400 ? 4 : 3;
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -106,7 +122,7 @@ export function generateDynamicRoute(dep, arr) {
   waypoints.push({ id: arr.icao, type: 'airport', lat: arr.lat, lon: arr.lon });
 
   const alt = total > 1200 ? 'FL380' : total > 600 ? 'FL350' : total > 300 ? 'FL310' : 'FL240';
-  return { airway: 'DCT', altitude: alt, aircraft: 'A320', waypoints: enrichWaypoints(waypoints) };
+  return applyAircraftProfile({ airway: 'DCT', altitude: alt, aircraft: 'A320', waypoints: enrichWaypoints(waypoints) }, aircraftProfile);
 }
 
 // ─── Weather mock data ────────────────────────────────────────────────────────

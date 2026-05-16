@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { searchAirports } from '../data/airports.ts'
+import { filterAircraftProfiles, getAircraftDisplayLabel } from '../data/aircraftPerformance.ts'
 
 function AirportSearch({ label, role, value, onChange }) {
   const [query, setQuery]       = useState(value ? `${value.icao} — ${value.name}` : '')
@@ -123,7 +124,51 @@ function AirportSearch({ label, role, value, onChange }) {
   )
 }
 
-export default function FlightInput({ departure, arrival, routeState, selectedSID, selectedSTAR, onDepartureChange, onArrivalChange, onCalculate, onNavigate }) {
+function AircraftCombobox({ selectedAircraftProfile, onAircraftChange }) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const [focusedIndex, setFocusedIndex] = useState(0)
+  const options = filterAircraftProfiles(query)
+
+  function select(profile) {
+    onAircraftChange(profile.icaoCode)
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--violet)', marginBottom: 8 }}>Aircraft Type</div>
+      <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 6 }}>{getAircraftDisplayLabel(selectedAircraftProfile)}</div>
+      <input
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); setFocusedIndex(0) }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onKeyDown={(e) => {
+          if (!open || !options.length) return
+          if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedIndex((i) => Math.min(i + 1, options.length - 1)) }
+          if (e.key === 'ArrowUp') { e.preventDefault(); setFocusedIndex((i) => Math.max(i - 1, 0)) }
+          if (e.key === 'Enter') { e.preventDefault(); select(options[focusedIndex]) }
+        }}
+        placeholder="Search ICAO, manufacturer, aircraft"
+        style={{ width: '100%', padding: '10px 12px', borderRadius: 'var(--r)', background: 'var(--glass-2)', border: '1px solid var(--line)', color: 'var(--text)' }}
+      />
+      {open && (
+        <div style={{ position: 'absolute', zIndex: 220, left: 0, right: 0, top: 'calc(100% + 6px)', background: 'var(--bg-2)', border: '1px solid var(--line)', borderRadius: 'var(--r)', maxHeight: 220, overflowY: 'auto' }}>
+          {options.map((profile, i) => (
+            <button key={profile.icaoCode} onMouseDown={() => select(profile)} style={{ width: '100%', textAlign: 'left', padding: '9px 12px', background: i===focusedIndex ? 'var(--glass)' : 'transparent', borderBottom: '1px solid var(--line-2)', color: 'var(--text)', cursor: 'pointer' }}>
+              {getAircraftDisplayLabel(profile)}
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{profile.manufacturer}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function FlightInput({ departure, arrival, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, onAircraftChange, onDepartureChange, onArrivalChange, onCalculate, onNavigate }) {
   const dist = departure && arrival
     ? Math.round(Math.sqrt(((departure.lat - arrival.lat) * 111) ** 2 + ((departure.lon - arrival.lon) * 79) ** 2) * 0.54) // rough NM
     : null
@@ -155,6 +200,7 @@ export default function FlightInput({ departure, arrival, routeState, selectedSI
           </div>
 
           <AirportSearch label="Arrival" role="arr" value={arrival} onChange={onArrivalChange} />
+          <AircraftCombobox selectedAircraftProfile={selectedAircraftProfile} onAircraftChange={onAircraftChange} />
         </div>
 
         {/* Distance */}

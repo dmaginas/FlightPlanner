@@ -40,8 +40,8 @@ export default function AIPanel({ departure, arrival, route, selectedSID, select
   if (!route) return null
 
   const totalDist = route.waypoints[route.waypoints.length - 1]?.distCum ?? 0
-  const fuelEst   = (totalDist * 0.022).toFixed(1)
-  const timeMin   = Math.round(totalDist / 8.5)
+  const fuelEst   = route.fuelEstimateTons?.toFixed?.(1) ?? (totalDist * 0.022).toFixed(1)
+  const timeMin   = route.etaMinutes ?? Math.round(totalDist / 8.5)
   const timeLabel = `${Math.floor(timeMin / 60)}h ${timeMin % 60}m`
 
   const insights = []
@@ -79,10 +79,11 @@ export default function AIPanel({ departure, arrival, route, selectedSID, select
       </div>
 
       {/* Key stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <StatCell label="Distance" value={`${totalDist} NM`} />
         <StatCell label="ETE"      value={timeLabel} />
         <StatCell label="Altitude" value={route.altitude} />
+        <StatCell label="Aircraft" value={route.aircraft} />
       </div>
 
       {/* Confidence */}
