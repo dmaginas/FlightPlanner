@@ -5,6 +5,7 @@ import SIDScreen from './components/SIDScreen.tsx'
 import STARScreen from './components/STARScreen.tsx'
 import { getAirport } from './data/airports.ts'
 import { getRoute, generateDynamicRoute } from './data/mockData.ts'
+import { AIRCRAFT_PROFILE_BY_ICAO, DEFAULT_AIRCRAFT_TYPE } from './data/aircraftPerformance.ts'
 
 export default function App() {
   const [screen, setScreen]           = useState('plan')
@@ -13,6 +14,7 @@ export default function App() {
   const [selectedSID, setSelectedSID] = useState(null)
   const [selectedSTAR, setSelectedSTAR] = useState(null)
   const [routeState, setRouteState]   = useState('ready') // idle | loading | ready
+  const [selectedAircraftType, setSelectedAircraftType] = useState(DEFAULT_AIRCRAFT_TYPE)
 
   useEffect(() => {
     let active = true
@@ -30,8 +32,9 @@ export default function App() {
 
   const route = useCallback(() => {
     if (!departure || !arrival) return null
-    return getRoute(departure.icao, arrival.icao) ?? generateDynamicRoute(departure, arrival)
-  }, [departure, arrival])()
+    const aircraftProfile = AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]
+    return getRoute(departure.icao, arrival.icao, aircraftProfile) ?? generateDynamicRoute(departure, arrival, aircraftProfile)
+  }, [departure, arrival, selectedAircraftType])()
 
   function handleCalculate() {
     setRouteState('loading')
@@ -72,6 +75,8 @@ export default function App() {
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
           routeState={routeState}
+          selectedAircraftProfile={AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]}
+          onAircraftChange={setSelectedAircraftType}
           onDepartureChange={handleDepartureChange}
           onArrivalChange={handleArrivalChange}
           onCalculate={handleCalculate}

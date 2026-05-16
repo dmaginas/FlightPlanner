@@ -5,8 +5,8 @@ import WaypointTable from './WaypointTable.tsx'
 import RouteMap      from './RouteMap.tsx'
 
 export default function MainScreen({
-  departure, arrival, route, selectedSID, selectedSTAR, routeState,
-  onDepartureChange, onArrivalChange, onCalculate, onNavigate,
+  departure, arrival, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
+  onAircraftChange, onDepartureChange, onArrivalChange, onCalculate, onNavigate,
 }) {
   return (
     <div style={{
@@ -28,6 +28,8 @@ export default function MainScreen({
           routeState={routeState}
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
+          selectedAircraftProfile={selectedAircraftProfile}
+          onAircraftChange={onAircraftChange}
           onDepartureChange={onDepartureChange}
           onArrivalChange={onArrivalChange}
           onCalculate={onCalculate}
@@ -48,7 +50,9 @@ export default function MainScreen({
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
           routeState={routeState}
+          selectedAircraftProfile={selectedAircraftProfile}
         />
+        <RangeWarning route={route} selectedAircraftProfile={selectedAircraftProfile} />
       </main>
 
       {/* ── Waypoint table (below map) ── */}
@@ -70,6 +74,7 @@ export default function MainScreen({
         overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
         borderLeft: '1px solid var(--line)',
       }}>
+        <RangeWarning route={route} selectedAircraftProfile={selectedAircraftProfile} />
         {route ? (
           <AIPanel
             departure={departure}
@@ -77,6 +82,7 @@ export default function MainScreen({
             route={route}
             selectedSID={selectedSID}
             selectedSTAR={selectedSTAR}
+            selectedAircraftProfile={selectedAircraftProfile}
           />
         ) : (
           <AIEmpty />
@@ -123,4 +129,12 @@ function AIEmpty() {
       </div>
     </div>
   )
+}
+
+function RangeWarning({ route, selectedAircraftProfile }) {
+  if (!route || !selectedAircraftProfile) return null
+  const routeNm = route.routeDistanceNm ?? route.waypoints?.[route.waypoints.length - 1]?.distCum
+  if (!routeNm || routeNm <= selectedAircraftProfile.maxRangeNm) return null
+  const msg = `Warning: Planned route distance exceeds the approximate range of ${selectedAircraftProfile.icaoCode} — ${selectedAircraftProfile.displayName}. Route: ${routeNm.toLocaleString()} NM, approximate range: ${selectedAircraftProfile.maxRangeNm.toLocaleString()} NM.`
+  return <div style={{ marginTop: 10, padding: '10px 12px', border: '1px solid rgba(255,180,80,.4)', background: 'var(--amber-soft)', color: 'var(--text)', borderRadius: 'var(--r-sm)', fontSize: 12 }}>{msg}</div>
 }
