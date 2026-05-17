@@ -6,36 +6,75 @@ export type MetarRecord = {
   rawText: string
 }
 
+export class MetarServiceError extends Error {
+  kind: 'invalid_icao' | 'http' | 'network' | 'empty_response'
+  status?: number
+
+  constructor(kind: MetarServiceError['kind'], message: string, status?: number) {
+    super(message)
+    this.name = 'MetarServiceError'
+    this.kind = kind
+    this.status = status
+  }
+}
+
 export function normalizeIcaoCode(icao: string | null | undefined): string | null {
   const code = icao?.trim().toUpperCase() ?? ''
   return ICAO_PATTERN.test(code) ? code : null
+}
+
+export function buildMetarUrl(icao: string): string {
+  const code = normalizeIcaoCode(icao)
+  if (!code) throw new MetarServiceError('invalid_icao', 'Invalid ICAO code for METAR lookup.')
+
+  const url = new URL(AVIATION_WEATHER_BASE_URL)
+  url.searchParams.set('ids', code)
+  url.searchParams.set('format', 'raw')
+
+  return url.toString()
 }
 
 export async function fetchMetarByIcao(icao: string, signal?: AbortSignal): Promise<MetarRecord | null> {
   const code = normalizeIcaoCode(icao)
   if (!code) return null
 
-  const params = new URLSearchParams({
-    ids: code,
-    format: 'raw',
-  })
+  const requestUrl = buildMetarUrl(code)
 
-  const response = await fetch(`${AVIATION_WEATHER_BASE_URL}?${params.toString()}`, { signal })
-  if (!response.ok) throw new Error(`METAR request failed with status ${response.status}`)
+  let response: Response
+  try {
+    response = await fetch(requestUrl, {
+      signal,
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store',
+      headers: {
+        Accept: 'text/plain',
+      },
+    })
+  } catch (error) {
+    if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
+      throw error
+    }
+
+    throw new MetarServiceError('network', 'Unable to reach AviationWeather for METAR data.')
+  }
+
+  if (!response.ok) {
+    throw new MetarServiceError('http', `METAR request failed with status ${response.status}.`, response.status)
+  }
 
   const text = (await response.text()).trim()
-  if (!text) return null
+  if (!text) {
+    throw new MetarServiceError('empty_response', 'No METAR is currently available for this airport.')
+  }
 
-  const rawLine = text
-    .split('\n')
-    .map((line) => line.trim())
-    .find((line) => line.startsWith(code))
-    ?? text.split('\n').map((line) => line.trim()).find(Boolean)
-
-  if (!rawLine) return null
+  const firstNonEmptyLine = text.split('\n').map((line) => line.trim()).find(Boolean)
+  if (!firstNonEmptyLine) {
+    throw new MetarServiceError('empty_response', 'No METAR is currently available for this airport.')
+  }
 
   return {
     icao: code,
-    rawText: rawLine,
+    rawText: firstNonEmptyLine,
   }
 }
