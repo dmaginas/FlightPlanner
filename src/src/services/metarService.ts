@@ -45,15 +45,17 @@ export async function fetchMetarByIcao(icao: string, signal?: AbortSignal): Prom
     response = await fetch(requestUrl, {
       signal,
       method: 'GET',
-      mode: 'cors',
-      cache: 'no-store',
-      headers: {
-        Accept: 'text/plain',
-      },
     })
   } catch (error) {
     if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) {
       throw error
+    }
+
+    if (error instanceof TypeError) {
+      throw new MetarServiceError(
+        'network',
+        'Unable to reach AviationWeather for METAR data (network/CORS error).',
+      )
     }
 
     throw new MetarServiceError('network', 'Unable to reach AviationWeather for METAR data.')
