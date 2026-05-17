@@ -1,158 +1,48 @@
-# FlightPlanner ✈️
+# FlightPlanner
 
-> Intelligente Reise- und Flugplanung für moderne Entwickler:innen und Vielreisende.
+FlightPlanner is a React + TypeScript flight-planning UI for **flight simulation only**.
 
----
+> Safety notice: Do not use this project for real-world flight planning, navigation, or operational aviation decisions.
 
-## 📌 Übersicht
+## Tech stack
 
-**FlightPlanner** ist eine Anwendung zur Planung, Verwaltung und Optimierung von Flugreisen.  
-Die Plattform hilft Nutzer:innen dabei:
-
-- Flüge effizient zu organisieren
-- Reisepläne zentral zu verwalten
-- Kosten und Zeiten zu optimieren
-- Flugrouten übersichtlich darzustellen
-- Reiseinformationen an einem Ort zu bündeln
-
-Das Projekt eignet sich sowohl als Lernprojekt als auch als Grundlage für produktive Anwendungen im Bereich Travel-Tech.
-
----
-
-## 🚀 Features
-
-- 🔍 Flugsuche & Reiseplanung
-- 🗺️ Übersichtliche Routenplanung
-- 📅 Verwaltung von Reiseplänen
-- 💰 Preis- & Zeitoptimierung
-- 📱 Responsive UI
-- ⚡ Schnelle API-Integration
-- 🔐 Benutzer-Authentifizierung *(optional)*
-- ☁️ Cloud-ready Deployment
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- React / Next.js
+- React 18
 - TypeScript
-- TailwindCSS
+- Vite
+- Leaflet + React-Leaflet
 
-### Backend
-- Node.js
-- Express / NestJS
-- REST API
+## App location
 
-### Datenbank
-- PostgreSQL / MongoDB
-
-### Deployment
-- Docker
-- Vercel / Railway / AWS
-
----
-
-## 📂 Projektstruktur
+The runnable frontend app is in `src/`.
 
 ```bash
-FlightPlanner/
-│
-├── frontend/          # Frontend Anwendung
-├── backend/           # Backend & API
-├── docs/              # Dokumentation
-├── docker/            # Docker Konfiguration
-├── .env.example
-├── package.json
-└── README.md
-```
-
----
-
-## ⚙️ Installation
-
-### Voraussetzungen
-
-- Node.js >= 18
-- npm oder pnpm
-- Docker *(optional)*
-
-### Repository klonen
-
-```bash
-git clone https://github.com/USERNAME/FlightPlanner.git
-cd FlightPlanner
-```
-
-### Dependencies installieren
-
-```bash
+cd src
 npm install
-```
-
-### Entwicklungsserver starten
-
-```bash
 npm run dev
 ```
 
-Die Anwendung läuft anschließend unter:
+## Environment variables (`src/.env`)
 
-```bash
-http://localhost:3000
-```
-
----
-
-## 🔑 Environment Variables
-
-Erstelle eine `.env` Datei basierend auf `.env.example`:
+### Required for airport search and airport lookup
 
 ```env
-DATABASE_URL=
-API_KEY=
-JWT_SECRET=
+VITE_OPENAIP_API_KEY=your_openaip_api_key
+# optional override
+VITE_OPENAIP_BASE_URL=https://api.core.openaip.net/api
 ```
 
----
+### No key required for METAR
 
-## 🧪 Testing
+METAR data is fetched from the Aviation Weather Center Data API:
+`https://aviationweather.gov/api/data/metar`
 
-```bash
-npm run test
-```
+## Aviation data sources used
 
----
+- **Airport search / lookup**: OpenAIP API (`/airports`)
+- **METAR weather**: Aviation Weather Center Data API (`/api/data/metar`)
 
-## 🐳 Docker
+## Notes on Airways / VOR / NDB map layers
 
-### Docker Build
+For this revision, only METAR and safety disclaimer features were implemented.
 
-```bash
-docker build -t flightplanner .
-```
-
-### Docker Start
-
-```bash
-docker run -p 3000:3000 flightplanner
-```
-
----
-
-## 📸 Screenshots
-
-> Hier können später Screenshots oder GIFs eingefügt werden.
-
----
-
-## 🗺️ Roadmap
-
-- [ ] Multi-City Flugplanung
-- [ ] KI-gestützte Reisevorschläge
-- [ ] Kalenderintegration
-- [ ] Echtzeit-Flugstatus
-- [ ] Mobile App
-- [ ] Offline-Modus
-
----
+Airways/VOR/NDB overlay layers were not integrated yet because a single free source with clear browser-side CORS behavior, stable global coverage, and straightforward legal fit for all three overlay types still needs a final selection and validation in this codebase context.
