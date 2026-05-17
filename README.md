@@ -33,8 +33,12 @@ VITE_OPENAIP_BASE_URL=https://api.core.openaip.net/api
 
 ### No key required for METAR
 
-METAR data is fetched from the Aviation Weather Center Data API:
-`https://aviationweather.gov/api/data/metar`
+METAR data is fetched directly from the React frontend against the AviationWeather API endpoint:
+`https://aviationweather.gov/api/data/metar?ids=<ICAO>&format=raw`
+
+Query parameters in use:
+- `ids=<ICAO>`: selected airport ICAO code (trimmed, uppercased, validated as 4 letters before request)
+- `format=raw`: requests raw METAR text for direct display in the UI
 
 ## Aviation data sources used
 

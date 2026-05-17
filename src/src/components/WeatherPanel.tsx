@@ -1,53 +1,41 @@
 import { useEffect, useState } from 'react'
-import { fetchMetarByIcao } from '../services/metarService.ts'
-
-function CatBadge({ cat }) {
-  const colors = {
-    VFR:  { bg: 'rgba(0,229,168,.15)', color: 'var(--mint)',  border: 'rgba(0,229,168,.3)' },
-    MVFR: { bg: 'rgba(255,196,87,.15)', color: 'var(--amber)', border: 'rgba(255,196,87,.3)' },
-    IFR:  { bg: 'rgba(255,92,114,.15)', color: 'var(--red)',   border: 'rgba(255,92,114,.3)' },
-    LIFR: { bg: 'rgba(255,92,114,.25)', color: 'var(--red)',   border: 'rgba(255,92,114,.5)' },
-  }
-  const c = colors[cat] ?? colors.VFR
-  return (
-    <span style={{
-      padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-      letterSpacing: '0.08em', fontFamily: 'var(--font-mono)',
-      background: c.bg, color: c.color, border: `1px solid ${c.border}`,
-    }}>{cat}</span>
-  )
-}
+import { fetchMetarByIcao, normalizeIcaoCode } from '../services/metarService.ts'
 
 function AirportWeather({ airport, role }) {
   if (!airport) return null
   const [state, setState] = useState({ status: 'idle', metar: null, message: '' })
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
+    const normalizedIcao = normalizeIcaoCode(airport?.icao)
 
     async function loadMetar() {
-      if (!airport?.icao) {
+      if (!airport) {
+        setState({ status: 'empty', metar: null, message: 'Select an airport to load METAR data.' })
+        return
+      }
+
+      if (!normalizedIcao) {
         setState({ status: 'empty', metar: null, message: 'No ICAO airport code is available for METAR lookup.' })
         return
       }
 
       setState({ status: 'loading', metar: null, message: '' })
       try {
-        const metar = await fetchMetarByIcao(airport.icao)
-        if (cancelled) return
+        const metar = await fetchMetarByIcao(normalizedIcao, controller.signal)
         if (!metar || !metar.rawText) {
           setState({ status: 'empty', metar: null, message: 'No METAR is currently available for this airport.' })
           return
         }
         setState({ status: 'ready', metar, message: '' })
-      } catch {
-        if (cancelled) return
+      } catch (error) {
+        if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return
         setState({ status: 'error', metar: null, message: 'METAR data could not be loaded right now.' })
       }
     }
 
     loadMetar()
-    return () => { cancelled = true }
+    return () => controller.abort()
   }, [airport?.icao])
 
   return (
@@ -65,13 +53,7 @@ function AirportWeather({ airport, role }) {
             {role === 'dep' ? '↑ Departure' : '↓ Arrival'}
           </div>
         </div>
-        <CatBadge cat={state.metar?.flightCategory ?? 'VFR'} />
       </div>
-
-      <DataCell
-        label="Report time"
-        value={state.metar?.reportTime ? new Date(state.metar.reportTime).toLocaleString() : '—'}
-      />
 
       {state.status === 'loading' && <StatusText text='Loading METAR…' />}
       {state.status === 'empty' && <StatusText text={state.message} />}
@@ -82,19 +64,10 @@ function AirportWeather({ airport, role }) {
         marginTop: 12, padding: '8px 10px', borderRadius: 'var(--r-sm)',
         background: 'rgba(0,0,0,.2)', border: '1px solid var(--line-2)',
         fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--dim)',
-        lineHeight: 1.5, wordBreak: 'break-all',
+        lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
       }}>
         {state.status === 'ready' ? state.metar.rawText : '—'}
       </div>
-    </div>
-  )
-}
-
-function DataCell({ label, value }) {
-  return (
-    <div>
-      <div style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 3 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{value}</div>
     </div>
   )
 }
