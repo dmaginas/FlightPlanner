@@ -22,6 +22,18 @@ export default function MainScreen({
         overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
         borderRight: '1px solid var(--line)',
       }}>
+        <div style={{
+          border: '1px solid rgba(255,92,114,.5)',
+          background: 'var(--red-soft)',
+          borderRadius: 'var(--r)',
+          padding: '12px 14px',
+          fontSize: 12,
+          lineHeight: 1.55,
+          color: 'var(--text)',
+        }}>
+          <strong style={{ display: 'block', marginBottom: 4 }}>Flight simulation only</strong>
+          FlightPlanner is intended for flight simulation only. Do not use this tool for real-world flight planning, navigation, or operational aviation decisions.
+        </div>
         <FlightInput
           departure={departure}
           arrival={arrival}

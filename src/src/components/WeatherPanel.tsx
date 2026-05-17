@@ -1,29 +1,5 @@
-import { getWeather } from '../data/mockData.ts'
-
-function WindArrow({ dir, speed }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{
-        width: 28, height: 28, borderRadius: '50%',
-        border: '1px solid var(--line)', background: 'var(--glass)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        position: 'relative',
-      }}>
-        <div style={{
-          width: 2, height: 10, background: 'var(--violet)',
-          borderRadius: 1, transformOrigin: 'bottom center',
-          transform: `rotate(${dir}deg)`,
-          marginBottom: 4,
-        }} />
-      </div>
-      <div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
-          {String(dir).padStart(3, '0')}° / {speed}kt
-        </div>
-      </div>
-    </div>
-  )
-}
+import { useEffect, useState } from 'react'
+import { fetchMetarByIcao } from '../services/metarService.ts'
 
 function CatBadge({ cat }) {
   const colors = {
@@ -44,7 +20,35 @@ function CatBadge({ cat }) {
 
 function AirportWeather({ airport, role }) {
   if (!airport) return null
-  const wx = getWeather(airport.icao)
+  const [state, setState] = useState({ status: 'idle', metar: null, message: '' })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadMetar() {
+      if (!airport?.icao) {
+        setState({ status: 'empty', metar: null, message: 'No ICAO airport code is available for METAR lookup.' })
+        return
+      }
+
+      setState({ status: 'loading', metar: null, message: '' })
+      try {
+        const metar = await fetchMetarByIcao(airport.icao)
+        if (cancelled) return
+        if (!metar || !metar.rawText) {
+          setState({ status: 'empty', metar: null, message: 'No METAR is currently available for this airport.' })
+          return
+        }
+        setState({ status: 'ready', metar, message: '' })
+      } catch {
+        if (cancelled) return
+        setState({ status: 'error', metar: null, message: 'METAR data could not be loaded right now.' })
+      }
+    }
+
+    loadMetar()
+    return () => { cancelled = true }
+  }, [airport?.icao])
 
   return (
     <div style={{
@@ -61,26 +65,17 @@ function AirportWeather({ airport, role }) {
             {role === 'dep' ? '↑ Departure' : '↓ Arrival'}
           </div>
         </div>
-        <CatBadge cat={wx.cat} />
+        <CatBadge cat={state.metar?.flightCategory ?? 'VFR'} />
       </div>
 
-      {/* Conditions */}
-      <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 10 }}>{wx.conditions}</div>
+      <DataCell
+        label="Report time"
+        value={state.metar?.reportTime ? new Date(state.metar.reportTime).toLocaleString() : '—'}
+      />
 
-      {/* Wind */}
-      <WindArrow dir={wx.wind.dir} speed={wx.wind.spd} />
-      {wx.wind.gust && (
-        <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 4, marginLeft: 36 }}>
-          Gusting {wx.wind.gust}kt
-        </div>
-      )}
-
-      {/* Data row */}
-      <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-        <DataCell label="TEMP" value={`${wx.temp}°C`} />
-        <DataCell label="VIS"  value={wx.vis >= 9999 ? '10km+' : `${(wx.vis / 1000).toFixed(1)}km`} />
-        <DataCell label="QNH"  value={`${wx.qnh}`} />
-      </div>
+      {state.status === 'loading' && <StatusText text='Loading METAR…' />}
+      {state.status === 'empty' && <StatusText text={state.message} />}
+      {state.status === 'error' && <StatusText text={state.message} />}
 
       {/* METAR */}
       <div style={{
@@ -89,7 +84,7 @@ function AirportWeather({ airport, role }) {
         fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--dim)',
         lineHeight: 1.5, wordBreak: 'break-all',
       }}>
-        {wx.metar}
+        {state.status === 'ready' ? state.metar.rawText : '—'}
       </div>
     </div>
   )
@@ -110,11 +105,18 @@ export default function WeatherPanel({ departure, arrival }) {
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--muted)', letterSpacing: '0.02em' }}>
         WEATHER BRIEFING
       </div>
+      <div style={{ fontSize: 11, color: 'var(--amber)', lineHeight: 1.5 }}>
+        METAR data is shown for flight simulation only and must not be used for real-world aviation decisions.
+      </div>
 
       {departure ? <AirportWeather airport={departure} role="dep" /> : <EmptySlot label="Select departure airport" />}
       {arrival   ? <AirportWeather airport={arrival}   role="arr" /> : <EmptySlot label="Select arrival airport" />}
     </div>
   )
+}
+
+function StatusText({ text }) {
+  return <div style={{ marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>{text}</div>
 }
 
 function EmptySlot({ label }) {
