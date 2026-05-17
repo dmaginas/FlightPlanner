@@ -1,41 +1,41 @@
 const AVIATION_WEATHER_BASE_URL = 'https://aviationweather.gov/api/data/metar'
-
-function toIsoIfPossible(value: string | undefined) {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date.toISOString()
-}
+const ICAO_PATTERN = /^[A-Z]{4}$/
 
 export type MetarRecord = {
   icao: string
   rawText: string
-  reportTime: string | null
-  flightCategory: string | null
 }
 
-export async function fetchMetarByIcao(icao: string): Promise<MetarRecord | null> {
-  const code = icao?.trim().toUpperCase()
-  if (!code || code.length !== 4) return null
+export function normalizeIcaoCode(icao: string | null | undefined): string | null {
+  const code = icao?.trim().toUpperCase() ?? ''
+  return ICAO_PATTERN.test(code) ? code : null
+}
+
+export async function fetchMetarByIcao(icao: string, signal?: AbortSignal): Promise<MetarRecord | null> {
+  const code = normalizeIcaoCode(icao)
+  if (!code) return null
 
   const params = new URLSearchParams({
     ids: code,
-    format: 'json',
+    format: 'raw',
   })
 
-  const response = await fetch(`${AVIATION_WEATHER_BASE_URL}?${params.toString()}`)
+  const response = await fetch(`${AVIATION_WEATHER_BASE_URL}?${params.toString()}`, { signal })
+  if (!response.ok) throw new Error(`METAR request failed with status ${response.status}`)
 
-  if (!response.ok) {
-    throw new Error(`METAR request failed with status ${response.status}`)
-  }
+  const text = (await response.text()).trim()
+  if (!text) return null
 
-  const data = await response.json()
-  const entry = Array.isArray(data) ? data[0] : null
-  if (!entry) return null
+  const rawLine = text
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.startsWith(code))
+    ?? text.split('\n').map((line) => line.trim()).find(Boolean)
+
+  if (!rawLine) return null
 
   return {
-    icao: (entry.icaoId ?? code).toUpperCase(),
-    rawText: entry.rawOb ?? entry.rawText ?? '',
-    reportTime: toIsoIfPossible(entry.obsTime ?? entry.reportTime ?? entry.receiptTime),
-    flightCategory: entry.flightCategory ?? null,
+    icao: code,
+    rawText: rawLine,
   }
 }
