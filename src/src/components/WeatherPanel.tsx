@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { fetchMetarByIcao, normalizeIcaoCode } from '../services/metarService.ts'
+import { fetchMetarByIcao, MetarServiceError, normalizeIcaoCode } from '../services/metarService.ts'
 
 function AirportWeather({ airport, role }) {
   if (!airport) return null
@@ -30,6 +30,17 @@ function AirportWeather({ airport, role }) {
         setState({ status: 'ready', metar, message: '' })
       } catch (error) {
         if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return
+
+        if (error instanceof MetarServiceError && error.kind === 'empty_response') {
+          setState({ status: 'empty', metar: null, message: error.message })
+          return
+        }
+
+        if (error instanceof MetarServiceError && error.kind === 'http') {
+          setState({ status: 'error', metar: null, message: `METAR service returned HTTP ${error.status}.` })
+          return
+        }
+
         setState({ status: 'error', metar: null, message: 'METAR data could not be loaded right now.' })
       }
     }
