@@ -9,15 +9,19 @@ FlightPlanner is a React + TypeScript flight-planning UI for **flight simulation
 
 ```
 FlightPlanner/
-  frontend/   ← React/Vite app (previously src/)
-  backend/    ← Node/TypeScript API backend (see backend/README.md)
-  docs/       ← Design documents and research
+  frontend/              ← React/Vite app
+  backend/               ← ASP.NET Core backend (.NET 10 LTS) — see backend/README.md
+  backend-node-archive/  ← Former Node/TypeScript backend (archived, not active)
+  docs/                  ← Design documents and research
 ```
 
 ## Tech stack
 
 - **Frontend**: React 18, TypeScript, Vite, Leaflet + React-Leaflet
-- **Backend**: Node.js, TypeScript, Express — see [backend/README.md](backend/README.md)
+- **Backend**: C# / ASP.NET Core (.NET 10 LTS) — see [backend/README.md](backend/README.md)
+
+> The former Node.js/TypeScript/Express backend has been archived to `backend-node-archive/`.
+> See [backend-node-archive/README.md](backend-node-archive/README.md) for details.
 
 ## Frontend
 
@@ -39,18 +43,26 @@ VITE_OPENAIP_API_KEY=your_openaip_api_key
 VITE_OPENAIP_BASE_URL=https://api.core.openaip.net/api
 ```
 
+### ASP.NET Core backend URL
+
+```env
+# Points to the local ASP.NET Core backend (default: https://localhost:5001)
+VITE_API_BASE_URL=https://localhost:5001
+```
+
 ### METAR (no key required)
 
-METAR data is fetched via the project backend (`/api/metar`), which proxies requests to
+METAR data is fetched via the ASP.NET Core backend (`/api/metar`), which proxies requests to
 AviationWeather server-side. This avoids the browser CORS restriction that would otherwise
 block direct requests to `https://aviationweather.gov`.
 
-See [backend/README.md](backend/README.md) for details.
+See [backend/README.md](backend/README.md) for full backend documentation including Swagger,
+CORS configuration, HTTPS setup, and Visual Studio 2026 instructions.
 
 ## Aviation data sources used
 
 - **Airport search / lookup**: OpenAIP API (`/airports`)
-- **METAR weather**: Aviation Weather Center Data API (`/api/data/metar`) — proxied via backend
+- **METAR weather**: Aviation Weather Center Data API (`/api/data/metar`) — proxied via ASP.NET Core backend
 
 ## Notes on Airways / VOR / NDB map layers
 

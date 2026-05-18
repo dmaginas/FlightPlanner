@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FlightPlanner.Api.Tests/FlightPlanner.Api.Tests.csproj" />
+  <Project Path="FlightPlanner.Api/FlightPlanner.Api.csproj" />
+</Solution>

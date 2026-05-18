@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "dgSpecHash": "+MYq608wIrw=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\dimos\\.nuget\\packages\\microsoft.aspnetcore.spaservices.extensions\\10.0.0\\microsoft.aspnetcore.spaservices.extensions.10.0.0.nupkg.sha512",
+    "C:\\Users\\dimos\\.nuget\\packages\\microsoft.extensions.apidescription.server\\8.0.0\\microsoft.extensions.apidescription.server.8.0.0.nupkg.sha512",
+    "C:\\Users\\dimos\\.nuget\\packages\\microsoft.openapi\\1.6.23\\microsoft.openapi.1.6.23.nupkg.sha512",
+    "C:\\Users\\dimos\\.nuget\\packages\\swashbuckle.aspnetcore\\9.0.1\\swashbuckle.aspnetcore.9.0.1.nupkg.sha512",
+    "C:\\Users\\dimos\\.nuget\\packages\\swashbuckle.aspnetcore.swagger\\9.0.1\\swashbuckle.aspnetcore.swagger.9.0.1.nupkg.sha512",
+    "C:\\Users\\dimos\\.nuget\\packages\\swashbuckle.aspnetcore.swaggergen\\9.0.1\\swashbuckle.aspnetcore.swaggergen.9.0.1.nupkg.sha512",
+    "C:\\Users\\dimos\\.nuget\\packages\\swashbuckle.aspnetcore.swaggerui\\9.0.1\\swashbuckle.aspnetcore.swaggerui.9.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}

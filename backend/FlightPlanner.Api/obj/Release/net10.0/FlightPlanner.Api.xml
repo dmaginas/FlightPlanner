@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>FlightPlanner.Api</name>
+    </assembly>
+    <members>
+        <member name="T:FlightPlanner.Api.Controllers.HealthController">
+            <summary>
+            Health-Check-Endpunkt — GET /api/health
+            </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Controllers.HealthController.GetHealth">
+            <summary>
+            Gibt den Servicestatus, den Namen und die Version des Backends zurück.
+            </summary>
+            <returns>200 OK mit Status, Name und Version.</returns>
+        </member>
+        <member name="T:FlightPlanner.Api.Controllers.MetarController">
+             <summary>
+             METAR-Proxy-Endpunkt — GET /api/metar?icao=EDDF
+            
+             Ruft METAR-Daten serverseitig von AviationWeather ab und liefert sie
+             als rohen Text zurück. Browser können AviationWeather nicht direkt
+             ansprechen, da kein Access-Control-Allow-Origin-Header gesetzt wird.
+             Dieser Backend-Proxy umgeht diese CORS-Einschränkung.
+             </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Controllers.MetarController.GetMetar(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Ruft den rohen METAR-Text für einen Flughafen ab.
+            </summary>
+            <param name="icao">
+            ICAO-Flughafencode — genau 4 alphanumerische Zeichen, z. B. EDDF.
+            Groß-/Kleinschreibung wird ignoriert; der Code wird normalisiert.
+            </param>
+            <param name="cancellationToken">Abbruch-Token.</param>
+            <returns>
+            200 OK — roher METAR-Text (text/plain), z. B. "EDDF 181120Z 26005KT CAVOK 15/07 Q1013 NOSIG"
+            </returns>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.ErrorResponse">
+            <summary>
+            Standardisiertes JSON-Fehlerformat für API-Fehlerantworten.
+            </summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.ErrorResponse.Error">
+            <summary>Kurze, maschinenlesbare Fehlerbeschreibung.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.ErrorResponse.Details">
+            <summary>Ausführliche, benutzerlesbare Fehlerbeschreibung.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.HealthResponse">
+            <summary>
+            Antwortmodell für den Health-Check-Endpunkt GET /api/health.
+            </summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.HealthResponse.Status">
+            <summary>Servicestatus, immer "ok".</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.HealthResponse.Name">
+            <summary>Name des Backend-Dienstes.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.HealthResponse.Version">
+            <summary>Aktuelle Backend-Version (aus Assembly-Metadaten).</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Options.CorsOptions">
+            <summary>
+            Konfigurationsoptionen für CORS.
+            Wird aus "Cors"-Sektion in appsettings.json/appsettings.Development.json gelesen.
+            </summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Options.CorsOptions.AllowedOrigins">
+            <summary>
+            Liste der erlaubten Origins für CORS.
+            Beispiel: ["http://localhost:5173", "https://localhost:5173"]
+            </summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.AviationWeatherService">
+             <summary>
+             Serverseitiger AviationWeather-METAR-Abruf über HttpClientFactory.
+            
+             Ruft https://aviationweather.gov/api/data/metar?ids={icao}&amp;format=raw ab.
+             Kein API-Key erforderlich. METAR-Daten werden als roher Text zurückgegeben.
+            
+             Diese Klasse löst den Browser-CORS-Fehler, da der HTTP-Request vom Backend
+             (nicht vom Browser) ausgeht und daher nicht der CORS-Richtlinie unterliegt.
+             </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.AviationWeatherService.FetchRawMetarAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:FlightPlanner.Api.Services.IAviationWeatherService">
+            <summary>
+            Interface für den serverseitigen AviationWeather-METAR-Abruf.
+            Abstrahiert den HTTP-Aufruf für Dependency Injection und Testbarkeit.
+            </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.IAviationWeatherService.FetchRawMetarAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Ruft den rohen METAR-Text für den angegebenen ICAO-Code von AviationWeather ab.
+            </summary>
+            <param name="icao">Validierter, normalisierter ICAO-Code (4 alphanumerische Zeichen, Großbuchstaben).</param>
+            <param name="cancellationToken">Abbruch-Token.</param>
+            <returns>Den rohen METAR-Text (erste nicht-leere Zeile der Antwort).</returns>
+            <exception cref="T:FlightPlanner.Api.Services.AviationWeatherException">
+            Wird ausgelöst bei HTTP-Fehlern, Netzwerkfehlern oder leerer Antwort.
+            </exception>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.AviationWeatherErrorKind">
+            <summary>Art des Fehlers beim AviationWeather-Abruf.</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.AviationWeatherErrorKind.Http">
+            <summary>AviationWeather hat einen HTTP-Fehler-Statuscode zurückgegeben.</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.AviationWeatherErrorKind.Network">
+            <summary>Es konnte keine Netzwerkverbindung zu AviationWeather hergestellt werden.</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.AviationWeatherErrorKind.EmptyResponse">
+            <summary>AviationWeather hat eine leere oder nur aus Whitespace bestehende Antwort geliefert.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.AviationWeatherException">
+            <summary>
+            Exception die ausgelöst wird, wenn der AviationWeather-Abruf fehlschlägt.
+            </summary>
+        </member>
+    </members>
+</doc>
