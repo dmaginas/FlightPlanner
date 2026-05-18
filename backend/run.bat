@@ -1,0 +1,1 @@
+dotnet run --project FlightPlanner.Api --configuration Release

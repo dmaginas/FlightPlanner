@@ -1,0 +1,187 @@
+{
+  "openapi": "3.0.4",
+  "info": {
+    "title": "FlightPlanner API",
+    "description": "Backend-API für FlightPlanner (nur für Flugsimulation).\n\n**METAR-Proxy**: Ruft METAR-Daten serverseitig von AviationWeather ab, um den\nBrowser-CORS-Fehler zu umgehen. AviationWeather setzt keinen\nAccess-Control-Allow-Origin-Header, daher sind direkte Browser-Requests blockiert.\n\n**Kein API-Key** für AviationWeather erforderlich.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/Health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Gibt den Servicestatus, den Namen und die Version des Backends zurück.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Metar": {
+      "get": {
+        "tags": [
+          "Metar"
+        ],
+        "summary": "Ruft den rohen METAR-Text für einen Flughafen ab.",
+        "parameters": [
+          {
+            "name": "icao",
+            "in": "query",
+            "description": "ICAO-Flughafencode — genau 4 alphanumerische Zeichen, z. B. EDDF.\r\nGroß-/Kleinschreibung wird ignoriert; der Code wird normalisiert.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorResponse": {
+        "required": [
+          "details",
+          "error"
+        ],
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Kurze, maschinenlesbare Fehlerbeschreibung.",
+            "nullable": true
+          },
+          "details": {
+            "type": "string",
+            "description": "Ausführliche, benutzerlesbare Fehlerbeschreibung.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Standardisiertes JSON-Fehlerformat für API-Fehlerantworten."
+      },
+      "HealthResponse": {
+        "required": [
+          "name",
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Servicestatus, immer \"ok\".",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Name des Backend-Dienstes.",
+            "nullable": true
+          },
+          "version": {
+            "type": "string",
+            "description": "Aktuelle Backend-Version (aus Assembly-Metadaten).",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Antwortmodell für den Health-Check-Endpunkt GET /api/health."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health",
+      "description": "Health-Check-Endpunkt — GET /api/health"
+    },
+    {
+      "name": "Metar",
+      "description": "METAR-Proxy-Endpunkt — GET /api/metar?icao=EDDF\r\n            \r\nRuft METAR-Daten serverseitig von AviationWeather ab und liefert sie\r\nals rohen Text zurück. Browser können AviationWeather nicht direkt\r\nansprechen, da kein Access-Control-Allow-Origin-Header gesetzt wird.\r\nDieser Backend-Proxy umgeht diese CORS-Einschränkung."
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "ContainingType": "FlightPlanner.Api.Controllers.HealthController",
+    "Method": "GetHealth",
+    "RelativePath": "api/Health",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "FlightPlanner.Api.Models.HealthResponse",
+        "MediaTypes": [
+          "application/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FlightPlanner.Api.Controllers.MetarController",
+    "Method": "GetMetar",
+    "RelativePath": "api/Metar",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "icao",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.String",
+        "MediaTypes": [
+          "text/plain",
+          "application/json"
+        ],
+        "StatusCode": 200
+      },
+      {
+        "Type": "FlightPlanner.Api.Models.ErrorResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json"
+        ],
+        "StatusCode": 400
+      },
+      {
+        "Type": "FlightPlanner.Api.Models.ErrorResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json"
+        ],
+        "StatusCode": 404
+      },
+      {
+        "Type": "FlightPlanner.Api.Models.ErrorResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json"
+        ],
+        "StatusCode": 502
+      },
+      {
+        "Type": "FlightPlanner.Api.Models.ErrorResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json"
+        ],
+        "StatusCode": 503
+      }
+    ]
+  }
+]
