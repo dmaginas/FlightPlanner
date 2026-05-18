@@ -5,24 +5,31 @@ FlightPlanner is a React + TypeScript flight-planning UI for **flight simulation
 
 > Safety notice: Do not use this project for real-world flight planning, navigation, or operational aviation decisions.
 
+## Repository structure
+
+```
+FlightPlanner/
+  frontend/   ← React/Vite app (previously src/)
+  backend/    ← Node/TypeScript API backend (see backend/README.md)
+  docs/       ← Design documents and research
+```
+
 ## Tech stack
 
-- React 18
-- TypeScript
-- Vite
-- Leaflet + React-Leaflet
+- **Frontend**: React 18, TypeScript, Vite, Leaflet + React-Leaflet
+- **Backend**: Node.js, TypeScript, Express — see [backend/README.md](backend/README.md)
 
-## App location
+## Frontend
 
-The runnable frontend app is in `src/`.
+The runnable frontend app is in `frontend/`.
 
 ```bash
-cd src
+cd frontend
 npm install
 npm run dev
 ```
 
-## Environment variables (`src/.env`)
+## Environment variables (`frontend/.env`)
 
 ### Required for airport search and airport lookup
 
@@ -32,22 +39,23 @@ VITE_OPENAIP_API_KEY=your_openaip_api_key
 VITE_OPENAIP_BASE_URL=https://api.core.openaip.net/api
 ```
 
-### No key required for METAR
+### METAR (no key required)
 
-METAR data is fetched directly from the React frontend against the AviationWeather API endpoint:
-`https://aviationweather.gov/api/data/metar?ids=<ICAO>&format=raw`
+METAR data is fetched via the project backend (`/api/metar`), which proxies requests to
+AviationWeather server-side. This avoids the browser CORS restriction that would otherwise
+block direct requests to `https://aviationweather.gov`.
 
-Query parameters in use:
-- `ids=<ICAO>`: selected airport ICAO code (trimmed, uppercased, validated as 4 letters before request)
-- `format=raw`: requests raw METAR text for direct display in the UI
+See [backend/README.md](backend/README.md) for details.
 
 ## Aviation data sources used
 
 - **Airport search / lookup**: OpenAIP API (`/airports`)
-- **METAR weather**: Aviation Weather Center Data API (`/api/data/metar`)
+- **METAR weather**: Aviation Weather Center Data API (`/api/data/metar`) — proxied via backend
 
 ## Notes on Airways / VOR / NDB map layers
 
 For this revision, only METAR and safety disclaimer features were implemented.
 
-Airways/VOR/NDB overlay layers were not integrated yet because a single free source with clear browser-side CORS behavior, stable global coverage, and straightforward legal fit for all three overlay types still needs a final selection and validation in this codebase context.
+Airways/VOR/NDB overlay layers were not integrated yet because a single free source with clear
+browser-side CORS behavior, stable global coverage, and straightforward legal fit for all three
+overlay types still needs a final selection and validation in this codebase context.
