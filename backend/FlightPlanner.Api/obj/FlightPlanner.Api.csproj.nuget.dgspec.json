@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj": {}
+    "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj": {}
   },
   "projects": {
-    "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj": {
+    "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj": {
       "version": "0.1.0",
       "restore": {
-        "projectUniqueName": "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj",
+        "projectUniqueName": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj",
         "projectName": "FlightPlanner.Api",
-        "projectPath": "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj",
+        "projectPath": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj",
         "packagesPath": "C:\\Users\\dimos\\.nuget\\packages\\",
-        "outputPath": "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\obj\\",
+        "outputPath": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

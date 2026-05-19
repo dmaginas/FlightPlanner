@@ -120,10 +120,132 @@
           }
         }
       }
+    },
+    "/api/Routes": {
+      "get": {
+        "tags": [
+          "Routes"
+        ],
+        "summary": "Searches for IFR flight plans between two airports.\r\nReturns the best match as selectedRoute plus up to 4 alternatives.",
+        "parameters": [
+          {
+            "name": "departure",
+            "in": "query",
+            "description": "Departure airport ICAO code (e.g. EDDF).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "description": "Destination airport ICAO code (e.g. EGLL).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "aircraftType",
+            "in": "query",
+            "description": "ICAO aircraft type code (e.g. A320). Accepted for enrichment and future use;\r\nnot forwarded to the FPD API (not supported as a query parameter there).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cruisingAltitude",
+            "in": "query",
+            "description": "Requested cruising altitude in feet (e.g. 35000). Accepted for enrichment;\r\nnot forwarded to the FPD API.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "routeType",
+            "in": "query",
+            "description": "Currently only \"IFR\" is supported.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AlternativeRouteDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeText": {
+            "type": "string",
+            "nullable": true
+          },
+          "distanceNm": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "popularity": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Alternative route candidate (metadata only — no full waypoints)."
+      },
       "ErrorResponse": {
         "required": [
           "details",
@@ -171,6 +293,122 @@
         },
         "additionalProperties": false,
         "description": "Antwortmodell für den Health-Check-Endpunkt GET /api/health."
+      },
+      "RouteResponse": {
+        "type": "object",
+        "properties": {
+          "selectedRoute": {
+            "$ref": "#/components/schemas/SelectedRouteDto"
+          },
+          "alternatives": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlternativeRouteDto"
+            },
+            "description": "Alternative routes (metadata only) for future UI selection.",
+            "nullable": true
+          },
+          "warning": {
+            "type": "string",
+            "description": "Human-readable warning when the result is a fallback or partial.\r\nNull on fully successful external lookup.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Top-level response from GET /api/routes."
+      },
+      "SelectedRouteDto": {
+        "required": [
+          "departure",
+          "destination",
+          "source"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "departure": {
+            "type": "string",
+            "nullable": true
+          },
+          "destination": {
+            "type": "string",
+            "nullable": true
+          },
+          "aircraftType": {
+            "type": "string",
+            "nullable": true
+          },
+          "cruisingAltitude": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "routeType": {
+            "type": "string",
+            "nullable": true
+          },
+          "routeText": {
+            "type": "string",
+            "description": "Route string (waypoint idents separated by spaces), e.g. \"ANEKI UL9 KONAN SILVA\".",
+            "nullable": true
+          },
+          "waypoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WaypointDto"
+            },
+            "nullable": true
+          },
+          "distanceNm": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "source": {
+            "type": "string",
+            "description": "\"flight-plan-database\" or \"local-fallback\".",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Primary route including all waypoints."
+      },
+      "WaypointDto": {
+        "required": [
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ICAO / fix identifier, e.g. \"EDDF\" or \"ANEKI\".",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "lat": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "lon": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "description": "Normalised type: \"airport\", \"fix\", \"vor\", \"ndb\".",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Single waypoint in the route."
       }
     }
   },
@@ -182,6 +420,10 @@
     {
       "name": "Metar",
       "description": "METAR-Proxy-Endpunkt — GET /api/metar?icao=EDDF\r\n            \r\nRuft METAR-Daten serverseitig von AviationWeather ab und liefert sie\r\nals rohen Text zurück. Browser können AviationWeather nicht direkt\r\nansprechen, da kein Access-Control-Allow-Origin-Header gesetzt wird.\r\nDieser Backend-Proxy umgeht diese CORS-Einschränkung."
+    },
+    {
+      "name": "Routes",
+      "description": "IFR Route Lookup — GET /api/routes\r\n            \r\nProxies route requests to the Flight Plan Database API, caches results\r\nserver-side (default 30 min), and maps the response into a stable\r\nfrontend-facing DTO.\r\n            \r\nThe Flight Plan Database API key is read from server configuration only\r\nand is never forwarded to or exposed in the frontend."
     }
   ]
 }

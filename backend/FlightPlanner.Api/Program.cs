@@ -41,6 +41,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // CORS — Origins aus Konfiguration, nie pauschal *
+// OPTIONS muss explizit erlaubt sein, damit der Browser-Preflight nicht blockiert wird.
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -49,14 +50,14 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(corsOptions.AllowedOrigins)
                   .AllowAnyHeader()
-                  .WithMethods("GET");
+                  .WithMethods("GET", "OPTIONS");
         }
         else
         {
             // Sicherer Fallback: kein Origin erlaubt, statt * zu verwenden
-            policy.WithOrigins("http://localhost:5173")
+            policy.WithOrigins("http://localhost:5173", "https://localhost:5173")
                   .AllowAnyHeader()
-                  .WithMethods("GET");
+                  .WithMethods("GET", "OPTIONS");
         }
     });
 });
@@ -94,8 +95,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// WICHTIG: UseCors() muss VOR UseHttpsRedirection() stehen!
+// Andernfalls sendet der Server beim OPTIONS-Preflight einen 301-Redirect
+// ohne CORS-Header zurück, und der Browser bricht den Request ab.
 app.UseCors();
+app.UseHttpsRedirection();
 
 // ── Statisches Frontend-Serving (Block 4) ───────────────────────────────────
 // In Produktion liefert das Backend das gebaute Vite-Frontend aus frontend/dist.

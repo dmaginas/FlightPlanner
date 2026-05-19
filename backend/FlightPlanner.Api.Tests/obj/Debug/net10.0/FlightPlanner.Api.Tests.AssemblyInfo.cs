@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FlightPlanner.Api.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+483e0678ffa085f3fecc750e92b51080a9a3d851")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f5175afabf0d5934af2dc50bd89f891febcd9b52")]
 [assembly: System.Reflection.AssemblyProductAttribute("FlightPlanner.Api.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FlightPlanner.Api.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -3,8 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|c:\\users\\dimos\\source\\repos\\dmaginas\\flightplanner\\backend\\flightplanner.api\\controllers\\metarcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|solutionrelative:flightplanner.api\\controllers\\metarcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|c:\\users\\dimos\\source\\repos\\dmaginas\\flightplanner\\backend\\flightplanner.api\\services\\flightplandatabaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|solutionrelative:flightplanner.api\\services\\flightplandatabaseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|c:\\users\\dimos\\source\\repos\\dmaginas\\flightplanner\\backend\\flightplanner.api\\controllers\\routescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|solutionrelative:flightplanner.api\\controllers\\routescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{5006FA74-6C89-3335-E1A8-10E18B9FD211}|FlightPlanner.Api\\FlightPlanner.Api.csproj|c:\\users\\dimos\\source\\repos\\dmaginas\\flightplanner\\backend\\flightplanner.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -23,27 +27,40 @@
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Program.cs",
-              "RelativeDocumentMoniker": "FlightPlanner.Api\\Program.cs",
-              "ToolTip": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Program.cs",
-              "RelativeToolTip": "FlightPlanner.Api\\Program.cs",
-              "ViewState": "AgIAAC0AAAAAAAAAAAAjwD8AAAAAAAAAAAAAAA==",
+              "Title": "RoutesController.cs",
+              "DocumentMoniker": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Controllers\\RoutesController.cs",
+              "RelativeDocumentMoniker": "FlightPlanner.Api\\Controllers\\RoutesController.cs",
+              "ToolTip": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Controllers\\RoutesController.cs",
+              "RelativeToolTip": "FlightPlanner.Api\\Controllers\\RoutesController.cs",
+              "ViewState": "AgIAACgAAAAAAAAAAAAQwD8AAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-18T09:45:07.363Z",
+              "WhenOpened": "2026-05-19T14:29:57.537Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "MetarController.cs",
-              "DocumentMoniker": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Controllers\\MetarController.cs",
-              "RelativeDocumentMoniker": "FlightPlanner.Api\\Controllers\\MetarController.cs",
-              "ToolTip": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Controllers\\MetarController.cs",
-              "RelativeToolTip": "FlightPlanner.Api\\Controllers\\MetarController.cs",
-              "ViewState": "AgIAADAAAAAAAAAAAAAewDUAAAAIAAAAAAAAAA==",
+              "Title": "FlightPlanDatabaseService.cs",
+              "DocumentMoniker": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Services\\FlightPlanDatabaseService.cs",
+              "RelativeDocumentMoniker": "FlightPlanner.Api\\Services\\FlightPlanDatabaseService.cs",
+              "ToolTip": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Services\\FlightPlanDatabaseService.cs",
+              "RelativeToolTip": "FlightPlanner.Api\\Services\\FlightPlanDatabaseService.cs",
+              "ViewState": "AgIAADEAAAAAAAAAAAAewDoAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-18T09:38:54.776Z",
+              "WhenOpened": "2026-05-19T14:26:39.245Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Program.cs",
+              "RelativeDocumentMoniker": "FlightPlanner.Api\\Program.cs",
+              "ToolTip": "C:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\Program.cs",
+              "RelativeToolTip": "FlightPlanner.Api\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAD8AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T09:45:07.363Z",
               "EditorCaption": ""
             }
           ]
