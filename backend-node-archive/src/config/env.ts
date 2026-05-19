@@ -31,3 +31,22 @@ export const ALLOWED_ORIGINS: string[] = (process.env['ALLOWED_ORIGINS'] ?? 'htt
 import path from 'path'
 export const FRONTEND_DIST_PATH: string = path.resolve(__dirname, '..', '..', '..', 'frontend', 'dist')
 
+// ── Flight Plan Database API ───────────────────────────────────────────────────
+
+/**
+ * Flight Plan Database API key (required at request time — no default).
+ * Set in .env: FLIGHT_PLAN_DATABASE_API_KEY=your_key_here
+ * Never commit a real key; keep it in .env (listed in .gitignore).
+ */
+export const FPD_API_KEY: string = process.env['FLIGHT_PLAN_DATABASE_API_KEY'] ?? ''
+
+/** Base URL for the Flight Plan Database API. */
+export const FPD_BASE_URL: string = (
+  process.env['FLIGHT_PLAN_DATABASE_BASE_URL'] ?? 'https://api.flightplandatabase.com'
+).replace(/\/$/, '')
+
+/** Server-side in-memory cache TTL in minutes. Default: 30. */
+export const FPD_CACHE_TTL_MINUTES: number = parseInt(
+  process.env['FLIGHT_PLAN_DATABASE_CACHE_TTL_MINUTES'] ?? '30',
+  10,
+)

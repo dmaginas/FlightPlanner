@@ -10,6 +10,11 @@ var corsOptions = builder.Configuration
     .GetSection(CorsOptions.SectionName)
     .Get<CorsOptions>() ?? new CorsOptions();
 
+// ── Flight Plan Database options ────────────────────────────────────────────
+var fpdOptions = builder.Configuration
+    .GetSection(FlightPlanDatabaseOptions.SectionName)
+    .Get<FlightPlanDatabaseOptions>() ?? new FlightPlanDatabaseOptions();
+
 // ── Services ────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 
@@ -60,6 +65,19 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient<IAviationWeatherService, AviationWeatherService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
+// In-memory cache (used by FlightPlanDatabaseService)
+builder.Services.AddMemoryCache();
+
+// Flight Plan Database service — registered with HttpClientFactory
+// ApiKey is intentionally NOT validated at startup so the app can start
+// and return a clear 503 per-request if the key is missing.
+builder.Services.AddSingleton(fpdOptions);
+builder.Services.AddHttpClient<IFlightPlanDatabaseService, FlightPlanDatabaseService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 

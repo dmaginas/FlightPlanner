@@ -6,6 +6,7 @@ import STARScreen from './components/STARScreen.tsx'
 import { getAirport } from './data/airports.ts'
 import { getRoute, generateDynamicRoute } from './data/mockData.ts'
 import { AIRCRAFT_PROFILE_BY_ICAO, DEFAULT_AIRCRAFT_TYPE } from './data/aircraftPerformance.ts'
+import { fetchRoute, RouteServiceError, type AlternativeRoute } from './services/routeService.ts'
 
 export default function App() {
   const [screen, setScreen]           = useState('plan')
@@ -13,45 +14,102 @@ export default function App() {
   const [arrival, setArrival]         = useState(null)
   const [selectedSID, setSelectedSID] = useState(null)
   const [selectedSTAR, setSelectedSTAR] = useState(null)
-  const [routeState, setRouteState]   = useState('ready') // idle | loading | ready
+  const [routeState, setRouteState]   = useState('idle') // idle | loading | ready
   const [selectedAircraftType, setSelectedAircraftType] = useState(DEFAULT_AIRCRAFT_TYPE)
+
+  // Route state — set by handleCalculate, cleared when airports change
+  const [route, setRoute]               = useState(null)
+  const [routeWarning, setRouteWarning] = useState<string | null>(null)
+  const [routeConfigError, setRouteConfigError] = useState<string | null>(null)
+  const [alternatives, setAlternatives] = useState<AlternativeRoute[]>([])
 
   useEffect(() => {
     let active = true
-
     async function loadDefaults() {
       const [dep, arr] = await Promise.all([getAirport('EDDF'), getAirport('EGLL')])
       if (!active) return
       setDeparture(dep)
       setArrival(arr)
     }
-
     loadDefaults()
     return () => { active = false }
   }, [])
 
-  const route = useCallback(() => {
-    if (!departure || !arrival) return null
-    const aircraftProfile = AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]
-    return getRoute(departure.icao, arrival.icao, aircraftProfile) ?? generateDynamicRoute(departure, arrival, aircraftProfile)
-  }, [departure, arrival, selectedAircraftType])()
+  // ── Local fallback calculation ──────────────────────────────────────────────
+  function computeLocalFallback(dep, arr, aircraftProfile) {
+    return getRoute(dep.icao, arr.icao, aircraftProfile)
+      ?? generateDynamicRoute(dep, arr, aircraftProfile)
+  }
 
-  function handleCalculate() {
+  // ── Calculate route ─────────────────────────────────────────────────────────
+  async function handleCalculate() {
+    if (!departure || !arrival) return
+
     setRouteState('loading')
     setSelectedSID(null)
     setSelectedSTAR(null)
-    setTimeout(() => setRouteState('ready'), 1600)
+    setRouteWarning(null)
+    setRouteConfigError(null)
+    setAlternatives([])
+    setRoute(null)
+
+    const aircraftProfile = AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]
+
+    try {
+      const result = await fetchRoute(
+        {
+          departure:       departure.icao,
+          destination:     arrival.icao,
+          aircraftType:    selectedAircraftType,
+          cruisingAltitude:aircraftProfile?.preferredCruiseAltitudeFt,
+          routeType:       'IFR',
+        },
+        aircraftProfile,
+      )
+
+      setRoute(result.selectedRoute)
+      setAlternatives(result.alternatives ?? [])
+      if (result.warning) setRouteWarning(result.warning)
+      setRouteState('ready')
+
+    } catch (error) {
+      // Hard config error — show message, no fallback
+      if (error instanceof RouteServiceError && error.kind === 'config_error') {
+        setRouteConfigError(
+          'Flight Plan Database API key is not configured on the server. ' +
+          'Please set the API key and restart the backend.'
+        )
+        setRouteState('idle')
+        return
+      }
+
+      // All other errors — use local fallback
+      const fallback = computeLocalFallback(departure, arrival, aircraftProfile)
+      setRoute(fallback)
+      setRouteState('ready')
+      setRouteWarning(
+        'External IFR route lookup failed. Showing locally calculated fallback route.'
+      )
+    }
   }
 
   function handleDepartureChange(apt) {
     setDeparture(apt)
     setSelectedSID(null)
+    setRoute(null)
+    setRouteWarning(null)
+    setRouteConfigError(null)
+    setAlternatives([])
     if (apt && arrival) setRouteState('idle')
   }
 
   function handleArrivalChange(apt) {
     setArrival(apt)
     setSelectedSTAR(null)
+    setRoute(null)
+    setRouteWarning(null)
+    setRouteConfigError(null)
+    setAlternatives([])
     if (departure && apt) setRouteState('idle')
   }
 
@@ -81,6 +139,9 @@ export default function App() {
           onArrivalChange={handleArrivalChange}
           onCalculate={handleCalculate}
           onNavigate={setScreen}
+          routeWarning={routeWarning}
+          routeConfigError={routeConfigError}
+          alternatives={alternatives}
         />
       )}
 

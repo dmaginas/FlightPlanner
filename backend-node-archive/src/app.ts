@@ -11,6 +11,7 @@ import { ALLOWED_ORIGINS, FRONTEND_DIST_PATH } from './config/env'
 import { requestLogger } from './utils/logger'
 import healthRouter from './routes/health'
 import metarRouter from './routes/metar'
+import routesRouter from './routes/routes'
 
 export function createApp(): Express {
   const app = express()
@@ -25,9 +26,10 @@ export function createApp(): Express {
   app.use(express.json())
   app.use(requestLogger)
 
-  // ── API routes ─────────────────────────────────────────────────────────────
+  // ── API routes ─────────────────────────────────────────────
   app.use('/api', healthRouter)
   app.use('/api', metarRouter)
+  app.use('/api', routesRouter)
 
   // ── Static frontend (production) ───────────────────────────────────────────
   // Serve the built Vite output so a single Node process handles both API and UI.

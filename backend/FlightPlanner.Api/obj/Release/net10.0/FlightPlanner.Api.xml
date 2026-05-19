@@ -38,6 +38,36 @@
             200 OK — roher METAR-Text (text/plain), z. B. "EDDF 181120Z 26005KT CAVOK 15/07 Q1013 NOSIG"
             </returns>
         </member>
+        <member name="T:FlightPlanner.Api.Controllers.RoutesController">
+             <summary>
+             IFR Route Lookup — GET /api/routes
+            
+             Proxies route requests to the Flight Plan Database API, caches results
+             server-side (default 30 min), and maps the response into a stable
+             frontend-facing DTO.
+            
+             The Flight Plan Database API key is read from server configuration only
+             and is never forwarded to or exposed in the frontend.
+             </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Controllers.RoutesController.GetRoutes(System.String,System.String,System.String,System.Nullable{System.Int32},System.String,System.Threading.CancellationToken)">
+            <summary>
+            Searches for IFR flight plans between two airports.
+            Returns the best match as selectedRoute plus up to 4 alternatives.
+            </summary>
+            <param name="departure">Departure airport ICAO code (e.g. EDDF).</param>
+            <param name="destination">Destination airport ICAO code (e.g. EGLL).</param>
+            <param name="aircraftType">
+            ICAO aircraft type code (e.g. A320). Accepted for enrichment and future use;
+            not forwarded to the FPD API (not supported as a query parameter there).
+            </param>
+            <param name="cruisingAltitude">
+            Requested cruising altitude in feet (e.g. 35000). Accepted for enrichment;
+            not forwarded to the FPD API.
+            </param>
+            <param name="routeType">Currently only "IFR" is supported.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+        </member>
         <member name="T:FlightPlanner.Api.Models.ErrorResponse">
             <summary>
             Standardisiertes JSON-Fehlerformat für API-Fehlerantworten.
@@ -63,6 +93,42 @@
         <member name="P:FlightPlanner.Api.Models.HealthResponse.Version">
             <summary>Aktuelle Backend-Version (aus Assembly-Metadaten).</summary>
         </member>
+        <member name="T:FlightPlanner.Api.Models.RouteResponse">
+            <summary>Top-level response from GET /api/routes.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.RouteResponse.SelectedRoute">
+            <summary>The primary IFR route to display. Null if no route could be found.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.RouteResponse.Alternatives">
+            <summary>Alternative routes (metadata only) for future UI selection.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.RouteResponse.Warning">
+            <summary>
+            Human-readable warning when the result is a fallback or partial.
+            Null on fully successful external lookup.
+            </summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.SelectedRouteDto">
+            <summary>Primary route including all waypoints.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.SelectedRouteDto.RouteText">
+            <summary>Route string (waypoint idents separated by spaces), e.g. "ANEKI UL9 KONAN SILVA".</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.SelectedRouteDto.Source">
+            <summary>"flight-plan-database" or "local-fallback".</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.WaypointDto">
+            <summary>Single waypoint in the route.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.WaypointDto.Id">
+            <summary>ICAO / fix identifier, e.g. "EDDF" or "ANEKI".</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.WaypointDto.Type">
+            <summary>Normalised type: "airport", "fix", "vor", "ndb".</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.AlternativeRouteDto">
+            <summary>Alternative route candidate (metadata only — no full waypoints).</summary>
+        </member>
         <member name="T:FlightPlanner.Api.Options.CorsOptions">
             <summary>
             Konfigurationsoptionen für CORS.
@@ -74,6 +140,24 @@
             Liste der erlaubten Origins für CORS.
             Beispiel: ["http://localhost:5173", "https://localhost:5173"]
             </summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Options.FlightPlanDatabaseOptions">
+            <summary>
+            Configuration options for the Flight Plan Database API integration.
+            Bind from the "FlightPlanDatabase" section in appsettings.json or user secrets.
+            </summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Options.FlightPlanDatabaseOptions.ApiKey">
+            <summary>
+            Flight Plan Database API key. Must NOT be empty at request time.
+            Set via user secrets: dotnet user-secrets set "FlightPlanDatabase:ApiKey" "YOUR_KEY"
+            </summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Options.FlightPlanDatabaseOptions.BaseUrl">
+            <summary>Base URL for the Flight Plan Database API (no trailing slash).</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Options.FlightPlanDatabaseOptions.CacheTtlMinutes">
+            <summary>Server-side in-memory cache TTL in minutes. Default: 30.</summary>
         </member>
         <member name="T:FlightPlanner.Api.Services.AviationWeatherService">
              <summary>
@@ -87,6 +171,28 @@
              </summary>
         </member>
         <member name="M:FlightPlanner.Api.Services.AviationWeatherService.FetchRawMetarAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:FlightPlanner.Api.Services.FlightPlanDatabaseService">
+             <summary>
+             Calls the Flight Plan Database API (https://flightplandatabase.com) to search
+             for IFR routes between two airports. Results are cached in-memory for the
+             configured TTL (default: 30 minutes) to conserve API quota.
+            
+             API documentation: https://flightplandatabase.com/dev/api
+            
+             Strategy:
+               1. GET /search/plans?fromICAO=X&amp;toICAO=Y&amp;limit=5&amp;sort=popularity
+                  → returns up to 5 plan summaries (no full waypoints)
+               2. GET /plan/{id} for the top result → returns full waypoints (route.nodes)
+               3. Remaining search results become alternatives (metadata only)
+            
+             Aircraft type and cruising altitude are NOT query parameters supported by the
+             FPD API. They are accepted by our internal endpoint for client-side enrichment
+             and future extensibility, but are not forwarded to FPD.
+             </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.FlightPlanDatabaseService.SearchRoutesAsync(System.String,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="T:FlightPlanner.Api.Services.IAviationWeatherService">
@@ -122,6 +228,51 @@
             <summary>
             Exception die ausgelöst wird, wenn der AviationWeather-Abruf fehlschlägt.
             </summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.FpdRouteResult">
+            <summary>Result returned by the Flight Plan Database service.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Services.FpdRouteResult.Selected">
+            <summary>First (best) plan with full waypoints. Null if nothing was found.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Services.FpdRouteResult.Alternatives">
+            <summary>Additional candidate plans (metadata only — no full waypoints).</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.FpdPlan">
+            <summary>Full flight plan including waypoints from GET /plan/{id}.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.FpdNode">
+            <summary>Single waypoint node from the FPD route.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.FpdPlanSummary">
+            <summary>Metadata-only summary (from search results — no full waypoints).</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.FpdErrorKind.ConfigurationMissing">
+            <summary>API key is missing or empty in configuration.</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.FpdErrorKind.Http">
+            <summary>HTTP error from the FPD API.</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.FpdErrorKind.Network">
+            <summary>Network / connectivity error.</summary>
+        </member>
+        <member name="F:FlightPlanner.Api.Services.FpdErrorKind.NoResults">
+            <summary>No flight plans found for the given route.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.IFlightPlanDatabaseService">
+            <summary>
+            Server-side proxy for the Flight Plan Database API.
+            Searches for IFR routes between two airports and caches results in memory.
+            </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.IFlightPlanDatabaseService.SearchRoutesAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Searches for IFR flight plans between two airports.
+            Returns the best match with full waypoints plus alternative summaries.
+            </summary>
+            <exception cref="T:FlightPlanner.Api.Services.FlightPlanDatabaseException">
+            Thrown on config error, HTTP error, network error, or no results.
+            </exception>
         </member>
     </members>
 </doc>

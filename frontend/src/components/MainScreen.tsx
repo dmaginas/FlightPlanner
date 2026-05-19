@@ -1,12 +1,14 @@
-import FlightInput   from './FlightInput.tsx'
-import WeatherPanel  from './WeatherPanel.tsx'
-import AIPanel       from './AIPanel.tsx'
-import WaypointTable from './WaypointTable.tsx'
-import RouteMap      from './RouteMap.tsx'
+import FlightInput    from './FlightInput.tsx'
+import WeatherPanel   from './WeatherPanel.tsx'
+import AIPanel        from './AIPanel.tsx'
+import WaypointTable  from './WaypointTable.tsx'
+import RouteMap       from './RouteMap.tsx'
+import AlternativesPanel from './AlternativesPanel.tsx'
 
 export default function MainScreen({
   departure, arrival, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   onAircraftChange, onDepartureChange, onArrivalChange, onCalculate, onNavigate,
+  routeWarning, routeConfigError, alternatives,
 }) {
   return (
     <div style={{
@@ -22,6 +24,7 @@ export default function MainScreen({
         overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
         borderRight: '1px solid var(--line)',
       }}>
+        {/* Simulation disclaimer — always visible */}
         <div style={{
           border: '1px solid rgba(255,92,114,.5)',
           background: 'var(--red-soft)',
@@ -32,8 +35,42 @@ export default function MainScreen({
           color: 'var(--text)',
         }}>
           <strong style={{ display: 'block', marginBottom: 4 }}>Flight simulation only</strong>
-          FlightPlanner is intended for flight simulation only. Do not use this tool for real-world flight planning, navigation, or operational aviation decisions.
+          Routes are for simulation/planning use only and must not be used for real-world navigation.
         </div>
+
+        {/* Config error banner */}
+        {routeConfigError && (
+          <div style={{
+            border: '1px solid rgba(255,92,114,.7)',
+            background: 'rgba(255,92,114,.12)',
+            borderRadius: 'var(--r)',
+            padding: '10px 14px',
+            fontSize: 12, lineHeight: 1.55, color: 'var(--text)',
+            display: 'flex', gap: 8, alignItems: 'flex-start',
+          }}>
+            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠</span>
+            <div>
+              <strong style={{ display: 'block', marginBottom: 2 }}>Server configuration error</strong>
+              {routeConfigError}
+            </div>
+          </div>
+        )}
+
+        {/* Fallback warning banner */}
+        {routeWarning && !routeConfigError && (
+          <div style={{
+            border: '1px solid rgba(255,180,80,.5)',
+            background: 'var(--amber-soft)',
+            borderRadius: 'var(--r)',
+            padding: '10px 14px',
+            fontSize: 12, lineHeight: 1.55, color: 'var(--text)',
+            display: 'flex', gap: 8, alignItems: 'flex-start',
+          }}>
+            <span style={{ fontSize: 14, flexShrink: 0 }}>⚡</span>
+            <div>{routeWarning}</div>
+          </div>
+        )}
+
         <FlightInput
           departure={departure}
           arrival={arrival}
@@ -47,6 +84,11 @@ export default function MainScreen({
           onCalculate={onCalculate}
           onNavigate={onNavigate}
         />
+
+        {/* Alternative routes */}
+        {alternatives && alternatives.length > 0 && (
+          <AlternativesPanel alternatives={alternatives} />
+        )}
       </aside>
 
       {/* ── Map center ── */}
@@ -150,3 +192,4 @@ function RangeWarning({ route, selectedAircraftProfile }) {
   const msg = `Warning: Planned route distance exceeds the approximate range of ${selectedAircraftProfile.icaoCode} — ${selectedAircraftProfile.displayName}. Route: ${routeNm.toLocaleString()} NM, approximate range: ${selectedAircraftProfile.maxRangeNm.toLocaleString()} NM.`
   return <div style={{ marginTop: 10, padding: '10px 12px', border: '1px solid rgba(255,180,80,.4)', background: 'var(--amber-soft)', color: 'var(--text)', borderRadius: 'var(--r-sm)', fontSize: 12 }}>{msg}</div>
 }
+

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("FlightPlanner ASP.NET Core Backend — METAR proxy and static frontend serving")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+fa8e9e8e83075bfd2020027ee6458e0dfe9389d4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+483e0678ffa085f3fecc750e92b51080a9a3d851")]
 [assembly: System.Reflection.AssemblyProductAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]
