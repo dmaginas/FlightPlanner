@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlightPlanner UX Survey – Statistik</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #60a5fa;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      margin-top: 8px;
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+    .kpi-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 48px;
+    }
+    .kpi {
+      background: #1e2535;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 20px 28px;
+      text-align: center;
+      min-width: 150px;
+    }
+    .kpi .value {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #60a5fa;
+      line-height: 1;
+    }
+    .kpi .label {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .section {
+      margin-bottom: 48px;
+    }
+    .section h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #93c5fd;
+      border-left: 3px solid #3b82f6;
+      padding-left: 12px;
+      margin-bottom: 24px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #1e2535;
+      border: 1px solid #2d3748;
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card h3 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 18px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 240px;
+    }
+    .bar-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .bar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bar-item .name {
+      width: 180px;
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      flex-shrink: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bar-item .track {
+      flex: 1;
+      background: #2d3748;
+      border-radius: 4px;
+      height: 18px;
+      position: relative;
+    }
+    .bar-item .fill {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #3b82f6, #60a5fa);
+      transition: width 0.6s ease;
+    }
+    .bar-item .count {
+      width: 28px;
+      text-align: right;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #93c5fd;
+    }
+    .quote-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .quote {
+      background: #0f1117;
+      border-left: 3px solid #3b82f6;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      font-size: 0.83rem;
+      color: #cbd5e1;
+      font-style: italic;
+      line-height: 1.5;
+    }
+    .quote .tag {
+      font-style: normal;
+      font-size: 0.72rem;
+      color: #60a5fa;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .insight-box {
+      background: #162032;
+      border: 1px solid #1e40af;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-top: 24px;
+    }
+    .insight-box h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #60a5fa;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+    .insight-box ul {
+      padding-left: 18px;
+    }
+    .insight-box li {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .insight-box li strong {
+      color: #93c5fd;
+    }
+    footer {
+      text-align: center;
+      margin-top: 64px;
+      font-size: 0.78rem;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>FlightPlanner User Experience Survey</h1>
+  <p>Erhebungszeitraum: 14.–17. Mai 2026 &nbsp;|&nbsp; Auswertung vom 21. Mai 2026</p>
+</header>
+
+<!-- KPIs -->
+<div class="kpi-row">
+  <div class="kpi"><div class="value">11</div><div class="label">Teilnehmer</div></div>
+  <div class="kpi"><div class="value">4</div><div class="label">Erhebungstage</div></div>
+  <div class="kpi"><div class="value">82%</div><div class="label">MSFS-Nutzer</div></div>
+  <div class="kpi"><div class="value">73%</div><div class="label">UI wichtig</div></div>
+  <div class="kpi"><div class="value">64%</div><div class="label">Wetter wichtig</div></div>
+  <div class="kpi"><div class="value">45%</div><div class="label">Routing als #1-Problem</div></div>
+</div>
+
+<!-- 1. Simulatoren & Tools -->
+<div class="section">
+  <h2>1. Simulatoren &amp; Planungstools</h2>
+  <div class="grid">
+
+    <div class="card">
+      <h3>Genutzte Simulatoren</h3>
+      <div class="chart-wrap">
+        <canvas id="simChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Primäre Planungsmethode</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">SimBrief</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">3</span></div>
+        <div class="bar-item"><span class="name">MSFS Flight Planner</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Little Navmap</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">PFPX</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">SkyVector / Papier</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Real-World Tools</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Allg. Planungssoftware</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Manuell</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Andere</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Gleichzeitig genutzte Tools (Mehrfachnennung)</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">SimBrief</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">6</span></div>
+        <div class="bar-item"><span class="name">MSFS Flight Planner</span><div class="track"><div class="fill" style="width:67%"></div></div><span class="count">4</span></div>
+        <div class="bar-item"><span class="name">PFPX</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">2</span></div>
+        <div class="bar-item"><span class="name">Little Navmap</span><div class="track"><div class="fill" style="width:17%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">SkyVector</span><div class="track"><div class="fill" style="width:17%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Real-World Tools</span><div class="track"><div class="fill" style="width:17%"></div></div><span class="count">1</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Typische Planungsdauer</h3>
+      <div class="chart-wrap">
+        <canvas id="durationChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 2. Wichtigkeit von UI & Wetter -->
+<div class="section">
+  <h2>2. Prioritäten: UI-Qualität &amp; Wetter</h2>
+  <div class="grid">
+
+    <div class="card">
+      <h3>Wie wichtig ist die visuelle Qualität?</h3>
+      <div class="chart-wrap">
+        <canvas id="uiChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Wie wichtig ist Wetter bei der Planung?</h3>
+      <div class="chart-wrap">
+        <canvas id="weatherChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Welche Wetterinformationen werden geprüft?</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">METAR</span><div class="track"><div class="fill" style="width:67%"></div></div><span class="count">4</span></div>
+        <div class="bar-item"><span class="name">Alle verfügbaren</span><div class="track"><div class="fill" style="width:50%"></div></div><span class="count">3</span></div>
+        <div class="bar-item"><span class="name">Departure/Arrival</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">2</span></div>
+        <div class="bar-item"><span class="name">Echtzeit-Quellen (Windy)</span><div class="track"><div class="fill" style="width:17%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">MSFS Live Weather</span><div class="track"><div class="fill" style="width:17%"></div></div><span class="count">1</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Flugtypen mit höchstem Planungsaufwand</h3>
+      <div class="chart-wrap">
+        <canvas id="flightTypeChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 3. Pain Points & Feature-Wünsche -->
+<div class="section">
+  <h2>3. Pain Points &amp; Feature-Wünsche</h2>
+  <div class="grid">
+
+    <div class="card">
+      <h3>Wichtigstes Problem, das FlightPlanner lösen soll</h3>
+      <div class="chart-wrap">
+        <canvas id="problemChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Frustrationen mit SimBrief / bestehenden Tools</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">Schlechte UI / Usability</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">3</span></div>
+        <div class="bar-item"><span class="name">Fehlende Features</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">3</span></div>
+        <div class="bar-item"><span class="name">Keine Störungen</span><div class="track"><div class="fill" style="width:67%"></div></div><span class="count">2</span></div>
+        <div class="bar-item"><span class="name">Kein Preview / Karte</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Kostenpflichtig</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Nutzts nicht</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Gewünschte Automationen</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">Routenerstellung</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">5</span></div>
+        <div class="bar-item"><span class="name">Optimaler FlugLevel</span><div class="track"><div class="fill" style="width:40%"></div></div><span class="count">2</span></div>
+        <div class="bar-item"><span class="name">Wetter / NOTAMs abrufen</span><div class="track"><div class="fill" style="width:20%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">ZFW / TOW Berechnungen</span><div class="track"><div class="fill" style="width:20%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">ATC Frequenzen</span><div class="track"><div class="fill" style="width:20%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Alles</span><div class="track"><div class="fill" style="width:20%"></div></div><span class="count">1</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Essenzielle Integrationen</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">FMC / Aircraft (PMDG etc.)</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">3</span></div>
+        <div class="bar-item"><span class="name">Navigraph</span><div class="track"><div class="fill" style="width:67%"></div></div><span class="count">2</span></div>
+        <div class="bar-item"><span class="name">MSFS direkt</span><div class="track"><div class="fill" style="width:67%"></div></div><span class="count">2</span></div>
+        <div class="bar-item"><span class="name">VATSIM</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Wetter-APIs</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Keine / egal</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="count">2</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 4. SimBrief-Export-Abhängigkeit -->
+<div class="section">
+  <h2>4. SimBrief-Export: Wie abhängig sind die Nutzer?</h2>
+  <div class="grid">
+
+    <div class="card">
+      <h3>Reaktion wenn kein SimBrief-Export verfügbar wäre</h3>
+      <div class="chart-wrap">
+        <canvas id="simbriefChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ausgewählte Originalantworten</h3>
+      <div class="quote-list">
+        <div class="quote"><span class="tag">Positiv / egal</span>"Doesn't matter, want to stop using SimBrief anyway."</div>
+        <div class="quote"><span class="tag">Bleibt bei SimBrief</span>"I will stick with SimBrief."</div>
+        <div class="quote"><span class="tag">Kein Problem</span>"Nothing" / "SimBrief is outdated and very expensive – it would make me happy."</div>
+        <div class="quote"><span class="tag">Kritisch</span>"People might start a riot."</div>
+        <div class="quote"><span class="tag">Würde es vermissen</span>"Well, I would still want to export routes."</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 5. Flugfrequenz -->
+<div class="section">
+  <h2>5. Nutzungsintensität</h2>
+  <div class="grid">
+
+    <div class="card">
+      <h3>Flüge pro Woche</h3>
+      <div class="chart-wrap">
+        <canvas id="freqChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Zielgruppen (laut Nutzern selbst)</h3>
+      <div class="bar-list" style="margin-top:8px">
+        <div class="bar-item"><span class="name">IFR-Piloten</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="count">4</span></div>
+        <div class="bar-item"><span class="name">Realismus-Fokus</span><div class="track"><div class="fill" style="width:75%"></div></div><span class="count">3</span></div>
+        <div class="bar-item"><span class="name">VATSIM / IVAO Online</span><div class="track"><div class="fill" style="width:25%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Erfahrene Simmer</span><div class="track"><div class="fill" style="width:25%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Alle Piloten</span><div class="track"><div class="fill" style="width:25%"></div></div><span class="count">1</span></div>
+        <div class="bar-item"><span class="name">Echte Piloten</span><div class="track"><div class="fill" style="width:25%"></div></div><span class="count">1</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Key Insights -->
+<div class="insight-box">
+  <h4>Zusammenfassung – Handlungsrelevante Erkenntnisse</h4>
+  <ul>
+    <li><strong>Routing ist das #1-Problem:</strong> 5 von 11 Nutzern nennen die Routenerstellung als wichtigstes zu lösendes Problem. Schnelle, realistische Routen sind der wichtigste Differenzierungsfaktor.</li>
+    <li><strong>Klare, zentrale Oberfläche:</strong> Das Wechseln zwischen mehreren Tools (SimBrief + MSFS Planner + PFPX) ist der häufigste Pain Point. "Alles auf einer Seite" ist der am häufigsten genannte Wunsch.</li>
+    <li><strong>MSFS ist die dominante Plattform:</strong> 82 % der Befragten nutzen MSFS 2020/2024. P3D und X-Plane sind Nische.</li>
+    <li><strong>SimBrief-Abhängigkeit ist gespalten:</strong> Etwa die Hälfte wäre froh, SimBrief zu ersetzen; die andere Hälfte erwartet zumindest einen Export-Weg.</li>
+    <li><strong>UI-Qualität ist wichtiger als Wetter:</strong> 73 % bewerten UI als wichtig, nur 64 % Wetter. Ein modernes, intuitives Design ist ein eigenständiger Mehrwert.</li>
+    <li><strong>Power-User-Bedarf:</strong> Mehrere Nutzer fordern PFPX-artige Features: Redispatch, Tankering, OFP-Customization – Zeichen einer fortgeschrittenen Zielgruppe.</li>
+    <li><strong>Navigraph &amp; FMC-Integration:</strong> Navigraph und direkte FMC-Anbindung (PMDG 737, A320) werden als essenziell für professionellen Einsatz genannt.</li>
+    <li><strong>Schnelligkeit zählt:</strong> 6 von 11 planen unter 30 Minuten. Für diese Gruppe muss der Flow schnell und reibungslos sein.</li>
+  </ul>
+</div>
+
+<footer>
+  FlightPlanner UX Survey 2026 &nbsp;|&nbsp; n = 11 &nbsp;|&nbsp; Generiert am 21. Mai 2026
+</footer>
+
+<script>
+  const defaults = {
+    plugins: { legend: { labels: { color: '#94a3b8', font: { size: 12 } } } },
+    scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } }, y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } } }
+  };
+  const pieDefaults = {
+    plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 12 }, padding: 12 } } }
+  };
+  const blue = ['#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#1d4ed8','#2563eb'];
+
+  new Chart(document.getElementById('simChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['MSFS 2020/2024', 'P3D V5', 'FlightGear', 'X-Plane'],
+      datasets: [{ data: [9, 2, 2, 1], backgroundColor: ['#3b82f6','#1d4ed8','#60a5fa','#93c5fd'], borderColor: '#1e2535', borderWidth: 3 }]
+    },
+    options: { ...pieDefaults, cutout: '60%' }
+  });
+
+  new Chart(document.getElementById('durationChart'), {
+    type: 'bar',
+    data: {
+      labels: ['< 5 min', '5–10 min', '10–30 min', '30–60 min', '> 60 min'],
+      datasets: [{ label: 'Nutzer', data: [2, 2, 4, 2, 1], backgroundColor: '#3b82f6', borderRadius: 6 }]
+    },
+    options: { ...defaults, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } }, y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#2d3748' }, min: 0 } } }
+  });
+
+  new Chart(document.getElementById('uiChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Wichtig', 'Nicht wichtig'],
+      datasets: [{ data: [9, 2], backgroundColor: ['#3b82f6','#374151'], borderColor: '#1e2535', borderWidth: 3 }]
+    },
+    options: { ...pieDefaults, cutout: '65%' }
+  });
+
+  new Chart(document.getElementById('weatherChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Wichtig', 'Nicht wichtig'],
+      datasets: [{ data: [7, 4], backgroundColor: ['#3b82f6','#374151'], borderColor: '#1e2535', borderWidth: 3 }]
+    },
+    options: { ...pieDefaults, cutout: '65%' }
+  });
+
+  new Chart(document.getElementById('flightTypeChart'), {
+    type: 'bar',
+    data: {
+      labels: ['IFR-Flüge', 'Langstrecke', 'Alle gleich', 'High-Density', 'VFR'],
+      datasets: [{ label: 'Nennungen', data: [5, 2, 2, 1, 0], backgroundColor: '#3b82f6', borderRadius: 6 }]
+    },
+    options: { ...defaults, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#2d3748' }, min: 0 }, y: { ticks: { color: '#94a3b8' }, grid: { color: '#2d3748' } } } }
+  });
+
+  new Chart(document.getElementById('problemChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Routing', 'Wetter', 'Klarheit / UI', 'OFP-Format', 'Anderes'],
+      datasets: [{ data: [5, 2, 2, 1, 1], backgroundColor: ['#3b82f6','#60a5fa','#93c5fd','#1d4ed8','#2563eb'], borderColor: '#1e2535', borderWidth: 3 }]
+    },
+    options: { ...pieDefaults, cutout: '55%' }
+  });
+
+  new Chart(document.getElementById('simbriefChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Kein Problem / froh darüber', 'Würde Export vermissen', 'Bleibt bei SimBrief', 'Keine Angabe'],
+      datasets: [{ data: [4, 3, 1, 3], backgroundColor: ['#22c55e','#f59e0b','#ef4444','#4b5563'], borderColor: '#1e2535', borderWidth: 3 }]
+    },
+    options: { ...pieDefaults, cutout: '60%' }
+  });
+
+  new Chart(document.getElementById('freqChart'), {
+    type: 'bar',
+    data: {
+      labels: ['1×/Woche', '2–3×/Woche', '3–4×/Woche', '4–5×/Woche', '8–10×/Woche', 'Täglich'],
+      datasets: [{ label: 'Nutzer', data: [1, 3, 2, 1, 1, 1], backgroundColor: '#3b82f6', borderRadius: 6 }]
+    },
+    options: { ...defaults, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: {size: 10} }, grid: { color: '#2d3748' } }, y: { ticks: { color: '#94a3b8', stepSize: 1 }, grid: { color: '#2d3748' }, min: 0 } } }
+  });
+</script>
+</body>
+</html>
