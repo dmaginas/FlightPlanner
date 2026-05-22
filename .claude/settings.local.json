@@ -32,7 +32,12 @@
       "PowerShell(\"Backend gestartet, pr�fe Health...\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(w['id'], '850hPa:', w['levels'][0]['windSpeedKt'],'kt', w['levels'][0]['tempC'],'°C'\\) for w in d['waypoints']]\")",
       "PowerShell(Start-Process -FilePath \"dotnet\" -ArgumentList \"run --configuration Release --no-build\" -WorkingDirectory $backendDir -RedirectStandardOutput \"C:\\\\Users\\\\dimos\\\\AppData\\\\Local\\\\Temp\\\\fp-backend.log\" -RedirectStandardError \"C:\\\\Users\\\\dimos\\\\AppData\\\\Local\\\\Temp\\\\fp-backend-err.log\" -WindowStyle Hidden)",
-      "PowerShell($backendDir = \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\\\\backend\\\\FlightPlanner.Api\")"
+      "PowerShell($backendDir = \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\\\\backend\\\\FlightPlanner.Api\")",
+      "Bash(npm run *)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Get-Content \"C:\\\\Users\\\\dimos\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-dimos-source-repos-dmaginas-FlightPlanner\\\\0ec880de-7f39-4da4-bf65-605aea156427\\\\tasks\\\\bzdquv57o.output\" -ErrorAction SilentlyContinue)",
+      "Bash(Get-NetTCPConnection -LocalPort 5173,5000,5001 -State Listen -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object LocalPort,OwningProcess)"
     ]
   }
 }
