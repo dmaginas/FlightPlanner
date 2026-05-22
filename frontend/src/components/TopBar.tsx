@@ -56,9 +56,10 @@ const S = {
 
 export default function TopBar({ screen, onNavigate, departure, arrival, selectedSID, selectedSTAR, routeState }) {
   const tabs = [
-    { id: 'plan', label: 'Flight Plan' },
-    { id: 'sid',  label: 'SID' + (selectedSID  ? ` · ${selectedSID.name}`  : '') },
-    { id: 'star', label: 'STAR' + (selectedSTAR ? ` · ${selectedSTAR.name}` : '') },
+    { id: 'plan',   label: 'Flight Plan' },
+    { id: 'sid',    label: 'SID' + (selectedSID  ? ` · ${selectedSID.name}`  : '') },
+    { id: 'star',   label: 'STAR' + (selectedSTAR ? ` · ${selectedSTAR.name}` : '') },
+    { id: 'gramet', label: 'GRAMET' },
   ]
 
   const statusMap = { idle: 'No Route', loading: 'Calculating…', ready: 'Route Ready' }

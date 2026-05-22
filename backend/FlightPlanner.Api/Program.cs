@@ -50,14 +50,14 @@ builder.Services.AddCors(options =>
         {
             policy.WithOrigins(corsOptions.AllowedOrigins)
                   .AllowAnyHeader()
-                  .WithMethods("GET", "OPTIONS");
+                  .WithMethods("GET", "POST", "OPTIONS");
         }
         else
         {
             // Sicherer Fallback: kein Origin erlaubt, statt * zu verwenden
             policy.WithOrigins("http://localhost:5173", "https://localhost:5173")
                   .AllowAnyHeader()
-                  .WithMethods("GET", "OPTIONS");
+                  .WithMethods("GET", "POST", "OPTIONS");
         }
     });
 });
@@ -77,6 +77,13 @@ builder.Services.AddMemoryCache();
 // and return a clear 503 per-request if the key is missing.
 builder.Services.AddSingleton(fpdOptions);
 builder.Services.AddHttpClient<IFlightPlanDatabaseService, FlightPlanDatabaseService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(20);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
+// GRAMET service — fetches pressure-level weather from Open Meteo (no API key required)
+builder.Services.AddHttpClient<IGrametService, GrametService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");

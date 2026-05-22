@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\" -Depth 1)",
+      "Bash(Select-Object Name)",
+      "WebFetch(domain:open-meteo.com)",
+      "Bash(xargs grep -l \"interface\\\\|type.*=\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(dotnet build *)",
+      "Bash(npx tsc *)",
+      "Bash(node_modules\\\\.bin\\\\tsc --noEmit)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://localhost:5001/api/health)",
+      "Bash(curl -sk -X POST https://localhost:5001/api/gramet -H 'Content-Type: application/json' -d '{\"waypoints\":[{\"id\":\"EDDF\",\"lat\":50.0379,\"lon\":8.5622,\"distanceNm\":0},{\"id\":\"EGLL\",\"lat\":51.4775,\"lon\":-0.4614,\"distanceNm\":270}]}')",
+      "Bash(curl -s \"https://api.open-meteo.com/v1/forecast?latitude=50.0379&longitude=8.5622&hourly=temperature_850hPa,wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=kn&timezone=UTC&forecast_days=1\")",
+      "Bash(curl -s \"https://api.open-meteo.com/v1/forecast?latitude=50.0&longitude=8.0&hourly=temperature_850hPa,wind_speed_850hPa,wind_direction_850hPa,cloud_cover_850hPa,temperature_200hPa,wind_speed_200hPa&wind_speed_unit=kn&timezone=UTC&forecast_days=1\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d['hourly'].keys\\(\\)\\)\\)\")",
+      "Bash(curl -sv \"https://api.open-meteo.com/v1/forecast?latitude=50.0379&longitude=8.5622&hourly=temperature_850hPa,wind_speed_850hPa,wind_direction_850hPa,cloud_cover_850hPa,temperature_700hPa,wind_speed_700hPa,wind_direction_700hPa,cloud_cover_700hPa,temperature_500hPa,wind_speed_500hPa,wind_direction_500hPa,cloud_cover_500hPa,temperature_300hPa,wind_speed_300hPa,wind_direction_300hPa,cloud_cover_300hPa,temperature_250hPa,wind_speed_250hPa,wind_direction_250hPa,cloud_cover_250hPa,temperature_200hPa,wind_speed_200hPa,wind_direction_200hPa,cloud_cover_200hPa&wind_speed_unit=kn&timezone=UTC&forecast_days=1\")",
+      "Bash(curl -s \"https://api.open-meteo.com/v1/forecast?latitude=50.0379&longitude=8.5622&hourly=temperature_850hPa,wind_speed_850hPa,wind_direction_850hPa,cloud_cover_850hPa,temperature_700hPa,wind_speed_700hPa,wind_direction_700hPa,cloud_cover_700hPa,temperature_500hPa,wind_speed_500hPa,wind_direction_500hPa,cloud_cover_500hPa,temperature_300hPa,wind_speed_300hPa,wind_direction_300hPa,cloud_cover_300hPa,temperature_250hPa,wind_speed_250hPa,wind_direction_250hPa,cloud_cover_250hPa,temperature_200hPa,wind_speed_200hPa,wind_direction_200hPa,cloud_cover_200hPa&wind_speed_unit=kn&timezone=UTC&forecast_days=1\")",
+      "Bash(curl -sv -X OPTIONS https://localhost:5001/api/gramet -H 'Origin: http://localhost:5173' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: content-type')",
+      "Bash(curl -sk -X POST https://localhost:5001/api/gramet -H 'Content-Type: application/json' -H 'Origin: http://localhost:5173' -d '{\"waypoints\":[{\"id\":\"EDDF\",\"lat\":50.0379,\"lon\":8.5622,\"distanceNm\":0}]}' -v)",
+      "Bash(curl -s \"https://api.open-meteo.com/v1/forecast?latitude=50.0379&longitude=8.5622&hourly=cloud_cover_300hPa,cloud_cover_250hPa,cloud_cover_200hPa&timezone=UTC&forecast_days=1\")",
+      "Bash(curl -s -A FlightPlanner/0.1.0 'https://api.open-meteo.com/v1/forecast?latitude=50.0379&longitude=8.5622&hourly=temperature_850hPa,wind_speed_850hPa,wind_direction_850hPa,cloud_cover_850hPa,temperature_700hPa,wind_speed_700hPa,wind_direction_700hPa,cloud_cover_700hPa,temperature_500hPa,wind_speed_500hPa,wind_direction_500hPa,cloud_cover_500hPa,temperature_300hPa,wind_speed_300hPa,wind_direction_300hPa,cloud_cover_300hPa,temperature_250hPa,wind_speed_250hPa,wind_direction_250hPa,cloud_cover_250hPa,temperature_200hPa,wind_speed_200hPa,wind_direction_200hPa,cloud_cover_200hPa&wind_speed_unit=kn&timezone=UTC&forecast_days=1')",
+      "Bash(Get-Process -Name \"FlightPlanner*\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Process *)",
+      "Bash(curl *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Start-Process -FilePath $exe -WindowStyle Hidden)",
+      "PowerShell($exe = \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\\\\backend\\\\FlightPlanner.Api\\\\bin\\\\Release\\\\net10.0\\\\FlightPlanner.Api.exe\")",
+      "PowerShell(\"Backend gestartet, pr�fe Health...\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(w['id'], '850hPa:', w['levels'][0]['windSpeedKt'],'kt', w['levels'][0]['tempC'],'°C'\\) for w in d['waypoints']]\")",
+      "PowerShell(Start-Process -FilePath \"dotnet\" -ArgumentList \"run --configuration Release --no-build\" -WorkingDirectory $backendDir -RedirectStandardOutput \"C:\\\\Users\\\\dimos\\\\AppData\\\\Local\\\\Temp\\\\fp-backend.log\" -RedirectStandardError \"C:\\\\Users\\\\dimos\\\\AppData\\\\Local\\\\Temp\\\\fp-backend-err.log\" -WindowStyle Hidden)",
+      "PowerShell($backendDir = \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\\\\backend\\\\FlightPlanner.Api\")"
+    ]
+  }
+}

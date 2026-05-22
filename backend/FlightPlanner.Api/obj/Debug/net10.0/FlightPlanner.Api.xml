@@ -4,6 +4,22 @@
         <name>FlightPlanner.Api</name>
     </assembly>
     <members>
+        <member name="T:FlightPlanner.Api.Controllers.GrametController">
+             <summary>
+             GRAMET cross-section endpoint — POST /api/gramet
+            
+             Accepts a list of route waypoints and returns pressure-level weather data
+             (temperature, wind, cloud cover) for each waypoint fetched from Open Meteo.
+             Designed for GRAMET-style vertical cross-section visualisation.
+            
+             No API key required. For flight simulation use only.
+             </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Controllers.GrametController.GetGramet(FlightPlanner.Api.Models.GrametRequest,System.Threading.CancellationToken)">
+            <summary>
+            Returns GRAMET weather cross-section data for the given route waypoints.
+            </summary>
+        </member>
         <member name="T:FlightPlanner.Api.Controllers.HealthController">
             <summary>
             Health-Check-Endpunkt — GET /api/health
@@ -78,6 +94,33 @@
         </member>
         <member name="P:FlightPlanner.Api.Models.ErrorResponse.Details">
             <summary>Ausführliche, benutzerlesbare Fehlerbeschreibung.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.GrametRequest">
+            <summary>Request body for POST /api/gramet.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.GrametRequest.Waypoints">
+            <summary>Route waypoints to fetch weather data for. Max 15.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.GrametWaypointInput">
+            <summary>A single waypoint for which to request pressure-level weather data.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.GrametWaypointInput.DistanceNm">
+            <summary>Cumulative distance from departure in nautical miles.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.GrametResponse">
+            <summary>Full GRAMET cross-section response for the requested route.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.GrametResponse.GeneratedAt">
+            <summary>ISO 8601 UTC timestamp when this data was fetched.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.GrametWaypointData">
+            <summary>Weather cross-section for a single waypoint at all pressure levels.</summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Models.GrametLevelData">
+            <summary>Weather data at one pressure level for one waypoint.</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.GrametLevelData.FlightLevelFt">
+            <summary>Approximate altitude in feet (ISA standard).</summary>
         </member>
         <member name="T:FlightPlanner.Api.Models.HealthResponse">
             <summary>
@@ -195,6 +238,16 @@
         <member name="M:FlightPlanner.Api.Services.FlightPlanDatabaseService.SearchRoutesAsync(System.String,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="T:FlightPlanner.Api.Services.GrametService">
+             <summary>
+             Fetches pressure-level weather data from the Open Meteo free API
+             (https://api.open-meteo.com) for GRAMET cross-section visualisation.
+            
+             No API key required. One HTTP request is made per waypoint in parallel.
+             On any per-waypoint failure the service returns zero-filled fallback data
+             instead of propagating the error, so the chart is always renderable.
+             </summary>
+        </member>
         <member name="T:FlightPlanner.Api.Services.IAviationWeatherService">
             <summary>
             Interface für den serverseitigen AviationWeather-METAR-Abruf.
@@ -273,6 +326,18 @@
             <exception cref="T:FlightPlanner.Api.Services.FlightPlanDatabaseException">
             Thrown on config error, HTTP error, network error, or no results.
             </exception>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.IGrametService">
+            <summary>
+            Fetches GRAMET-style cross-section weather data from Open Meteo
+            for a list of route waypoints at multiple pressure levels.
+            </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.IGrametService.FetchGrametAsync(System.Collections.Generic.IReadOnlyList{FlightPlanner.Api.Models.GrametWaypointInput},System.Threading.CancellationToken)">
+            <summary>
+            Fetches pressure-level weather data for each waypoint in parallel.
+            Returns a fallback with zero values for any waypoint that fails.
+            </summary>
         </member>
     </members>
 </doc>
