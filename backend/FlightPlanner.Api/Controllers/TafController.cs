@@ -6,10 +6,10 @@ using FlightPlanner.Api.Services;
 namespace FlightPlanner.Api.Controllers;
 
 /// <summary>
-/// TAF-Proxy-Endpunkt — GET /api/taf?icao=EDDF
+/// TAF proxy endpoint — GET /api/taf?icao=EDDF
 ///
-/// Ruft TAF-Daten serverseitig von AviationWeather ab und liefert sie
-/// als rohen Text zurück (CORS-Proxy-Muster, identisch mit MetarController).
+/// Fetches TAF data server-side from AviationWeather and returns it as plain
+/// text. Same CORS-proxy pattern as MetarController.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -63,7 +63,7 @@ public sealed class TafController : ControllerBase
         }
         catch (AviationWeatherException ex) when (ex.Kind == AviationWeatherErrorKind.Http)
         {
-            _logger.LogWarning("Upstream-Fehler TAF für {Icao}: {Message}", normalizedIcao, ex.Message);
+            _logger.LogWarning("Upstream error for TAF {Icao}: {Message}", normalizedIcao, ex.Message);
             return StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse
             {
                 Error = "Upstream error.",
@@ -72,7 +72,7 @@ public sealed class TafController : ControllerBase
         }
         catch (AviationWeatherException ex) when (ex.Kind == AviationWeatherErrorKind.Network)
         {
-            _logger.LogError("Netzwerkfehler TAF für {Icao}: {Message}", normalizedIcao, ex.Message);
+            _logger.LogError("Network error for TAF {Icao}: {Message}", normalizedIcao, ex.Message);
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
             {
                 Error = "Service unavailable.",
@@ -89,7 +89,7 @@ public sealed class TafController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unerwarteter Fehler TAF {Icao}", normalizedIcao);
+            _logger.LogError(ex, "Unexpected error for TAF {Icao}", normalizedIcao);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
                 Error = "Internal server error.",

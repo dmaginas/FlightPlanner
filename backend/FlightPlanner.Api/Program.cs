@@ -6,7 +6,7 @@ using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Konfiguration ───────────────────────────────────────────────────────────
+// ── Configuration ───────────────────────────────────────────────────────────
 var corsOptions = builder.Configuration
     .GetSection(CorsOptions.SectionName)
     .Get<CorsOptions>() ?? new CorsOptions();
@@ -33,21 +33,20 @@ builder.Services.AddSwaggerGen(options =>
         Title = "FlightPlanner API",
         Version = "0.1.0",
         Description = """
-            Backend-API für FlightPlanner (nur für Flugsimulation).
+            Backend API for FlightPlanner (flight simulation only).
 
-            **METAR-Proxy**: Ruft METAR-Daten serverseitig von AviationWeather ab, um den
-            Browser-CORS-Fehler zu umgehen. AviationWeather setzt keinen
-            Access-Control-Allow-Origin-Header, daher sind direkte Browser-Requests blockiert.
+            **METAR proxy**: fetches METAR data server-side from AviationWeather to work around
+            browser CORS restrictions. AviationWeather does not set an
+            Access-Control-Allow-Origin header, so direct browser requests are blocked.
 
-            **Kein API-Key** für AviationWeather erforderlich.
+            **No API key** required for AviationWeather.
             """,
     });
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory,
         "FlightPlanner.Api.xml"), includeControllerXmlComments: true);
 });
 
-// CORS — Origins aus Konfiguration, nie pauschal *
-// OPTIONS muss explizit erlaubt sein, damit der Browser-Preflight nicht blockiert wird.
+// CORS — origins from configuration, never wildcard *
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
@@ -60,7 +59,6 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            // Sicherer Fallback: kein Origin erlaubt, statt * zu verwenden
             policy.WithOrigins("http://localhost:5173", "https://localhost:5173")
                   .AllowAnyHeader()
                   .WithMethods("GET", "POST", "OPTIONS");
@@ -68,7 +66,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// HttpClientFactory für AviationWeather
+// HttpClientFactory for AviationWeather
 builder.Services.AddHttpClient<IAviationWeatherService, AviationWeatherService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(15);
@@ -105,7 +103,7 @@ builder.Services.AddHttpClient<INotamService, NotamService>(client =>
 
 var app = builder.Build();
 
-// ── Middleware-Pipeline ─────────────────────────────────────────────────────
+// ── Middleware pipeline ─────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -116,15 +114,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// WICHTIG: UseCors() muss VOR UseHttpsRedirection() stehen!
-// Andernfalls sendet der Server beim OPTIONS-Preflight einen 301-Redirect
-// ohne CORS-Header zurück, und der Browser bricht den Request ab.
+// UseCors() must come before UseHttpsRedirection() so that the OPTIONS preflight
+// response includes CORS headers before any 301 redirect.
 app.UseCors();
 app.UseHttpsRedirection();
 
-// ── Statisches Frontend-Serving (Block 4) ───────────────────────────────────
-// In Produktion liefert das Backend das gebaute Vite-Frontend aus frontend/dist.
-// frontend/dist liegt relativ zum Repository-Root, das Backend liegt in backend/.
+// ── Static frontend serving ─────────────────────────────────────────────────
+// In production the backend serves the built Vite frontend from frontend/dist.
 var frontendDistPath = Path.GetFullPath(
     Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "frontend", "dist"));
 
@@ -141,11 +137,11 @@ if (Directory.Exists(frontendDistPath))
     });
 }
 
-// ── API-Routen ──────────────────────────────────────────────────────────────
+// ── API routes ──────────────────────────────────────────────────────────────
 app.MapControllers();
 
-// ── SPA-Fallback für Client-Side-Routing ───────────────────────────────────
-// Nicht-API-Routen liefern index.html zurück, damit React-Router funktioniert.
+// ── SPA fallback for client-side routing ───────────────────────────────────
+// Non-API routes serve index.html so React Router can handle them.
 if (Directory.Exists(frontendDistPath))
 {
     var indexPath = Path.Combine(frontendDistPath, "index.html");
@@ -161,5 +157,5 @@ if (Directory.Exists(frontendDistPath))
 
 app.Run();
 
-// Macht die Program-Klasse für WebApplicationFactory in Tests sichtbar
+// Makes Program visible to WebApplicationFactory in integration tests
 public partial class Program { }

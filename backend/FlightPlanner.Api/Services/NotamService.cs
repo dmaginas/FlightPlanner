@@ -5,10 +5,10 @@ using FlightPlanner.Api.Options;
 namespace FlightPlanner.Api.Services;
 
 /// <summary>
-/// Ruft NOTAMs von der FAA NOTAM API (api.faa.gov) ab.
-/// Konfiguration: FaaNotam:ApiKey in user secrets setzen.
+/// Fetches NOTAMs from the FAA NOTAM API (api.faa.gov).
+/// Configuration: set FaaNotam:ApiKey in user secrets.
 ///   dotnet user-secrets set "FaaNotam:ApiKey" "YOUR_KEY"
-/// Kostenlose Registrierung: https://api.faa.gov/
+/// Free registration: https://api.faa.gov/
 /// </summary>
 public sealed class NotamService : INotamService
 {
@@ -35,8 +35,8 @@ public sealed class NotamService : INotamService
         {
             throw new NotamException(
                 NotamErrorKind.ConfigurationMissing,
-                "FaaNotam:ApiKey ist nicht konfiguriert. " +
-                "Kostenlose Registrierung: https://api.faa.gov/ — dann: " +
+                "FaaNotam:ApiKey is not configured. " +
+                "Free registration: https://api.faa.gov/ — then run: " +
                 "dotnet user-secrets set \"FaaNotam:ApiKey\" \"YOUR_KEY\"");
         }
 
@@ -59,16 +59,16 @@ public sealed class NotamService : INotamService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Netzwerkfehler beim NOTAM-Abruf für ICAO {Icao}", icao);
+            _logger.LogError(ex, "Network error fetching NOTAMs for ICAO {Icao}", icao);
             throw new NotamException(NotamErrorKind.Network,
-                "FAA NOTAM API ist nicht erreichbar (Netzwerkfehler).");
+                "FAA NOTAM API is unreachable (network error).");
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("FAA NOTAM API HTTP {Status} für ICAO {Icao}", (int)response.StatusCode, icao);
+            _logger.LogWarning("FAA NOTAM API HTTP {Status} for ICAO {Icao}", (int)response.StatusCode, icao);
             throw new NotamException(NotamErrorKind.Http,
-                $"FAA NOTAM API hat HTTP {(int)response.StatusCode} zurückgegeben.",
+                $"FAA NOTAM API returned HTTP {(int)response.StatusCode}.",
                 (int)response.StatusCode);
         }
 

@@ -1,16 +1,16 @@
 namespace FlightPlanner.Api.Options;
 
 /// <summary>
-/// Konfigurationsoptionen für CORS.
-/// Wird aus "Cors"-Sektion in appsettings.json/appsettings.Development.json gelesen.
+/// CORS configuration options.
+/// Read from the "Cors" section in appsettings.json / appsettings.Development.json.
 /// </summary>
 public sealed class CorsOptions
 {
     public const string SectionName = "Cors";
 
     /// <summary>
-    /// Liste der erlaubten Origins für CORS.
-    /// Beispiel: ["http://localhost:5173", "https://localhost:5173"]
+    /// Allowed origins for CORS.
+    /// Example: ["http://localhost:5173", "https://localhost:5173"]
     /// </summary>
     public string[] AllowedOrigins { get; set; } = [];
 }

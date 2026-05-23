@@ -3,7 +3,7 @@ namespace FlightPlanner.Api.Services;
 public interface INotamService
 {
     /// <summary>
-    /// Ruft aktive NOTAMs für den angegebenen ICAO-Code von der FAA NOTAM API ab.
+    /// Fetches active NOTAMs for the given ICAO code from the FAA NOTAM API.
     /// </summary>
     Task<NotamResult> FetchNotamsAsync(string icao, CancellationToken cancellationToken = default);
 }

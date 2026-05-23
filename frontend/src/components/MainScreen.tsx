@@ -2,6 +2,7 @@ import FlightInput    from './FlightInput.tsx'
 import WeatherPanel   from './WeatherPanel.tsx'
 import AIPanel        from './AIPanel.tsx'
 import FuelPanel      from './FuelPanel.tsx'
+import ExportPanel    from './ExportPanel.tsx'
 import WaypointTable  from './WaypointTable.tsx'
 import RouteMap       from './RouteMap.tsx'
 import AlternativesPanel from './AlternativesPanel.tsx'
@@ -133,6 +134,7 @@ export default function MainScreen({
         borderLeft: '1px solid var(--line)',
       }}>
         <RangeWarning route={route} selectedAircraftProfile={selectedAircraftProfile} />
+
         {route ? (
           <AIPanel
             departure={departure}
@@ -146,6 +148,16 @@ export default function MainScreen({
         ) : (
           <AIEmpty />
         )}
+
+        <ExportPanel
+          route={route}
+          departure={departure}
+          arrival={arrival}
+          alternate={alternate}
+          selectedAircraftProfile={selectedAircraftProfile}
+          selectedSID={selectedSID}
+          selectedSTAR={selectedSTAR}
+        />
 
         <FuelPanel
           route={route}

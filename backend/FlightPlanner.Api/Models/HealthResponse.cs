@@ -1,16 +1,16 @@
 namespace FlightPlanner.Api.Models;
 
 /// <summary>
-/// Antwortmodell für den Health-Check-Endpunkt GET /api/health.
+/// Response model for the health-check endpoint GET /api/health.
 /// </summary>
 public sealed class HealthResponse
 {
-    /// <summary>Servicestatus, immer "ok".</summary>
+    /// <summary>Service status — always "ok".</summary>
     public required string Status { get; init; }
 
-    /// <summary>Name des Backend-Dienstes.</summary>
+    /// <summary>Name of the backend service.</summary>
     public required string Name { get; init; }
 
-    /// <summary>Aktuelle Backend-Version (aus Assembly-Metadaten).</summary>
+    /// <summary>Current backend version (from assembly metadata).</summary>
     public required string Version { get; init; }
 }

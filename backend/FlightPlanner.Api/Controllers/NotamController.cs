@@ -6,11 +6,11 @@ using FlightPlanner.Api.Services;
 namespace FlightPlanner.Api.Controllers;
 
 /// <summary>
-/// NOTAM-Endpunkt — GET /api/notam?icao=EDDF
+/// NOTAM endpoint — GET /api/notam?icao=EDDF
 ///
-/// Ruft aktive NOTAMs von der FAA NOTAM API ab und gibt sie als JSON zurück.
-/// Erfordert FaaNotam:ApiKey in der Server-Konfiguration (user secrets).
-/// Kostenlose Registrierung: https://api.faa.gov/
+/// Fetches active NOTAMs from the FAA NOTAM API and returns them as JSON.
+/// Requires FaaNotam:ApiKey in server configuration (user secrets).
+/// Free registration: https://api.faa.gov/
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -70,7 +70,7 @@ public sealed class NotamController : ControllerBase
         }
         catch (NotamException ex) when (ex.Kind == NotamErrorKind.ConfigurationMissing)
         {
-            _logger.LogWarning("NOTAM API-Key fehlt: {Message}", ex.Message);
+            _logger.LogWarning("NOTAM API key not configured: {Message}", ex.Message);
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
             {
                 Error   = "configuration_error",
@@ -79,20 +79,20 @@ public sealed class NotamController : ControllerBase
         }
         catch (NotamException ex) when (ex.Kind == NotamErrorKind.Http)
         {
-            _logger.LogWarning("NOTAM upstream HTTP error für {Icao}: {Message}", normalizedIcao, ex.Message);
+            _logger.LogWarning("NOTAM upstream HTTP error for {Icao}: {Message}", normalizedIcao, ex.Message);
             return StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse
             {
                 Error   = "Upstream error.",
-                Details = "FAA NOTAM API hat einen Fehler zurückgegeben. Bitte später erneut versuchen.",
+                Details = "FAA NOTAM API returned an error. Please try again later.",
             });
         }
         catch (NotamException ex) when (ex.Kind == NotamErrorKind.Network)
         {
-            _logger.LogError("NOTAM Netzwerkfehler für {Icao}: {Message}", normalizedIcao, ex.Message);
+            _logger.LogError("NOTAM network error for {Icao}: {Message}", normalizedIcao, ex.Message);
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
             {
                 Error   = "Service unavailable.",
-                Details = "FAA NOTAM API ist nicht erreichbar. Bitte später erneut versuchen.",
+                Details = "FAA NOTAM API is unreachable. Please try again later.",
             });
         }
         catch (OperationCanceledException)
@@ -105,7 +105,7 @@ public sealed class NotamController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unerwarteter Fehler NOTAM {Icao}", normalizedIcao);
+            _logger.LogError(ex, "Unexpected error for NOTAM {Icao}", normalizedIcao);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
                 Error = "Internal server error.",

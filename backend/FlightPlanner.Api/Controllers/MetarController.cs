@@ -6,12 +6,11 @@ using FlightPlanner.Api.Services;
 namespace FlightPlanner.Api.Controllers;
 
 /// <summary>
-/// METAR-Proxy-Endpunkt — GET /api/metar?icao=EDDF
+/// METAR proxy endpoint — GET /api/metar?icao=EDDF
 ///
-/// Ruft METAR-Daten serverseitig von AviationWeather ab und liefert sie
-/// als rohen Text zurück. Browser können AviationWeather nicht direkt
-/// ansprechen, da kein Access-Control-Allow-Origin-Header gesetzt wird.
-/// Dieser Backend-Proxy umgeht diese CORS-Einschränkung.
+/// Fetches METAR data server-side from AviationWeather and returns it as
+/// plain text. Browsers cannot call AviationWeather directly due to missing
+/// CORS headers; this backend proxy works around that restriction.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -29,15 +28,15 @@ public sealed class MetarController : ControllerBase
     }
 
     /// <summary>
-    /// Ruft den rohen METAR-Text für einen Flughafen ab.
+    /// Returns the raw METAR string for the given airport.
     /// </summary>
     /// <param name="icao">
-    /// ICAO-Flughafencode — genau 4 alphanumerische Zeichen, z. B. EDDF.
-    /// Groß-/Kleinschreibung wird ignoriert; der Code wird normalisiert.
+    /// ICAO airport code — exactly 4 alphanumeric characters, e.g. EDDF.
+    /// Case-insensitive; normalised to upper-case internally.
     /// </param>
-    /// <param name="cancellationToken">Abbruch-Token.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>
-    /// 200 OK — roher METAR-Text (text/plain), z. B. "EDDF 181120Z 26005KT CAVOK 15/07 Q1013 NOSIG"
+    /// 200 OK — raw METAR string (text/plain), e.g. "EDDF 181120Z 26005KT CAVOK 15/07 Q1013 NOSIG"
     /// </returns>
     [HttpGet]
     [Produces("text/plain", "application/json")]
@@ -50,7 +49,6 @@ public sealed class MetarController : ControllerBase
         [FromQuery] string? icao,
         CancellationToken cancellationToken)
     {
-        // ── ICAO-Validierung ────────────────────────────────────────────────
         var normalizedIcao = icao?.Trim().ToUpperInvariant();
 
         if (string.IsNullOrEmpty(normalizedIcao) || !IcaoPattern.IsMatch(normalizedIcao))
@@ -62,7 +60,6 @@ public sealed class MetarController : ControllerBase
             });
         }
 
-        // ── AviationWeather serverseitig aufrufen ───────────────────────────
         try
         {
             var metar = await _aviationWeatherService.FetchRawMetarAsync(normalizedIcao, cancellationToken);
@@ -78,7 +75,7 @@ public sealed class MetarController : ControllerBase
         }
         catch (AviationWeatherException ex) when (ex.Kind == AviationWeatherErrorKind.Http)
         {
-            _logger.LogWarning("Upstream-Fehler für {Icao}: {Message}", normalizedIcao, ex.Message);
+            _logger.LogWarning("Upstream error for METAR {Icao}: {Message}", normalizedIcao, ex.Message);
             return StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse
             {
                 Error = "Upstream error.",
@@ -87,7 +84,7 @@ public sealed class MetarController : ControllerBase
         }
         catch (AviationWeatherException ex) when (ex.Kind == AviationWeatherErrorKind.Network)
         {
-            _logger.LogError("Netzwerkfehler für {Icao}: {Message}", normalizedIcao, ex.Message);
+            _logger.LogError("Network error for METAR {Icao}: {Message}", normalizedIcao, ex.Message);
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
             {
                 Error = "Service unavailable.",
@@ -96,7 +93,6 @@ public sealed class MetarController : ControllerBase
         }
         catch (OperationCanceledException)
         {
-            // Anfrage wurde abgebrochen — kein Fehler-Log nötig
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
             {
                 Error = "Request cancelled.",
@@ -105,7 +101,7 @@ public sealed class MetarController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unerwarteter Fehler für METAR {Icao}", normalizedIcao);
+            _logger.LogError(ex, "Unexpected error for METAR {Icao}", normalizedIcao);
             return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
             {
                 Error = "Internal server error.",

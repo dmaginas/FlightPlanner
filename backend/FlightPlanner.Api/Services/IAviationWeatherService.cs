@@ -1,43 +1,43 @@
 namespace FlightPlanner.Api.Services;
 
 /// <summary>
-/// Interface für den serverseitigen AviationWeather-METAR-Abruf.
-/// Abstrahiert den HTTP-Aufruf für Dependency Injection und Testbarkeit.
+/// Server-side AviationWeather proxy interface.
+/// Abstracts HTTP calls for dependency injection and testability.
 /// </summary>
 public interface IAviationWeatherService
 {
     /// <summary>
-    /// Ruft den rohen METAR-Text für den angegebenen ICAO-Code von AviationWeather ab.
+    /// Fetches the raw METAR string for the given ICAO code from AviationWeather.
     /// </summary>
-    /// <param name="icao">Validierter, normalisierter ICAO-Code (4 alphanumerische Zeichen, Großbuchstaben).</param>
-    /// <param name="cancellationToken">Abbruch-Token.</param>
-    /// <returns>Den rohen METAR-Text (erste nicht-leere Zeile der Antwort).</returns>
+    /// <param name="icao">Validated, normalised ICAO code (4 alphanumeric characters, upper-case).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The raw METAR string (first non-empty line of the response).</returns>
     /// <exception cref="AviationWeatherException">
-    /// Wird ausgelöst bei HTTP-Fehlern, Netzwerkfehlern oder leerer Antwort.
+    /// Thrown on HTTP errors, network errors, or empty responses.
     /// </exception>
     Task<string> FetchRawMetarAsync(string icao, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Ruft den rohen TAF-Text für den angegebenen ICAO-Code von AviationWeather ab.
+    /// Fetches the raw TAF string for the given ICAO code from AviationWeather.
     /// </summary>
     Task<string> FetchRawTafAsync(string icao, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Art des Fehlers beim AviationWeather-Abruf.</summary>
+/// <summary>Error kind for AviationWeather fetch failures.</summary>
 public enum AviationWeatherErrorKind
 {
-    /// <summary>AviationWeather hat einen HTTP-Fehler-Statuscode zurückgegeben.</summary>
+    /// <summary>AviationWeather returned an HTTP error status code.</summary>
     Http,
 
-    /// <summary>Es konnte keine Netzwerkverbindung zu AviationWeather hergestellt werden.</summary>
+    /// <summary>No network connection could be established to AviationWeather.</summary>
     Network,
 
-    /// <summary>AviationWeather hat eine leere oder nur aus Whitespace bestehende Antwort geliefert.</summary>
+    /// <summary>AviationWeather returned an empty or whitespace-only response.</summary>
     EmptyResponse,
 }
 
 /// <summary>
-/// Exception die ausgelöst wird, wenn der AviationWeather-Abruf fehlschlägt.
+/// Exception thrown when an AviationWeather fetch fails.
 /// </summary>
 public sealed class AviationWeatherException : Exception
 {

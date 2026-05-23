@@ -1,13 +1,14 @@
 namespace FlightPlanner.Api.Services;
 
 /// <summary>
-/// Serverseitiger AviationWeather-METAR-Abruf über HttpClientFactory.
+/// Server-side AviationWeather proxy using HttpClientFactory.
 ///
-/// Ruft https://aviationweather.gov/api/data/metar?ids={icao}&amp;format=raw ab.
-/// Kein API-Key erforderlich. METAR-Daten werden als roher Text zurückgegeben.
+/// Fetches https://aviationweather.gov/api/data/metar?ids={icao}&amp;format=raw
+/// and https://aviationweather.gov/api/data/taf?ids={icao}&amp;format=raw.
+/// No API key required. Raw text is returned as-is.
 ///
-/// Diese Klasse löst den Browser-CORS-Fehler, da der HTTP-Request vom Backend
-/// (nicht vom Browser) ausgeht und daher nicht der CORS-Richtlinie unterliegt.
+/// This class works around the browser CORS restriction by making the HTTP
+/// request from the backend rather than from the browser.
 /// </summary>
 public sealed class AviationWeatherService : IAviationWeatherService
 {
@@ -38,20 +39,20 @@ public sealed class AviationWeatherService : IAviationWeatherService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Netzwerkfehler beim Abruf von AviationWeather für ICAO {Icao}", icao);
+            _logger.LogError(ex, "Network error fetching METAR from AviationWeather for ICAO {Icao}", icao);
             throw new AviationWeatherException(
                 AviationWeatherErrorKind.Network,
-                "AviationWeather ist nicht erreichbar (Netzwerkfehler). Bitte später erneut versuchen.");
+                "AviationWeather is unreachable (network error). Please try again later.");
         }
 
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning(
-                "AviationWeather hat HTTP {StatusCode} für ICAO {Icao} zurückgegeben",
+                "AviationWeather returned HTTP {StatusCode} for ICAO {Icao}",
                 (int)response.StatusCode, icao);
             throw new AviationWeatherException(
                 AviationWeatherErrorKind.Http,
-                $"AviationWeather hat HTTP {(int)response.StatusCode} zurückgegeben.",
+                $"AviationWeather returned HTTP {(int)response.StatusCode}.",
                 (int)response.StatusCode);
         }
 
@@ -64,10 +65,10 @@ public sealed class AviationWeatherService : IAviationWeatherService
 
         if (firstLine is null)
         {
-            _logger.LogInformation("AviationWeather hat eine leere Antwort für ICAO {Icao} geliefert", icao);
+            _logger.LogInformation("AviationWeather returned an empty response for ICAO {Icao}", icao);
             throw new AviationWeatherException(
                 AviationWeatherErrorKind.EmptyResponse,
-                "Für diesen Flughafen ist aktuell kein METAR verfügbar.");
+                "No METAR is currently available for this airport.");
         }
 
         return firstLine;
@@ -89,18 +90,18 @@ public sealed class AviationWeatherService : IAviationWeatherService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Netzwerkfehler beim TAF-Abruf für ICAO {Icao}", icao);
+            _logger.LogError(ex, "Network error fetching TAF from AviationWeather for ICAO {Icao}", icao);
             throw new AviationWeatherException(
                 AviationWeatherErrorKind.Network,
-                "AviationWeather ist nicht erreichbar (Netzwerkfehler). Bitte später erneut versuchen.");
+                "AviationWeather is unreachable (network error). Please try again later.");
         }
 
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("AviationWeather TAF HTTP {StatusCode} für ICAO {Icao}", (int)response.StatusCode, icao);
+            _logger.LogWarning("AviationWeather TAF HTTP {StatusCode} for ICAO {Icao}", (int)response.StatusCode, icao);
             throw new AviationWeatherException(
                 AviationWeatherErrorKind.Http,
-                $"AviationWeather hat HTTP {(int)response.StatusCode} zurückgegeben.",
+                $"AviationWeather returned HTTP {(int)response.StatusCode}.",
                 (int)response.StatusCode);
         }
 
@@ -108,10 +109,10 @@ public sealed class AviationWeatherService : IAviationWeatherService
 
         if (string.IsNullOrWhiteSpace(body))
         {
-            _logger.LogInformation("AviationWeather TAF: leere Antwort für ICAO {Icao}", icao);
+            _logger.LogInformation("AviationWeather TAF: empty response for ICAO {Icao}", icao);
             throw new AviationWeatherException(
                 AviationWeatherErrorKind.EmptyResponse,
-                "Für diesen Flughafen ist aktuell kein TAF verfügbar.");
+                "No TAF is currently available for this airport.");
         }
 
         return body;
