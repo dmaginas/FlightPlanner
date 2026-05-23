@@ -127,25 +127,6 @@ export default function AIPanel({ departure, arrival, alternate, route, selected
         {insights.map((ins, i) => <InsightRow key={i} {...ins} />)}
       </div>
 
-      {/* Export button */}
-      <button
-        style={{
-          padding: '12px', borderRadius: 'var(--r)',
-          background: 'linear-gradient(135deg, rgba(0,229,168,.85), rgba(0,229,168,.6))',
-          color: '#041A14', fontFamily: 'var(--font-display)',
-          fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em',
-          border: 'none', cursor: 'pointer', transition: 'opacity .15s',
-        }}
-        onMouseEnter={e => e.currentTarget.style.opacity = '.85'}
-        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-        onClick={() => {
-          const plan = `FlightPlanner Export\n${departure?.icao ?? '?'} → ${arrival?.icao ?? '?'}\nRoute: ${route.airway}\nAlt: ${route.altitude}\nWaypoints: ${route.waypoints.map(w => w.id).join(' ')}\nSID: ${selectedSID?.name ?? 'None'}\nSTAR: ${selectedSTAR?.name ?? 'None'}`
-          navigator.clipboard?.writeText(plan).catch(() => {})
-          alert('Route copied to clipboard!\n\n' + plan)
-        }}
-      >
-        Export Flight Plan
-      </button>
     </div>
   )
 }
