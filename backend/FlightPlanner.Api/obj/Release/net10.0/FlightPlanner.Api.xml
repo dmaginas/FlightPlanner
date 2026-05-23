@@ -54,6 +54,15 @@
             200 OK — roher METAR-Text (text/plain), z. B. "EDDF 181120Z 26005KT CAVOK 15/07 Q1013 NOSIG"
             </returns>
         </member>
+        <member name="T:FlightPlanner.Api.Controllers.NotamController">
+             <summary>
+             NOTAM-Endpunkt — GET /api/notam?icao=EDDF
+            
+             Ruft aktive NOTAMs von der FAA NOTAM API ab und gibt sie als JSON zurück.
+             Erfordert FaaNotam:ApiKey in der Server-Konfiguration (user secrets).
+             Kostenlose Registrierung: https://api.faa.gov/
+             </summary>
+        </member>
         <member name="T:FlightPlanner.Api.Controllers.RoutesController">
              <summary>
              IFR Route Lookup — GET /api/routes
@@ -83,6 +92,14 @@
             </param>
             <param name="routeType">Currently only "IFR" is supported.</param>
             <param name="cancellationToken">Cancellation token.</param>
+        </member>
+        <member name="T:FlightPlanner.Api.Controllers.TafController">
+             <summary>
+             TAF-Proxy-Endpunkt — GET /api/taf?icao=EDDF
+            
+             Ruft TAF-Daten serverseitig von AviationWeather ab und liefert sie
+             als rohen Text zurück (CORS-Proxy-Muster, identisch mit MetarController).
+             </summary>
         </member>
         <member name="T:FlightPlanner.Api.Models.ErrorResponse">
             <summary>
@@ -216,6 +233,9 @@
         <member name="M:FlightPlanner.Api.Services.AviationWeatherService.FetchRawMetarAsync(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:FlightPlanner.Api.Services.AviationWeatherService.FetchRawTafAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:FlightPlanner.Api.Services.FlightPlanDatabaseService">
              <summary>
              Calls the Flight Plan Database API (https://flightplandatabase.com) to search
@@ -264,6 +284,11 @@
             <exception cref="T:FlightPlanner.Api.Services.AviationWeatherException">
             Wird ausgelöst bei HTTP-Fehlern, Netzwerkfehlern oder leerer Antwort.
             </exception>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.IAviationWeatherService.FetchRawTafAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Ruft den rohen TAF-Text für den angegebenen ICAO-Code von AviationWeather ab.
+            </summary>
         </member>
         <member name="T:FlightPlanner.Api.Services.AviationWeatherErrorKind">
             <summary>Art des Fehlers beim AviationWeather-Abruf.</summary>
@@ -337,6 +362,19 @@
             <summary>
             Fetches pressure-level weather data for each waypoint in parallel.
             Returns a fallback with zero values for any waypoint that fails.
+            </summary>
+        </member>
+        <member name="M:FlightPlanner.Api.Services.INotamService.FetchNotamsAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Ruft aktive NOTAMs für den angegebenen ICAO-Code von der FAA NOTAM API ab.
+            </summary>
+        </member>
+        <member name="T:FlightPlanner.Api.Services.NotamService">
+            <summary>
+            Ruft NOTAMs von der FAA NOTAM API (api.faa.gov) ab.
+            Konfiguration: FaaNotam:ApiKey in user secrets setzen.
+              dotnet user-secrets set "FaaNotam:ApiKey" "YOUR_KEY"
+            Kostenlose Registrierung: https://api.faa.gov/
             </summary>
         </member>
     </members>

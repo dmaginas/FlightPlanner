@@ -1,0 +1,8 @@
+FAA NOTAM API-Key einrichten:
+
+  1. Kostenlos registrieren: https://api.faa.gov/
+  2. Nach der Registrierung den Key in user secrets speichern:
+  cd backend/FlightPlanner.Api
+  dotnet user-secrets set "FaaNotam:ApiKey" "DEIN_KEY"
+
+  Ohne Key läuft alles, aber das NOTAM-Panel zeigt dann "NOTAM API key not configured." an — METAR und TAF funktionieren ohne Key weiterhin normal.

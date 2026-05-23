@@ -37,7 +37,17 @@
       "Bash(Start-Sleep -Seconds 3)",
       "Bash(Get-Content \"C:\\\\Users\\\\dimos\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Users-dimos-source-repos-dmaginas-FlightPlanner\\\\0ec880de-7f39-4da4-bf65-605aea156427\\\\tasks\\\\bzdquv57o.output\" -ErrorAction SilentlyContinue)",
       "Bash(Get-NetTCPConnection -LocalPort 5173,5000,5001 -State Listen -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object LocalPort,OwningProcess)"
+      "Bash(Select-Object LocalPort,OwningProcess)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\\\\backend\" -Recurse -Directory | Select-Object -First 30 | ForEach-Object { $_.FullName })",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\" -Recurse -Depth 2 -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "WebFetch(domain:www.autorouter.aero)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:forums.x-plane.org)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(Get-ChildItem *)"
     ]
   }
 }
