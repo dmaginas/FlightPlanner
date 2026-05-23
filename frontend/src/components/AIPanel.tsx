@@ -36,6 +36,8 @@ function InsightRow({ icon, text, type = 'info' }) {
   )
 }
 
+import { calculateFuel } from '../utils/fuelCalculator.ts'
+
 function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3440.065
   const dLat = (lat2 - lat1) * Math.PI / 180
@@ -48,19 +50,19 @@ export default function AIPanel({ departure, arrival, alternate, route, selected
   if (!route) return null
 
   const totalDist = route.waypoints[route.waypoints.length - 1]?.distCum ?? 0
-  const tripFuel  = route.fuelEstimateTons ?? totalDist * 0.022
   const timeMin   = route.etaMinutes ?? Math.round(totalDist / 8.5)
   const timeLabel = `${Math.floor(timeMin / 60)}h ${timeMin % 60}m`
 
-  // Alternate fuel — destination → alternate at cruise burn rate
-  const altFuel = (() => {
-    if (!alternate || !arrival || !selectedAircraftProfile) return null
-    const distNm  = haversineNm(arrival.lat, arrival.lon, alternate.lat, alternate.lon)
-    const timeH   = distNm / selectedAircraftProfile.cruiseSpeedKts
-    return timeH * selectedAircraftProfile.fuelBurnTonPerHour
-  })()
+  const altDistNm = (arrival && alternate)
+    ? haversineNm(arrival.lat, arrival.lon, alternate.lat, alternate.lon)
+    : undefined
 
-  const totalFuel = altFuel !== null ? tripFuel + altFuel : tripFuel
+  const fuel = selectedAircraftProfile && totalDist
+    ? calculateFuel({ distanceNm: totalDist, aircraftProfile: selectedAircraftProfile, windComponentKts: 0, altDistanceNm: altDistNm })
+    : null
+
+  const tripFuel  = fuel?.tripFuel  ?? (route.fuelEstimateTons ?? totalDist * 0.022)
+  const totalFuel = fuel?.totalFuel ?? tripFuel
 
   const insights = []
   if (selectedSID?.windScore === 'Favorable')  insights.push({ icon: '✓', text: `SID ${selectedSID.name}: Wind aligned — fuel-efficient departure.`, type: 'success' })
@@ -69,11 +71,11 @@ export default function AIPanel({ departure, arrival, alternate, route, selected
   if (selectedSTAR?.windScore === 'Tailwind')  insights.push({ icon: '⚠', text: `STAR ${selectedSTAR.name}: Tailwind on finals — consider alternate runway.`, type: 'warning' })
 
   insights.push({ icon: '↗', text: `Cruise at ${route.altitude} — optimal for ${totalDist} NM sector.`, type: 'info' })
-  if (altFuel !== null) {
-    insights.push({ icon: '⛽', text: `Fuel breakdown — Trip: ~${tripFuel.toFixed(1)}T · Alternate: ~${altFuel.toFixed(1)}T · Total: ~${totalFuel.toFixed(1)}T`, type: 'info' })
+  if (alternate) {
+    insights.push({ icon: '⛽', text: `Trip fuel ~${tripFuel.toFixed(1)}T · Total with reserves ~${totalFuel.toFixed(1)}T (see Fuel & Performance for details).`, type: 'info' })
     insights.push({ icon: '◈', text: `Alternate ${alternate.icao} selected — ICAO fuel reserve requirement met.`, type: 'success' })
   } else {
-    insights.push({ icon: '⛽', text: `Estimated fuel: ~${tripFuel.toFixed(1)}T based on distance and altitude.`, type: 'info' })
+    insights.push({ icon: '⛽', text: `Estimated trip fuel: ~${tripFuel.toFixed(1)}T — open Fuel & Performance for full breakdown.`, type: 'info' })
     insights.push({ icon: '⚠', text: 'No alternate airport set — required by ICAO regulations for IFR flights.', type: 'warning' })
   }
 
@@ -110,9 +112,9 @@ export default function AIPanel({ departure, arrival, alternate, route, selected
         <StatCell label="Aircraft" value={route.aircraft} />
         <StatCell label="Trip Fuel"  value={`~${tripFuel.toFixed(1)} T`} />
         <StatCell
-          label={altFuel !== null ? 'Total Fuel' : 'Fuel (no ALTN)'}
+          label={alternate ? 'Total w/ ALTN' : 'Total w/ Res'}
           value={`~${totalFuel.toFixed(1)} T`}
-          highlight={altFuel !== null}
+          highlight={!!alternate}
         />
       </div>
 

@@ -1,6 +1,7 @@
 import FlightInput    from './FlightInput.tsx'
 import WeatherPanel   from './WeatherPanel.tsx'
 import AIPanel        from './AIPanel.tsx'
+import FuelPanel      from './FuelPanel.tsx'
 import WaypointTable  from './WaypointTable.tsx'
 import RouteMap       from './RouteMap.tsx'
 import AlternativesPanel from './AlternativesPanel.tsx'
@@ -145,6 +146,13 @@ export default function MainScreen({
         ) : (
           <AIEmpty />
         )}
+
+        <FuelPanel
+          route={route}
+          arrival={arrival}
+          alternate={alternate}
+          selectedAircraftProfile={selectedAircraftProfile}
+        />
 
         <WeatherPanel departure={departure} arrival={arrival} />
       </aside>
