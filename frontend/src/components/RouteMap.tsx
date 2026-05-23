@@ -82,7 +82,7 @@ function STARPath({ star }) {
   )
 }
 
-export default function RouteMap({ departure, arrival, route, selectedSID, selectedSTAR, routeState }) {
+export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState }) {
   const initialCenter = departure
     ? [departure.lat, departure.lon]
     : [51.0, 10.0]
@@ -137,6 +137,26 @@ export default function RouteMap({ departure, arrival, route, selectedSID, selec
                 </CircleMarker>
               )
             })}
+          </>
+        )}
+
+        {/* Alternate leg — dashed amber line from arrival to alternate */}
+        {alternate && arrival && (
+          <>
+            <Polyline
+              positions={[[arrival.lat, arrival.lon], [alternate.lat, alternate.lon]]}
+              pathOptions={{ color: '#FFB450', weight: 2, opacity: 0.7, dashArray: '8 6' }}
+            />
+            <CircleMarker
+              center={[alternate.lat, alternate.lon]}
+              radius={7}
+              pathOptions={{ color: '#fff', fillColor: '#FFB450', fillOpacity: 1, weight: 2 }}
+            >
+              <Tooltip permanent direction="top" offset={[0, -10]}>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{alternate.icao}</span>
+                <div style={{ fontSize: 10, opacity: .7 }}>ALTN</div>
+              </Tooltip>
+            </CircleMarker>
           </>
         )}
 

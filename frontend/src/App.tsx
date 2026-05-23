@@ -13,6 +13,7 @@ export default function App() {
   const [screen, setScreen]           = useState('plan')
   const [departure, setDeparture]     = useState(null)
   const [arrival, setArrival]         = useState(null)
+  const [alternate, setAlternate]     = useState(null)
   const [selectedSID, setSelectedSID] = useState(null)
   const [selectedSTAR, setSelectedSTAR] = useState(null)
   const [routeState, setRouteState]   = useState('idle') // idle | loading | ready
@@ -114,6 +115,10 @@ export default function App() {
     if (departure && apt) setRouteState('idle')
   }
 
+  function handleAlternateChange(apt) {
+    setAlternate(apt)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <TopBar
@@ -130,6 +135,7 @@ export default function App() {
         <MainScreen
           departure={departure}
           arrival={arrival}
+          alternate={alternate}
           route={route}
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
@@ -138,6 +144,7 @@ export default function App() {
           onAircraftChange={setSelectedAircraftType}
           onDepartureChange={handleDepartureChange}
           onArrivalChange={handleArrivalChange}
+          onAlternateChange={handleAlternateChange}
           onCalculate={handleCalculate}
           onNavigate={setScreen}
           routeWarning={routeWarning}

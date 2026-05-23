@@ -6,8 +6,8 @@ import RouteMap       from './RouteMap.tsx'
 import AlternativesPanel from './AlternativesPanel.tsx'
 
 export default function MainScreen({
-  departure, arrival, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-  onAircraftChange, onDepartureChange, onArrivalChange, onCalculate, onNavigate,
+  departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
+  onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
   routeWarning, routeConfigError, alternatives,
 }) {
   return (
@@ -74,6 +74,7 @@ export default function MainScreen({
         <FlightInput
           departure={departure}
           arrival={arrival}
+          alternate={alternate}
           routeState={routeState}
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
@@ -81,6 +82,7 @@ export default function MainScreen({
           onAircraftChange={onAircraftChange}
           onDepartureChange={onDepartureChange}
           onArrivalChange={onArrivalChange}
+          onAlternateChange={onAlternateChange}
           onCalculate={onCalculate}
           onNavigate={onNavigate}
         />
@@ -100,6 +102,7 @@ export default function MainScreen({
         <RouteMap
           departure={departure}
           arrival={arrival}
+          alternate={alternate}
           route={route}
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
@@ -133,6 +136,7 @@ export default function MainScreen({
           <AIPanel
             departure={departure}
             arrival={arrival}
+            alternate={alternate}
             route={route}
             selectedSID={selectedSID}
             selectedSTAR={selectedSTAR}

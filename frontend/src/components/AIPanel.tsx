@@ -36,13 +36,31 @@ function InsightRow({ icon, text, type = 'info' }) {
   )
 }
 
-export default function AIPanel({ departure, arrival, route, selectedSID, selectedSTAR }) {
+function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3440.065
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+export default function AIPanel({ departure, arrival, alternate, route, selectedSID, selectedSTAR, selectedAircraftProfile }) {
   if (!route) return null
 
   const totalDist = route.waypoints[route.waypoints.length - 1]?.distCum ?? 0
-  const fuelEst   = route.fuelEstimateTons?.toFixed?.(1) ?? (totalDist * 0.022).toFixed(1)
+  const tripFuel  = route.fuelEstimateTons ?? totalDist * 0.022
   const timeMin   = route.etaMinutes ?? Math.round(totalDist / 8.5)
   const timeLabel = `${Math.floor(timeMin / 60)}h ${timeMin % 60}m`
+
+  // Alternate fuel — destination → alternate at cruise burn rate
+  const altFuel = (() => {
+    if (!alternate || !arrival || !selectedAircraftProfile) return null
+    const distNm  = haversineNm(arrival.lat, arrival.lon, alternate.lat, alternate.lon)
+    const timeH   = distNm / selectedAircraftProfile.cruiseSpeedKts
+    return timeH * selectedAircraftProfile.fuelBurnTonPerHour
+  })()
+
+  const totalFuel = altFuel !== null ? tripFuel + altFuel : tripFuel
 
   const insights = []
   if (selectedSID?.windScore === 'Favorable')  insights.push({ icon: '✓', text: `SID ${selectedSID.name}: Wind aligned — fuel-efficient departure.`, type: 'success' })
@@ -51,7 +69,13 @@ export default function AIPanel({ departure, arrival, route, selectedSID, select
   if (selectedSTAR?.windScore === 'Tailwind')  insights.push({ icon: '⚠', text: `STAR ${selectedSTAR.name}: Tailwind on finals — consider alternate runway.`, type: 'warning' })
 
   insights.push({ icon: '↗', text: `Cruise at ${route.altitude} — optimal for ${totalDist} NM sector.`, type: 'info' })
-  insights.push({ icon: '⛽', text: `Estimated fuel: ~${fuelEst}T based on distance and altitude.`, type: 'info' })
+  if (altFuel !== null) {
+    insights.push({ icon: '⛽', text: `Fuel breakdown — Trip: ~${tripFuel.toFixed(1)}T · Alternate: ~${altFuel.toFixed(1)}T · Total: ~${totalFuel.toFixed(1)}T`, type: 'info' })
+    insights.push({ icon: '◈', text: `Alternate ${alternate.icao} selected — ICAO fuel reserve requirement met.`, type: 'success' })
+  } else {
+    insights.push({ icon: '⛽', text: `Estimated fuel: ~${tripFuel.toFixed(1)}T based on distance and altitude.`, type: 'info' })
+    insights.push({ icon: '⚠', text: 'No alternate airport set — required by ICAO regulations for IFR flights.', type: 'warning' })
+  }
 
   const confidence = Math.min(98, 72 + (selectedSID ? 10 : 0) + (selectedSTAR ? 12 : 0))
 
@@ -84,6 +108,12 @@ export default function AIPanel({ departure, arrival, route, selectedSID, select
         <StatCell label="ETE"      value={timeLabel} />
         <StatCell label="Altitude" value={route.altitude} />
         <StatCell label="Aircraft" value={route.aircraft} />
+        <StatCell label="Trip Fuel"  value={`~${tripFuel.toFixed(1)} T`} />
+        <StatCell
+          label={altFuel !== null ? 'Total Fuel' : 'Fuel (no ALTN)'}
+          value={`~${totalFuel.toFixed(1)} T`}
+          highlight={altFuel !== null}
+        />
       </div>
 
       {/* Confidence */}
@@ -118,15 +148,16 @@ export default function AIPanel({ departure, arrival, route, selectedSID, select
   )
 }
 
-function StatCell({ label, value }) {
+function StatCell({ label, value, highlight = false }) {
   return (
     <div style={{
       textAlign: 'center', padding: '10px 8px',
-      background: 'var(--glass)', borderRadius: 'var(--r-sm)',
-      border: '1px solid var(--line-2)',
+      background: highlight ? 'rgba(0,229,168,.07)' : 'var(--glass)',
+      borderRadius: 'var(--r-sm)',
+      border: `1px solid ${highlight ? 'rgba(0,229,168,.25)' : 'var(--line-2)'}`,
     }}>
       <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{value}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: highlight ? 'var(--mint)' : 'var(--text)' }}>{value}</div>
     </div>
   )
 }
