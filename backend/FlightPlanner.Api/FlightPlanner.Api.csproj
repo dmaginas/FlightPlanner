@@ -11,6 +11,7 @@
     <RootNamespace>FlightPlanner.Api</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1591</NoWarn>
+    <UserSecretsId>flightplanner-api-secrets</UserSecretsId>
   </PropertyGroup>
 
 
