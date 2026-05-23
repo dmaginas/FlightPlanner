@@ -1,5 +1,6 @@
 using FlightPlanner.Api.Options;
 using FlightPlanner.Api.Services;
+using NotamOptions = FlightPlanner.Api.Options.NotamOptions;
 using Microsoft.AspNetCore.SpaServices.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 
@@ -14,6 +15,11 @@ var corsOptions = builder.Configuration
 var fpdOptions = builder.Configuration
     .GetSection(FlightPlanDatabaseOptions.SectionName)
     .Get<FlightPlanDatabaseOptions>() ?? new FlightPlanDatabaseOptions();
+
+// ── FAA NOTAM options ───────────────────────────────────────────────────────
+var notamOptions = builder.Configuration
+    .GetSection(NotamOptions.SectionName)
+    .Get<NotamOptions>() ?? new NotamOptions();
 
 // ── Services ────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -86,6 +92,14 @@ builder.Services.AddHttpClient<IFlightPlanDatabaseService, FlightPlanDatabaseSer
 builder.Services.AddHttpClient<IGrametService, GrametService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(20);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
+// NOTAM service — fetches NOTAMs from FAA NOTAM API (requires free API key)
+builder.Services.AddSingleton(notamOptions);
+builder.Services.AddHttpClient<INotamService, NotamService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 

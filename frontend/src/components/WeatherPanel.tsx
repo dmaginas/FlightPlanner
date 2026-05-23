@@ -1,51 +1,169 @@
 import { useEffect, useState } from 'react'
 import { fetchMetarByIcao, MetarServiceError, normalizeIcaoCode } from '../services/metarService.ts'
+import { fetchTafByIcao, TafServiceError } from '../services/tafService.ts'
+import { fetchNotamsByIcao, NotamServiceError, type NotamItem } from '../services/notamService.ts'
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function StatusText({ text }) {
+  return <div style={{ marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>{text}</div>
+}
+
+function EmptySlot({ label }) {
+  return (
+    <div style={{
+      border: '1px dashed var(--line)', borderRadius: 'var(--r)',
+      padding: '20px 16px', textAlign: 'center',
+      color: 'var(--dim)', fontSize: 12,
+    }}>{label}</div>
+  )
+}
+
+function DataBlock({ text }: { text: string }) {
+  return (
+    <div style={{
+      marginTop: 8, padding: '8px 10px', borderRadius: 'var(--r-sm)',
+      background: 'rgba(0,0,0,.2)', border: '1px solid var(--line-2)',
+      fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--dim)',
+      lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+    }}>
+      {text}
+    </div>
+  )
+}
+
+function SectionLabel({ text }: { text: string }) {
+  return (
+    <div style={{
+      marginTop: 14, marginBottom: 2,
+      fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
+      color: 'var(--muted)', textTransform: 'uppercase',
+    }}>
+      {text}
+    </div>
+  )
+}
+
+function NotamList({ notams }: { notams: NotamItem[] }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+      {notams.map((n) => (
+        <div key={n.id} style={{
+          padding: '7px 10px', borderRadius: 'var(--r-sm)',
+          background: 'rgba(0,0,0,.2)', border: '1px solid var(--line-2)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>
+              {n.number}
+            </span>
+            {n.classification && (
+              <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.05em' }}>
+                {n.classification}
+              </span>
+            )}
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--dim)',
+            lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+          }}>
+            {n.text}
+          </div>
+          <div style={{ marginTop: 4, fontSize: 9.5, color: 'var(--muted)' }}>
+            {n.effectiveStart && `From ${n.effectiveStart}`}
+            {n.effectiveEnd   && ` · Until ${n.effectiveEnd}`}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ── AirportWeather ────────────────────────────────────────────────────────────
 
 function AirportWeather({ airport, role }) {
   if (!airport) return null
-  const [state, setState] = useState({ status: 'idle', metar: null, message: '' })
+
+  const [metar, setMetar] = useState<{ status: string; text: string; message: string }>(
+    { status: 'idle', text: '', message: '' }
+  )
+  const [taf, setTaf] = useState<{ status: string; text: string; message: string }>(
+    { status: 'idle', text: '', message: '' }
+  )
+  const [notam, setNotam] = useState<{ status: string; items: NotamItem[]; total: number; message: string }>(
+    { status: 'idle', items: [], total: 0, message: '' }
+  )
 
   useEffect(() => {
     const controller = new AbortController()
     const normalizedIcao = normalizeIcaoCode(airport?.icao)
 
-    async function loadMetar() {
-      if (!airport) {
-        setState({ status: 'empty', metar: null, message: 'Select an airport to load METAR data.' })
-        return
-      }
-
-      if (!normalizedIcao) {
-        setState({ status: 'empty', metar: null, message: 'No ICAO airport code is available for METAR lookup.' })
-        return
-      }
-
-      setState({ status: 'loading', metar: null, message: '' })
-      try {
-        const metar = await fetchMetarByIcao(normalizedIcao, controller.signal)
-        if (!metar || !metar.rawText) {
-          setState({ status: 'empty', metar: null, message: 'No METAR is currently available for this airport.' })
-          return
-        }
-        setState({ status: 'ready', metar, message: '' })
-      } catch (error) {
-        if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return
-
-        if (error instanceof MetarServiceError && error.kind === 'empty_response') {
-          setState({ status: 'empty', metar: null, message: error.message })
-          return
-        }
-
-        if (error instanceof MetarServiceError && error.kind === 'http') {
-          setState({ status: 'error', metar: null, message: `METAR service returned HTTP ${error.status}.` })
-          return
-        }
-
-        setState({ status: 'error', metar: null, message: 'METAR data could not be loaded right now.' })
-      }
+    if (!airport || !normalizedIcao) {
+      const msg = !airport
+        ? 'Select an airport to load weather data.'
+        : 'No ICAO code available for this airport.'
+      setMetar({ status: 'empty', text: '', message: msg })
+      setTaf(  { status: 'empty', text: '', message: msg })
+      setNotam({ status: 'empty', items: [], total: 0, message: msg })
+      return
     }
 
-    loadMetar()
+    // ── METAR ──────────────────────────────────────────────────────────────
+    setMetar({ status: 'loading', text: '', message: '' })
+    fetchMetarByIcao(normalizedIcao, controller.signal)
+      .then((record) => {
+        if (!record?.rawText) {
+          setMetar({ status: 'empty', text: '', message: 'No METAR available.' })
+        } else {
+          setMetar({ status: 'ready', text: record.rawText, message: '' })
+        }
+      })
+      .catch((err) => {
+        if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
+        if (err instanceof MetarServiceError && err.kind === 'empty_response') {
+          setMetar({ status: 'empty', text: '', message: err.message })
+        } else {
+          setMetar({ status: 'error', text: '', message: 'METAR could not be loaded.' })
+        }
+      })
+
+    // ── TAF ────────────────────────────────────────────────────────────────
+    setTaf({ status: 'loading', text: '', message: '' })
+    fetchTafByIcao(normalizedIcao, controller.signal)
+      .then((record) => {
+        if (!record?.rawText) {
+          setTaf({ status: 'empty', text: '', message: 'No TAF available.' })
+        } else {
+          setTaf({ status: 'ready', text: record.rawText, message: '' })
+        }
+      })
+      .catch((err) => {
+        if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
+        if (err instanceof TafServiceError && err.kind === 'empty_response') {
+          setTaf({ status: 'empty', text: '', message: err.message })
+        } else {
+          setTaf({ status: 'error', text: '', message: 'TAF could not be loaded.' })
+        }
+      })
+
+    // ── NOTAMs ────────────────────────────────────────────────────────────
+    setNotam({ status: 'loading', items: [], total: 0, message: '' })
+    fetchNotamsByIcao(normalizedIcao, controller.signal)
+      .then((record) => {
+        if (!record || record.notams.length === 0) {
+          setNotam({ status: 'empty', items: [], total: 0, message: 'No active NOTAMs.' })
+        } else {
+          setNotam({ status: 'ready', items: record.notams, total: record.total, message: '' })
+        }
+      })
+      .catch((err) => {
+        if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
+        if (err instanceof NotamServiceError && err.kind === 'config_error') {
+          setNotam({ status: 'error', items: [], total: 0, message: 'NOTAM API key not configured.' })
+        } else {
+          setNotam({ status: 'error', items: [], total: 0, message: 'NOTAMs could not be loaded.' })
+        }
+      })
+
     return () => controller.abort()
   }, [airport?.icao])
 
@@ -66,22 +184,28 @@ function AirportWeather({ airport, role }) {
         </div>
       </div>
 
-      {state.status === 'loading' && <StatusText text='Loading METAR…' />}
-      {state.status === 'empty' && <StatusText text={state.message} />}
-      {state.status === 'error' && <StatusText text={state.message} />}
-
       {/* METAR */}
-      <div style={{
-        marginTop: 12, padding: '8px 10px', borderRadius: 'var(--r-sm)',
-        background: 'rgba(0,0,0,.2)', border: '1px solid var(--line-2)',
-        fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--dim)',
-        lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-      }}>
-        {state.status === 'ready' ? state.metar.rawText : '—'}
-      </div>
+      <SectionLabel text="METAR" />
+      {metar.status === 'loading' && <StatusText text="Loading METAR…" />}
+      {(metar.status === 'empty' || metar.status === 'error') && <StatusText text={metar.message} />}
+      {metar.status === 'ready' && <DataBlock text={metar.text} />}
+
+      {/* TAF */}
+      <SectionLabel text="TAF" />
+      {taf.status === 'loading' && <StatusText text="Loading TAF…" />}
+      {(taf.status === 'empty' || taf.status === 'error') && <StatusText text={taf.message} />}
+      {taf.status === 'ready' && <DataBlock text={taf.text} />}
+
+      {/* NOTAMs */}
+      <SectionLabel text={notam.status === 'ready' ? `NOTAMs (${notam.total})` : 'NOTAMs'} />
+      {notam.status === 'loading' && <StatusText text="Loading NOTAMs…" />}
+      {(notam.status === 'empty' || notam.status === 'error') && <StatusText text={notam.message} />}
+      {notam.status === 'ready' && <NotamList notams={notam.items} />}
     </div>
   )
 }
+
+// ── WeatherPanel ──────────────────────────────────────────────────────────────
 
 export default function WeatherPanel({ departure, arrival }) {
   return (
@@ -90,25 +214,11 @@ export default function WeatherPanel({ departure, arrival }) {
         WEATHER BRIEFING
       </div>
       <div style={{ fontSize: 11, color: 'var(--amber)', lineHeight: 1.5 }}>
-        METAR data is shown for flight simulation only and must not be used for real-world aviation decisions.
+        METAR/TAF data is shown for flight simulation only and must not be used for real-world aviation decisions.
       </div>
 
       {departure ? <AirportWeather airport={departure} role="dep" /> : <EmptySlot label="Select departure airport" />}
       {arrival   ? <AirportWeather airport={arrival}   role="arr" /> : <EmptySlot label="Select arrival airport" />}
     </div>
-  )
-}
-
-function StatusText({ text }) {
-  return <div style={{ marginTop: 8, fontSize: 11, color: 'var(--muted)' }}>{text}</div>
-}
-
-function EmptySlot({ label }) {
-  return (
-    <div style={{
-      border: '1px dashed var(--line)', borderRadius: 'var(--r)',
-      padding: '20px 16px', textAlign: 'center',
-      color: 'var(--dim)', fontSize: 12,
-    }}>{label}</div>
   )
 }

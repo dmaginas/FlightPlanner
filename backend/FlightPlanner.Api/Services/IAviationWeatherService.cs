@@ -16,6 +16,11 @@ public interface IAviationWeatherService
     /// Wird ausgelöst bei HTTP-Fehlern, Netzwerkfehlern oder leerer Antwort.
     /// </exception>
     Task<string> FetchRawMetarAsync(string icao, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ruft den rohen TAF-Text für den angegebenen ICAO-Code von AviationWeather ab.
+    /// </summary>
+    Task<string> FetchRawTafAsync(string icao, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Art des Fehlers beim AviationWeather-Abruf.</summary>
