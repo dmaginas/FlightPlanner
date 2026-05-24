@@ -40,7 +40,7 @@ export interface SelectedRoute {
   routeText?: string | null
   waypoints: RouteWaypoint[]
   distanceNm?: number | null
-  source: 'flight-plan-database' | 'local-fallback'
+  source: 'flight-plan-database' | 'navdata-airac2012' | 'local-fallback'
   // Compatibility fields expected by RouteMap / WaypointTable / AIPanel
   altitude?: string
   aircraft?: string
@@ -89,6 +89,10 @@ export class RouteServiceError extends Error {
 export interface FetchRouteParams {
   departure: string
   destination: string
+  departureLat?: number
+  departureLon?: number
+  destinationLat?: number
+  destinationLon?: number
   aircraftType?: string
   cruisingAltitude?: number
   routeType?: string
@@ -102,6 +106,7 @@ interface BackendWaypoint {
   lat?: number | null
   lon?: number | null
   type?: string | null
+  airway?: string | null
 }
 
 interface BackendSelectedRoute {
@@ -164,10 +169,11 @@ function enrichWaypoints(raw: BackendWaypoint[]): RouteWaypoint[] {
             : 'CRZ'
     return {
       id:      wp.id,
-      name:    wp.name ?? undefined,
-      lat:     wp.lat  ?? undefined,
-      lon:     wp.lon  ?? undefined,
-      type:    wp.type ?? undefined,
+      name:    wp.name   ?? undefined,
+      lat:     wp.lat    ?? undefined,
+      lon:     wp.lon    ?? undefined,
+      type:    wp.type   ?? undefined,
+      airway:  wp.airway ?? undefined,
       altLabel,
       distCum: Math.round(cumDist),
     }
@@ -207,7 +213,7 @@ function mapSelectedRoute(
     routeText:       dto.routeText,
     waypoints:       enriched,
     distanceNm:      dto.distanceNm ?? undefined,
-    source:          (dto.source as 'flight-plan-database' | 'local-fallback') ?? 'flight-plan-database',
+    source:          (dto.source as 'flight-plan-database' | 'navdata-airac2012' | 'local-fallback') ?? 'flight-plan-database',
     // Legacy compat
     altitude:        altStr,
     aircraft:        dto.aircraftType ?? (aircraftProfile?.icaoCode as string | undefined),
@@ -238,8 +244,12 @@ export async function fetchRoute(
     departure:   params.departure,
     destination: params.destination,
     routeType:   params.routeType ?? 'IFR',
-    ...(params.aircraftType    ? { aircraftType:    params.aircraftType }              : {}),
-    ...(params.cruisingAltitude? { cruisingAltitude:String(params.cruisingAltitude) } : {}),
+    ...(params.aircraftType     ? { aircraftType:    params.aircraftType }              : {}),
+    ...(params.cruisingAltitude ? { cruisingAltitude:String(params.cruisingAltitude) } : {}),
+    ...(params.departureLat  != null ? { departureLat:   String(params.departureLat)  } : {}),
+    ...(params.departureLon  != null ? { departureLon:   String(params.departureLon)  } : {}),
+    ...(params.destinationLat != null ? { destinationLat: String(params.destinationLat) } : {}),
+    ...(params.destinationLon != null ? { destinationLon: String(params.destinationLon) } : {}),
   })
 
   let raw: BackendRouteResponse

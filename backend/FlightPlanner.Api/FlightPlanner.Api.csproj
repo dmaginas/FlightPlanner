@@ -21,4 +21,9 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="NavData\earth_awy.dat" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="NavData\earth_fix.dat" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -34,7 +34,7 @@ public sealed class SelectedRouteDto
     public IReadOnlyList<WaypointDto> Waypoints { get; init; } = [];
     public double? DistanceNm { get; init; }
 
-    /// <summary>"flight-plan-database" or "local-fallback".</summary>
+    /// <summary>"flight-plan-database", "navdata-airac2012", or "local-fallback".</summary>
     public required string Source { get; init; }
 }
 
@@ -50,6 +50,9 @@ public sealed class WaypointDto
 
     /// <summary>Normalised type: "airport", "fix", "vor", "ndb".</summary>
     public string? Type { get; init; }
+
+    /// <summary>Airway identifier this waypoint was reached on (e.g. "UL9"), or null for direct legs.</summary>
+    public string? Airway { get; init; }
 }
 
 /// <summary>Alternative route candidate (metadata only — no full waypoints).</summary>

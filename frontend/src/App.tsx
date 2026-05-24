@@ -63,6 +63,10 @@ export default function App() {
         {
           departure:       departure.icao,
           destination:     arrival.icao,
+          departureLat:    departure.lat,
+          departureLon:    departure.lon,
+          destinationLat:  arrival.lat,
+          destinationLon:  arrival.lon,
           aircraftType:    selectedAircraftType,
           cruisingAltitude:aircraftProfile?.preferredCruiseAltitudeFt,
           routeType:       'IFR',

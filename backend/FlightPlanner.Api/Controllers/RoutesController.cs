@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using FlightPlanner.Api.Models;
+using FlightPlanner.Api.NavData;
 using FlightPlanner.Api.Services;
 
 namespace FlightPlanner.Api.Controllers;
@@ -12,6 +13,9 @@ namespace FlightPlanner.Api.Controllers;
 /// server-side (default 30 min), and maps the response into a stable
 /// frontend-facing DTO.
 ///
+/// When FPD is unavailable or has no API key, falls back to local AIRAC 2012
+/// navdata routing (earth_awy.dat) if departure/destination coordinates are supplied.
+///
 /// The Flight Plan Database API key is read from server configuration only
 /// and is never forwarded to or exposed in the frontend.
 /// </summary>
@@ -22,17 +26,24 @@ public sealed class RoutesController : ControllerBase
     private static readonly Regex IcaoPattern = new(@"^[A-Z0-9]{4}$", RegexOptions.Compiled);
 
     private readonly IFlightPlanDatabaseService _fpdService;
+    private readonly INavDataService _navDataService;
     private readonly ILogger<RoutesController> _logger;
 
-    public RoutesController(IFlightPlanDatabaseService fpdService, ILogger<RoutesController> logger)
+    public RoutesController(
+        IFlightPlanDatabaseService fpdService,
+        INavDataService navDataService,
+        ILogger<RoutesController> logger)
     {
         _fpdService = fpdService;
+        _navDataService = navDataService;
         _logger = logger;
     }
 
     /// <summary>
     /// Searches for IFR flight plans between two airports.
     /// Returns the best match as selectedRoute plus up to 4 alternatives.
+    /// Falls back to local AIRAC 2012 navdata routing when coordinates are provided
+    /// and the external Flight Plan Database is unavailable.
     /// </summary>
     /// <param name="departure">Departure airport ICAO code (e.g. EDDF).</param>
     /// <param name="destination">Destination airport ICAO code (e.g. EGLL).</param>
@@ -45,6 +56,10 @@ public sealed class RoutesController : ControllerBase
     /// not forwarded to the FPD API.
     /// </param>
     /// <param name="routeType">Currently only "IFR" is supported.</param>
+    /// <param name="departureLat">Departure airport latitude (decimal degrees). Required for navdata fallback.</param>
+    /// <param name="departureLon">Departure airport longitude (decimal degrees). Required for navdata fallback.</param>
+    /// <param name="destinationLat">Destination airport latitude (decimal degrees). Required for navdata fallback.</param>
+    /// <param name="destinationLon">Destination airport longitude (decimal degrees). Required for navdata fallback.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     [HttpGet]
     [Produces("application/json")]
@@ -58,6 +73,10 @@ public sealed class RoutesController : ControllerBase
         [FromQuery] string? aircraftType,
         [FromQuery] int? cruisingAltitude,
         [FromQuery] string? routeType,
+        [FromQuery] double? departureLat,
+        [FromQuery] double? departureLon,
+        [FromQuery] double? destinationLat,
+        [FromQuery] double? destinationLon,
         CancellationToken cancellationToken)
     {
         // ── Validate ICAO codes ──────────────────────────────────────────────
@@ -103,48 +122,27 @@ public sealed class RoutesController : ControllerBase
         }
 
         // ── Call FPD service ──────────────────────────────────────────────────
+        FpdErrorKind? fpdFailKind = null;
+
         try
         {
             var result = await _fpdService.SearchRoutesAsync(dep, arr, cancellationToken);
-            var response = MapToResponse(result, dep, arr, aircraftType, cruisingAltitude);
-            return Ok(response);
+            return Ok(MapToResponse(result, dep, arr, aircraftType, cruisingAltitude));
         }
         catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.ConfigurationMissing)
         {
-            _logger.LogError("FPD configuration error: {Message}", ex.Message);
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
-            {
-                Error   = "configuration_error",
-                Details = "The Flight Plan Database API key is not configured on this server. " +
-                          "Please contact your system administrator.",
-            });
+            fpdFailKind = ex.Kind;
+            _logger.LogInformation("FPD key not configured — trying navdata for {Dep}→{Arr}", dep, arr);
         }
         catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.NoResults)
         {
-            _logger.LogInformation("FPD no results for {Dep}-{Arr}: {Message}", dep, arr, ex.Message);
-            return NotFound(new ErrorResponse
-            {
-                Error   = "No routes found.",
-                Details = ex.Message,
-            });
+            fpdFailKind = ex.Kind;
+            _logger.LogInformation("FPD no results for {Dep}→{Arr} — trying navdata fallback", dep, arr);
         }
-        catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.Http)
+        catch (FlightPlanDatabaseException ex)
         {
-            _logger.LogWarning("FPD upstream HTTP error for {Dep}-{Arr}: {Message}", dep, arr, ex.Message);
-            return StatusCode(StatusCodes.Status502BadGateway, new ErrorResponse
-            {
-                Error   = "Upstream error.",
-                Details = "The Flight Plan Database returned an error. Please try again later.",
-            });
-        }
-        catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.Network)
-        {
-            _logger.LogError("FPD network error for {Dep}-{Arr}: {Message}", dep, arr, ex.Message);
-            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
-            {
-                Error   = "Service unavailable.",
-                Details = "Unable to reach the Flight Plan Database. Please try again later.",
-            });
+            fpdFailKind = ex.Kind;
+            _logger.LogWarning("FPD error ({Kind}) for {Dep}→{Arr} — trying navdata fallback", ex.Kind, dep, arr);
         }
         catch (OperationCanceledException)
         {
@@ -154,15 +152,69 @@ public sealed class RoutesController : ControllerBase
                 Details = "The route request was cancelled.",
             });
         }
-        catch (Exception ex)
+
+        // ── NavData fallback ──────────────────────────────────────────────────
+        if (_navDataService.IsAvailable
+            && departureLat.HasValue && departureLon.HasValue
+            && destinationLat.HasValue && destinationLon.HasValue)
         {
-            _logger.LogError(ex, "Unexpected error for route {Dep}-{Arr}", dep, arr);
-            return StatusCode(StatusCodes.Status500InternalServerError, new ErrorResponse
+            var waypoints = _navDataService.FindRoute(
+                dep, departureLat.Value, departureLon.Value,
+                arr, destinationLat.Value, destinationLon.Value);
+
+            if (waypoints is { Count: >= 2 })
             {
-                Error   = "Internal server error.",
-                Details = "An unexpected error occurred while looking up the route.",
-            });
+                var routeText = string.Join(" ", waypoints
+                    .Where(w => w.Type != "airport")
+                    .Select(w => w.Id));
+                var distNm = CalculateTotalDistNm(waypoints);
+                var warning = fpdFailKind == FpdErrorKind.ConfigurationMissing
+                    ? "Flight Plan Database API key not configured. Route calculated from AIRAC 2012 navdata."
+                    : "External route database unavailable. Route calculated from AIRAC 2012 navdata.";
+
+                return Ok(new RouteResponse
+                {
+                    SelectedRoute = new SelectedRouteDto
+                    {
+                        Departure        = dep,
+                        Destination      = arr,
+                        AircraftType     = aircraftType,
+                        CruisingAltitude = cruisingAltitude,
+                        RouteType        = "IFR",
+                        RouteText        = routeText,
+                        Waypoints        = waypoints,
+                        DistanceNm       = distNm,
+                        Source           = "navdata-airac2012",
+                    },
+                    Alternatives = [],
+                    Warning      = warning,
+                });
+            }
+
+            _logger.LogWarning("Navdata routing also failed for {Dep}→{Arr}", dep, arr);
         }
+
+        // ── Both FPD and NavData failed — return error ────────────────────────
+        return fpdFailKind switch
+        {
+            FpdErrorKind.ConfigurationMissing => StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+            {
+                Error   = "configuration_error",
+                Details = "The Flight Plan Database API key is not configured. " +
+                          "Navdata routing also failed (coordinates not provided or routing error). " +
+                          "Please configure the API key.",
+            }),
+            FpdErrorKind.NoResults => NotFound(new ErrorResponse
+            {
+                Error   = "No routes found.",
+                Details = $"No IFR routes found between {dep} and {arr}.",
+            }),
+            _ => StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+            {
+                Error   = "Service unavailable.",
+                Details = "Route calculation failed. Please try again later.",
+            }),
+        };
     }
 
     // ── Mapping helpers ────────────────────────────────────────────────────────
@@ -239,4 +291,16 @@ public sealed class RoutesController : ControllerBase
         "NDB" => "ndb",
         _     => "fix",
     };
+
+    private static double CalculateTotalDistNm(IReadOnlyList<WaypointDto> wps)
+    {
+        double total = 0;
+        for (var i = 1; i < wps.Count; i++)
+        {
+            var p = wps[i - 1]; var c = wps[i];
+            if (p.Lat.HasValue && p.Lon.HasValue && c.Lat.HasValue && c.Lon.HasValue)
+                total += GeoMath.HaversineNm(p.Lat.Value, p.Lon.Value, c.Lat.Value, c.Lon.Value);
+        }
+        return Math.Round(total);
+    }
 }

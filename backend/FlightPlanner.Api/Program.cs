@@ -76,6 +76,9 @@ builder.Services.AddHttpClient<IAviationWeatherService, AviationWeatherService>(
 // In-memory cache (used by FlightPlanDatabaseService)
 builder.Services.AddMemoryCache();
 
+// NavData airway routing — loads AIRAC 2012 data at startup
+builder.Services.AddSingleton<INavDataService, NavDataService>();
+
 // Flight Plan Database service — registered with HttpClientFactory
 // ApiKey is intentionally NOT validated at startup so the app can start
 // and return a clear 503 per-request if the key is missing.
