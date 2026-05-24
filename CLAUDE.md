@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Git Workflow
+
+**Never commit or push without explicit instruction from the user.** Make all code changes first, then wait for the user to say "commit", "push", or similar before running any `git commit` or `git push` commands.
+
 ## Project Language
 
 **The project language is English.** All source code, UI strings, comments, variable names, log messages, error messages, and API responses must be in English. Conversation with the user may be in any language, but everything written into the codebase must be English.
