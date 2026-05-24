@@ -194,15 +194,45 @@ public sealed class RoutesController : ControllerBase
             _logger.LogWarning("Navdata routing also failed for {Dep}→{Arr}", dep, arr);
         }
 
-        // ── Both FPD and NavData failed — return error ────────────────────────
+        // ── Direct route fallback — always return something, never an error ────
+        if (departureLat.HasValue && departureLon.HasValue
+            && destinationLat.HasValue && destinationLon.HasValue)
+        {
+            var directWaypoints = new List<WaypointDto>
+            {
+                new() { Id = dep, Lat = departureLat.Value, Lon = departureLon.Value, Type = "airport" },
+                new() { Id = arr, Lat = destinationLat.Value, Lon = destinationLon.Value, Type = "airport" },
+            };
+            var distNm = CalculateTotalDistNm(directWaypoints);
+
+            _logger.LogInformation("Returning direct route for {Dep}→{Arr} ({Nm:F0}NM)", dep, arr, distNm);
+
+            return Ok(new RouteResponse
+            {
+                SelectedRoute = new SelectedRouteDto
+                {
+                    Departure        = dep,
+                    Destination      = arr,
+                    AircraftType     = aircraftType,
+                    CruisingAltitude = cruisingAltitude,
+                    RouteType        = "IFR",
+                    RouteText        = "DCT",
+                    Waypoints        = directWaypoints,
+                    DistanceNm       = distNm,
+                    Source           = "navdata-airac2012",
+                },
+                Alternatives = [],
+                Warning      = "No airway route found for this city pair. Showing direct route — consider selecting SID/STAR manually.",
+            });
+        }
+
+        // ── Coordinates not provided — return error ───────────────────────────
         return fpdFailKind switch
         {
             FpdErrorKind.ConfigurationMissing => StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
             {
                 Error   = "configuration_error",
-                Details = "The Flight Plan Database API key is not configured. " +
-                          "Navdata routing also failed (coordinates not provided or routing error). " +
-                          "Please configure the API key.",
+                Details = "The Flight Plan Database API key is not configured on this server.",
             }),
             FpdErrorKind.NoResults => NotFound(new ErrorResponse
             {
