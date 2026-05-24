@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
+import NavDataLayer from './NavDataLayer'
 
 // Fix Leaflet default icon (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl
@@ -85,7 +86,25 @@ function STARPath({ star }) {
   )
 }
 
+const LAYER_DEFS = [
+  { id: 'vor',    label: 'VOR',  color: '#a855f7' },
+  { id: 'ndb',    label: 'NDB',  color: '#06b6d4' },
+  { id: 'fix',    label: 'FIX',  color: '#9ca3af' },
+  { id: 'airway', label: 'AWY',  color: '#4a5568' },
+] as const
+
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState }) {
+  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>())
+
+  function toggleLayer(id: string) {
+    setEnabledLayers(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const initialCenter = departure
     ? [departure.lat, departure.lon]
     : [51.0, 10.0]
@@ -194,6 +213,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           </CircleMarker>
         )}
 
+        <NavDataLayer enabledLayers={enabledLayers} />
         <MapController departure={departure} arrival={arrival} routeCoords={routeCoords} />
       </MapContainer>
 
@@ -220,6 +240,39 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           </div>
         </div>
       )}
+
+      {/* NavData layer toggles — bottom-right */}
+      <div style={{
+        position: 'absolute', bottom: 28, right: 12, zIndex: 1000,
+        display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
+      }}>
+        {LAYER_DEFS.map(layer => {
+          const on = enabledLayers.has(layer.id)
+          return (
+            <button
+              key={layer.id}
+              onClick={() => toggleLayer(layer.id)}
+              style={{
+                padding: '4px 10px',
+                borderRadius: 6,
+                background: on ? 'rgba(13,18,41,.92)' : 'rgba(13,18,41,.6)',
+                border: `1px solid ${on ? layer.color : 'rgba(244,247,255,.15)'}`,
+                color: on ? layer.color : 'rgba(244,247,255,.4)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: 'pointer',
+                backdropFilter: 'blur(6px)',
+                letterSpacing: '0.04em',
+                transition: 'all .15s',
+                minWidth: 48,
+              }}
+            >
+              {layer.label}
+            </button>
+          )
+        })}
+      </div>
 
       {/* Map overlay labels */}
       <div style={{

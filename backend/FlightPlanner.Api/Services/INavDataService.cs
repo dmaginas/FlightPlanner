@@ -9,4 +9,8 @@ public interface INavDataService
     List<WaypointDto>? FindRoute(
         string depIcao, double depLat, double depLon,
         string arrIcao, double arrLat, double arrLon);
+
+    NavDataBboxResult QueryBbox(
+        double swLat, double swLon, double neLat, double neLon,
+        IReadOnlySet<string> types);
 }
