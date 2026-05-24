@@ -21,16 +21,19 @@ function buildRouteCoords(route, selectedSID, selectedSTAR) {
   const sidPath = selectedSID?.path ?? []
   const starPath = selectedSTAR?.path ?? []
 
+  const first = route.waypoints[0]
+  const last  = route.waypoints[route.waypoints.length - 1]
+
   if (sidPath.length) sidPath.forEach((coord) => dedupePush(coords, coord))
-  else dedupePush(coords, [route.waypoints[0].lat, route.waypoints[0].lon])
+  else if (first.lat != null && first.lon != null) dedupePush(coords, [first.lat, first.lon])
 
   route.waypoints
-    .filter((w) => w.type === 'fix')
+    .filter((w) => w.type === 'fix' && w.lat != null && w.lon != null)
     .map((w) => [w.lat, w.lon])
     .forEach((coord) => dedupePush(coords, coord))
 
   if (starPath.length) starPath.forEach((coord) => dedupePush(coords, coord))
-  else dedupePush(coords, [route.waypoints[route.waypoints.length - 1].lat, route.waypoints[route.waypoints.length - 1].lon])
+  else if (last.lat != null && last.lon != null) dedupePush(coords, [last.lat, last.lon])
 
   return coords
 }
@@ -122,7 +125,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
             {/* Waypoint markers */}
             {route.waypoints.map((wp, i) => {
               const isEndpoint = wp.type === 'airport'
-              if (isEndpoint) return null
+              if (isEndpoint || wp.lat == null || wp.lon == null) return null
               return (
                 <CircleMarker
                   key={`${wp.id}-${i}`}
