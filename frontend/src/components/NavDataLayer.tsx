@@ -1,19 +1,32 @@
 import { useEffect, useRef, useState } from 'react'
-import { useMap, CircleMarker, Polyline, Tooltip } from 'react-leaflet'
+import { useMap, Marker, CircleMarker, Polyline, Tooltip } from 'react-leaflet'
+import L from 'leaflet'
 import { fetchNavData, type NavDataBboxResult } from '../services/navDataService'
 
 const EMPTY: NavDataBboxResult = { vors: [], ndbs: [], fixes: [], airways: [] }
+
+const vorIcon = L.icon({
+  iconUrl:    '/icons/vor.svg',
+  iconSize:   [20, 20],
+  iconAnchor: [10, 10],
+})
+
+const ndbIcon = L.icon({
+  iconUrl:    '/icons/ndb.svg',
+  iconSize:   [18, 18],
+  iconAnchor: [9, 9],
+})
 
 interface Props {
   enabledLayers: Set<string>
 }
 
 export default function NavDataLayer({ enabledLayers }: Props) {
-  const map      = useMap()
-  const [data, setData]    = useState<NavDataBboxResult>(EMPTY)
+  const map     = useMap()
+  const [data, setData]  = useState<NavDataBboxResult>(EMPTY)
   const abortRef = useRef<AbortController | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [zoom, setZoom]    = useState(map.getZoom())
+  const [zoom, setZoom]  = useState(map.getZoom())
 
   useEffect(() => {
     async function fetchVisible() {
@@ -21,10 +34,10 @@ export default function NavDataLayer({ enabledLayers }: Props) {
       const bounds = map.getBounds().pad(0.15)
 
       const types: string[] = []
-      if (enabledLayers.has('vor'))                    types.push('vor')
-      if (enabledLayers.has('ndb')    && z >= 5)       types.push('ndb')
-      if (enabledLayers.has('fix')    && z >= 8)       types.push('fix')
-      if (enabledLayers.has('airway') && z >= 7)       types.push('airway')
+      if (enabledLayers.has('vor'))                types.push('vor')
+      if (enabledLayers.has('ndb')    && z >= 5)   types.push('ndb')
+      if (enabledLayers.has('fix')    && z >= 8)   types.push('fix')
+      if (enabledLayers.has('airway') && z >= 7)   types.push('airway')
 
       if (types.length === 0) { setData(EMPTY); return }
 
@@ -79,7 +92,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
         </Polyline>
       ))}
 
-      {/* Fixes — small grey triangles, zoom ≥ 8 */}
+      {/* Fixes — small grey dots, zoom ≥ 8 */}
       {enabledLayers.has('fix') && zoom >= 8 && data.fixes.map((fix, i) => (
         <CircleMarker
           key={`fix-${i}`}
@@ -93,34 +106,24 @@ export default function NavDataLayer({ enabledLayers }: Props) {
         </CircleMarker>
       ))}
 
-      {/* NDBs — cyan, zoom ≥ 5 */}
+      {/* NDBs — custom icon, zoom ≥ 5 */}
       {enabledLayers.has('ndb') && zoom >= 5 && data.ndbs.map((ndb, i) => (
-        <CircleMarker
-          key={`ndb-${i}`}
-          center={[ndb.lat, ndb.lon]}
-          radius={5}
-          pathOptions={{ color: '#06b6d4', fillColor: '#06b6d4', fillOpacity: 0.85, weight: 1.5 }}
-        >
-          <Tooltip direction="top" offset={[0, -7]}>
+        <Marker key={`ndb-${i}`} position={[ndb.lat, ndb.lon]} icon={ndbIcon}>
+          <Tooltip direction="top" offset={[0, -10]}>
             <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 11 }}>{ndb.ident}</span>
             <div style={{ fontSize: 10, opacity: 0.7 }}>{ndb.freqKhz} kHz</div>
           </Tooltip>
-        </CircleMarker>
+        </Marker>
       ))}
 
-      {/* VORs — violet hexagon-ish, always visible */}
+      {/* VORs — custom icon, always visible */}
       {enabledLayers.has('vor') && data.vors.map((vor, i) => (
-        <CircleMarker
-          key={`vor-${i}`}
-          center={[vor.lat, vor.lon]}
-          radius={6}
-          pathOptions={{ color: '#a855f7', fillColor: '#a855f7', fillOpacity: 0.9, weight: 1.5 }}
-        >
-          <Tooltip direction="top" offset={[0, -8]}>
+        <Marker key={`vor-${i}`} position={[vor.lat, vor.lon]} icon={vorIcon}>
+          <Tooltip direction="top" offset={[0, -11]}>
             <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 11 }}>{vor.ident}</span>
             <div style={{ fontSize: 10, opacity: 0.7 }}>{vor.freqMhz.toFixed(2)} MHz</div>
           </Tooltip>
-        </CircleMarker>
+        </Marker>
       ))}
     </>
   )
