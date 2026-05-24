@@ -6,12 +6,22 @@ import ExportPanel    from './ExportPanel.tsx'
 import WaypointTable  from './WaypointTable.tsx'
 import RouteMap       from './RouteMap.tsx'
 import AlternativesPanel from './AlternativesPanel.tsx'
+import { useWindowWidth } from '../hooks/useWindowWidth.ts'
 
 export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
   routeWarning, routeConfigError, alternatives,
 }) {
+  const width    = useWindowWidth()
+  const isNarrow = width < 1024
+
+  if (isNarrow) return <NarrowLayout {...{
+    departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
+    onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
+    routeWarning, routeConfigError, alternatives,
+  }} />
+
   return (
     <div style={{
       flex: 1, display: 'grid', overflow: 'hidden',
@@ -26,52 +36,9 @@ export default function MainScreen({
         overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
         borderRight: '1px solid var(--line)',
       }}>
-        {/* Simulation disclaimer — always visible */}
-        <div style={{
-          border: '1px solid rgba(255,92,114,.5)',
-          background: 'var(--red-soft)',
-          borderRadius: 'var(--r)',
-          padding: '12px 14px',
-          fontSize: 12,
-          lineHeight: 1.55,
-          color: 'var(--text)',
-        }}>
-          <strong style={{ display: 'block', marginBottom: 4 }}>Flight simulation only</strong>
-          Routes are for simulation/planning use only and must not be used for real-world navigation.
-        </div>
-
-        {/* Config error banner */}
-        {routeConfigError && (
-          <div style={{
-            border: '1px solid rgba(255,92,114,.7)',
-            background: 'rgba(255,92,114,.12)',
-            borderRadius: 'var(--r)',
-            padding: '10px 14px',
-            fontSize: 12, lineHeight: 1.55, color: 'var(--text)',
-            display: 'flex', gap: 8, alignItems: 'flex-start',
-          }}>
-            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠</span>
-            <div>
-              <strong style={{ display: 'block', marginBottom: 2 }}>Server configuration error</strong>
-              {routeConfigError}
-            </div>
-          </div>
-        )}
-
-        {/* Fallback warning banner */}
-        {routeWarning && !routeConfigError && (
-          <div style={{
-            border: '1px solid rgba(255,180,80,.5)',
-            background: 'var(--amber-soft)',
-            borderRadius: 'var(--r)',
-            padding: '10px 14px',
-            fontSize: 12, lineHeight: 1.55, color: 'var(--text)',
-            display: 'flex', gap: 8, alignItems: 'flex-start',
-          }}>
-            <span style={{ fontSize: 14, flexShrink: 0 }}>⚡</span>
-            <div>{routeWarning}</div>
-          </div>
-        )}
+        <Disclaimer />
+        {routeConfigError && <ConfigErrorBanner message={routeConfigError} />}
+        {routeWarning && !routeConfigError && <WarningBanner message={routeWarning} />}
 
         <FlightInput
           departure={departure}
@@ -89,7 +56,6 @@ export default function MainScreen({
           onNavigate={onNavigate}
         />
 
-        {/* Alternative routes */}
         {alternatives && alternatives.length > 0 && (
           <AlternativesPanel alternatives={alternatives} />
         )}
@@ -172,6 +138,160 @@ export default function MainScreen({
   )
 }
 
+// ── Narrow (tablet / mobile) layout ────────────────────────────────────────────
+
+function NarrowLayout({
+  departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
+  onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
+  routeWarning, routeConfigError, alternatives,
+}) {
+  return (
+    <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
+
+      {/* Flight input section */}
+      <div style={{ padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <Disclaimer />
+        {routeConfigError && <ConfigErrorBanner message={routeConfigError} />}
+        {routeWarning && !routeConfigError && <WarningBanner message={routeWarning} />}
+
+        <FlightInput
+          departure={departure}
+          arrival={arrival}
+          alternate={alternate}
+          routeState={routeState}
+          selectedSID={selectedSID}
+          selectedSTAR={selectedSTAR}
+          selectedAircraftProfile={selectedAircraftProfile}
+          onAircraftChange={onAircraftChange}
+          onDepartureChange={onDepartureChange}
+          onArrivalChange={onArrivalChange}
+          onAlternateChange={onAlternateChange}
+          onCalculate={onCalculate}
+          onNavigate={onNavigate}
+        />
+
+        {alternatives && alternatives.length > 0 && (
+          <AlternativesPanel alternatives={alternatives} />
+        )}
+      </div>
+
+      {/* Map */}
+      <div style={{ padding: '16px', height: 340, flexShrink: 0, position: 'relative' }}>
+        <RouteMap
+          departure={departure}
+          arrival={arrival}
+          alternate={alternate}
+          route={route}
+          selectedSID={selectedSID}
+          selectedSTAR={selectedSTAR}
+          routeState={routeState}
+          selectedAircraftProfile={selectedAircraftProfile}
+        />
+      </div>
+
+      {/* Waypoint table */}
+      <div style={{ padding: '0 16px 16px' }}>
+        {route
+          ? <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
+          : <EmptyTable />
+        }
+      </div>
+
+      {/* Right panel content — stacked */}
+      <div style={{ padding: '0 16px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <RangeWarning route={route} selectedAircraftProfile={selectedAircraftProfile} />
+
+        {route ? (
+          <AIPanel
+            departure={departure}
+            arrival={arrival}
+            alternate={alternate}
+            route={route}
+            selectedSID={selectedSID}
+            selectedSTAR={selectedSTAR}
+            selectedAircraftProfile={selectedAircraftProfile}
+          />
+        ) : (
+          <AIEmpty />
+        )}
+
+        <ExportPanel
+          route={route}
+          departure={departure}
+          arrival={arrival}
+          alternate={alternate}
+          selectedAircraftProfile={selectedAircraftProfile}
+          selectedSID={selectedSID}
+          selectedSTAR={selectedSTAR}
+        />
+
+        <FuelPanel
+          route={route}
+          arrival={arrival}
+          alternate={alternate}
+          selectedAircraftProfile={selectedAircraftProfile}
+        />
+
+        <WeatherPanel departure={departure} arrival={arrival} />
+      </div>
+    </div>
+  )
+}
+
+// ── Shared sub-components ───────────────────────────────────────────────────────
+
+function Disclaimer() {
+  return (
+    <div style={{
+      border: '1px solid rgba(255,92,114,.5)',
+      background: 'var(--red-soft)',
+      borderRadius: 'var(--r)',
+      padding: '12px 14px',
+      fontSize: 12,
+      lineHeight: 1.55,
+      color: 'var(--text)',
+    }}>
+      <strong style={{ display: 'block', marginBottom: 4 }}>Flight simulation only</strong>
+      Routes are for simulation/planning use only and must not be used for real-world navigation.
+    </div>
+  )
+}
+
+function ConfigErrorBanner({ message }: { message: string }) {
+  return (
+    <div style={{
+      border: '1px solid rgba(255,92,114,.7)',
+      background: 'rgba(255,92,114,.12)',
+      borderRadius: 'var(--r)',
+      padding: '10px 14px',
+      fontSize: 12, lineHeight: 1.55, color: 'var(--text)',
+      display: 'flex', gap: 8, alignItems: 'flex-start',
+    }}>
+      <span style={{ fontSize: 16, flexShrink: 0 }}>⚠</span>
+      <div>
+        <strong style={{ display: 'block', marginBottom: 2 }}>Server configuration error</strong>
+        {message}
+      </div>
+    </div>
+  )
+}
+
+function WarningBanner({ message }: { message: string }) {
+  return (
+    <div style={{
+      border: '1px solid rgba(255,180,80,.5)',
+      background: 'var(--amber-soft)',
+      borderRadius: 'var(--r)',
+      padding: '10px 14px',
+      fontSize: 12, lineHeight: 1.55, color: 'var(--text)',
+      display: 'flex', gap: 8, alignItems: 'flex-start',
+    }}>
+      <span style={{ fontSize: 14, flexShrink: 0 }}>⚡</span>
+      <div>{message}</div>
+    </div>
+  )
+}
+
 function EmptyTable() {
   return (
     <div style={{
@@ -216,4 +336,3 @@ function RangeWarning({ route, selectedAircraftProfile }) {
   const msg = `Warning: Planned route distance exceeds the approximate range of ${selectedAircraftProfile.icaoCode} — ${selectedAircraftProfile.displayName}. Route: ${routeNm.toLocaleString()} NM, approximate range: ${selectedAircraftProfile.maxRangeNm.toLocaleString()} NM.`
   return <div style={{ marginTop: 10, padding: '10px 12px', border: '1px solid rgba(255,180,80,.4)', background: 'var(--amber-soft)', color: 'var(--text)', borderRadius: 'var(--r-sm)', fontSize: 12 }}>{msg}</div>
 }
-
