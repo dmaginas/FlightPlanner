@@ -32,7 +32,15 @@ internal static class AirwayRouter
         // Retry with wider corridor
         corridorSet = FilterCorridor(graph, depLat, depLon, arrLat, arrLon, routeDistNm, corridorNm + 250);
         logger?.LogDebug("Navdata retry with wider corridor: {Count} nodes", corridorSet.Count);
-        return TryRoute(graph, corridorSet, depIcao, depLat, depLon, arrIcao, arrLat, arrLon);
+        result = TryRoute(graph, corridorSet, depIcao, depLat, depLon, arrIcao, arrLat, arrLon);
+        if (result is not null) return result;
+
+        // A* exhausted — sample the great-circle and snap to nearest real fixes.
+        // This handles oceanic routes (NAT, PACOTS) where no fixed airways exist.
+        logger?.LogInformation(
+            "A* found no path for {Dep}→{Arr} ({Dist:F0} NM) — using great-circle fix interpolation",
+            depIcao, arrIcao, routeDistNm);
+        return FindGreatCircleRoute(graph, depIcao, depLat, depLon, arrIcao, arrLat, arrLon);
     }
 
     private static HashSet<string> FilterCorridor(
@@ -183,5 +191,90 @@ internal static class AirwayRouter
         if (key == arrKey) return (arrLat, arrLon);
         var n = graph.Nodes[key];
         return (n.Lat, n.Lon);
+    }
+
+    // ── Great-circle interpolation fallback ────────────────────────────────────
+    // Used when A* finds no connected path (e.g. oceanic routes with no fixed airways).
+    // Samples points along the orthodrome every ~100 NM and snaps each to the
+    // nearest real navdata fix within 250 NM, producing a route with real identifiers.
+
+    private static List<WaypointDto> FindGreatCircleRoute(
+        NavGraph graph,
+        string depIcao, double depLat, double depLon,
+        string arrIcao, double arrLat, double arrLon)
+    {
+        const double SearchRadiusNm     = 250.0;
+        const double MinSpacingNm       = 80.0;
+        const double MinEndpointDistNm  = 80.0;
+
+        var totalNm = GeoMath.HaversineNm(depLat, depLon, arrLat, arrLon);
+        var steps   = Math.Max(4, (int)(totalNm / 100));
+
+        var waypoints = new List<WaypointDto>(steps + 2);
+        waypoints.Add(new WaypointDto { Id = depIcao, Lat = depLat, Lon = depLon, Type = "airport" });
+
+        double lastLat = depLat, lastLon = depLon;
+
+        for (var i = 1; i < steps; i++)
+        {
+            var t = (double)i / steps;
+            var (iLat, iLon) = GreatCirclePoint(depLat, depLon, arrLat, arrLon, t);
+
+            var fix = FindNearestFix(graph, iLat, iLon, SearchRadiusNm);
+            if (fix is null) continue;
+
+            // Too close to departure or arrival airport
+            if (GeoMath.HaversineNm(depLat, depLon, fix.Lat, fix.Lon) < MinEndpointDistNm) continue;
+            if (GeoMath.HaversineNm(arrLat, arrLon, fix.Lat, fix.Lon) < MinEndpointDistNm) continue;
+
+            // Too close to previous waypoint (deduplication)
+            if (GeoMath.HaversineNm(lastLat, lastLon, fix.Lat, fix.Lon) < MinSpacingNm) continue;
+
+            waypoints.Add(new WaypointDto { Id = fix.Ident, Lat = fix.Lat, Lon = fix.Lon, Type = "fix", Airway = "DCT" });
+            lastLat = fix.Lat;
+            lastLon = fix.Lon;
+        }
+
+        waypoints.Add(new WaypointDto { Id = arrIcao, Lat = arrLat, Lon = arrLon, Type = "airport" });
+        return waypoints;
+    }
+
+    private static (double lat, double lon) GreatCirclePoint(
+        double lat1, double lon1, double lat2, double lon2, double fraction)
+    {
+        var phi1 = lat1 * Math.PI / 180.0;
+        var phi2 = lat2 * Math.PI / 180.0;
+        var lam1 = lon1 * Math.PI / 180.0;
+        var lam2 = lon2 * Math.PI / 180.0;
+
+        var d = 2 * Math.Asin(Math.Sqrt(
+            Math.Pow(Math.Sin((phi2 - phi1) / 2), 2) +
+            Math.Cos(phi1) * Math.Cos(phi2) * Math.Pow(Math.Sin((lam2 - lam1) / 2), 2)));
+
+        if (d < 1e-10) return (lat1, lon1);
+
+        var a = Math.Sin((1 - fraction) * d) / Math.Sin(d);
+        var b = Math.Sin(fraction * d) / Math.Sin(d);
+
+        var x = a * Math.Cos(phi1) * Math.Cos(lam1) + b * Math.Cos(phi2) * Math.Cos(lam2);
+        var y = a * Math.Cos(phi1) * Math.Sin(lam1) + b * Math.Cos(phi2) * Math.Sin(lam2);
+        var z = a * Math.Sin(phi1) + b * Math.Sin(phi2);
+
+        return (
+            Math.Atan2(z, Math.Sqrt(x * x + y * y)) * 180.0 / Math.PI,
+            Math.Atan2(y, x) * 180.0 / Math.PI
+        );
+    }
+
+    private static NavNode? FindNearestFix(NavGraph graph, double lat, double lon, double maxDistNm)
+    {
+        NavNode? best = null;
+        var bestDist = maxDistNm;
+        foreach (var node in graph.Nodes.Values)
+        {
+            var d = GeoMath.HaversineNm(lat, lon, node.Lat, node.Lon);
+            if (d < bestDist) { bestDist = d; best = node; }
+        }
+        return best;
     }
 }
