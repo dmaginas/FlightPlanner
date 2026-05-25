@@ -79,17 +79,21 @@ export default function NavDataLayer({ enabledLayers }: Props) {
 
   return (
     <>
-      {/* Airways — grey polylines, zoom ≥ 7 */}
-      {enabledLayers.has('airway') && zoom >= 7 && data.airways.map((seg, i) => (
-        <Polyline
-          key={`awy-${i}`}
-          positions={[[seg.fromLat, seg.fromLon], [seg.toLat, seg.toLon]]}
-          pathOptions={{ color: '#4a5568', weight: 1, opacity: 0.55 }}
-        />
-      ))}
+      {/* Airways — grey polylines, zoom ≥ 7 (DCT segments excluded) */}
+      {enabledLayers.has('airway') && zoom >= 7 && data.airways
+        .filter(seg => seg.airway !== 'DCT')
+        .map((seg, i) => (
+          <Polyline
+            key={`awy-${i}`}
+            positions={[[seg.fromLat, seg.fromLon], [seg.toLat, seg.toLon]]}
+            pathOptions={{ color: '#4a5568', weight: 1, opacity: 0.55 }}
+          />
+        ))}
 
       {/* Airway labels — mid-segment, rotated along segment direction, zoom ≥ 9 */}
-      {enabledLayers.has('airway') && zoom >= 9 && data.airways.map((seg, i) => {
+      {enabledLayers.has('airway') && zoom >= 9 && data.airways
+        .filter(seg => seg.airway !== 'DCT')
+        .map((seg, i) => {
         const midLat = (seg.fromLat + seg.toLat) / 2
         const midLon = (seg.fromLon + seg.toLon) / 2
         const dx = seg.toLon - seg.fromLon
