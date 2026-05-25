@@ -50,8 +50,6 @@ export default function App() {
     if (!departure || !arrival) return
 
     setRouteState('loading')
-    setSelectedSID(null)
-    setSelectedSTAR(null)
     setRouteWarning(null)
     setRouteConfigError(null)
     setAlternatives([])
@@ -59,15 +57,23 @@ export default function App() {
 
     const aircraftProfile = AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]
 
+    // Use SID/STAR transition points as routing anchors when procedures are selected
+    const sidPath  = selectedSID?.path
+    const starPath = selectedSTAR?.path
+    const depLat = sidPath?.length  ? sidPath[sidPath.length - 1][0]  : departure.lat
+    const depLon = sidPath?.length  ? sidPath[sidPath.length - 1][1]  : departure.lon
+    const arrLat = starPath?.length ? starPath[0][0]                  : arrival.lat
+    const arrLon = starPath?.length ? starPath[0][1]                  : arrival.lon
+
     try {
       const result = await fetchRoute(
         {
           departure:       departure.icao,
           destination:     arrival.icao,
-          departureLat:    departure.lat,
-          departureLon:    departure.lon,
-          destinationLat:  arrival.lat,
-          destinationLon:  arrival.lon,
+          departureLat:    depLat,
+          departureLon:    depLon,
+          destinationLat:  arrLat,
+          destinationLon:  arrLon,
           aircraftType:    selectedAircraftType,
           cruisingAltitude:cruisingAltitude ?? aircraftProfile?.preferredCruiseAltitudeFt,
           routeType:       'IFR',
@@ -155,6 +161,8 @@ export default function App() {
           onAlternateChange={handleAlternateChange}
           onCalculate={handleCalculate}
           onNavigate={setScreen}
+          onSIDChange={setSelectedSID}
+          onSTARChange={setSelectedSTAR}
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
           alternatives={alternatives}

@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { searchAirports } from '../data/airports.ts'
 import { filterAircraftProfiles, getAircraftDisplayLabel } from '../data/aircraftPerformance.ts'
+import { getSIDs, getSTARs } from '../data/mockData.ts'
 
 function AirportSearch({ label, role, value, onChange }) {
   const [query, setQuery]       = useState(value ? `${value.icao} — ${value.name}` : '')
@@ -387,13 +388,97 @@ function CruiseAltitudeInput({ value, onChange, aircraftDefault }: {
   )
 }
 
-export default function FlightInput({ departure, arrival, alternate, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate }) {
+function windColor(score: string) {
+  if (score === 'Favorable') return 'var(--mint)'
+  if (score === 'Tailwind')  return '#ef4444'
+  return 'var(--amber)'
+}
+
+function ProcSelector({ label, procs, selected, onChange }: {
+  label: string
+  procs: any[]
+  selected: any
+  onChange: (proc: any | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  if (!procs || procs.length === 0) return null
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+          padding: '7px 10px', borderRadius: 'var(--r)',
+          background: selected ? 'rgba(0,229,168,.06)' : 'var(--glass)',
+          border: `1px solid ${selected ? 'rgba(0,229,168,.3)' : 'var(--line)'}`,
+          cursor: 'pointer', textAlign: 'left', transition: 'all .15s',
+        }}
+      >
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: selected ? 'var(--mint)' : 'var(--violet)', flexShrink: 0 }}>{label}</span>
+        <span style={{ flex: 1, fontSize: 11, color: selected ? 'var(--text)' : 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {selected ? `${selected.name}  RWY ${selected.runway}` : `Select ${label === 'SID' ? 'departure' : 'arrival'} procedure`}
+        </span>
+        {selected && <span style={{ fontSize: 10, color: 'var(--mint)', flexShrink: 0 }}>✓</span>}
+        <span style={{ fontSize: 9, color: 'var(--dim)', flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
+      </button>
+
+      {open && (
+        <div style={{
+          marginTop: 2, borderRadius: 'var(--r)', border: '1px solid var(--line)',
+          background: 'var(--bg-2)', overflow: 'hidden',
+        }}>
+          <button
+            onClick={() => { onChange(null); setOpen(false) }}
+            style={{
+              width: '100%', padding: '7px 12px', textAlign: 'left', cursor: 'pointer',
+              background: !selected ? 'rgba(139,124,255,.06)' : 'transparent',
+              borderBottom: '1px solid var(--line-2)',
+              fontSize: 11, color: !selected ? 'var(--text)' : 'var(--dim)',
+            }}
+          >
+            None — direct from airport
+          </button>
+          {procs.map(proc => (
+            <button
+              key={proc.id}
+              onClick={() => { onChange(proc); setOpen(false) }}
+              style={{
+                width: '100%', padding: '8px 12px', textAlign: 'left', cursor: 'pointer',
+                background: selected?.id === proc.id ? 'rgba(0,229,168,.06)' : 'transparent',
+                borderBottom: '1px solid var(--line-2)', transition: 'background .1s',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}
+              onMouseEnter={e => { if (selected?.id !== proc.id) e.currentTarget.style.background = 'var(--glass)' }}
+              onMouseLeave={e => { if (selected?.id !== proc.id) e.currentTarget.style.background = 'transparent' }}
+            >
+              <div>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: selected?.id === proc.id ? 'var(--mint)' : 'var(--text)' }}>{proc.name}</span>
+                <span style={{ fontSize: 10, color: 'var(--dim)', marginLeft: 6 }}>RWY {proc.runway}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 9, color: windColor(proc.windScore) }}>{proc.windScore}</span>
+                <span style={{ fontSize: 9, color: 'var(--dim)' }}>{proc.confidence}%</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function FlightInput({ departure, arrival, alternate, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onSIDChange, onSTARChange }) {
   const roughNm = (a, b) => a && b
     ? Math.round(Math.sqrt(((a.lat - b.lat) * 111) ** 2 + ((a.lon - b.lon) * 79) ** 2) * 0.54)
     : null
 
   const dist    = roughNm(departure, arrival)
   const altDist = roughNm(arrival, alternate)
+
+  const sids  = useMemo(() => departure ? getSIDs(departure.icao,  departure, null) : [], [departure?.icao])
+  const stars = useMemo(() => arrival   ? getSTARs(arrival.icao,   arrival,   null) : [], [arrival?.icao])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -408,8 +493,9 @@ export default function FlightInput({ departure, arrival, alternate, routeState,
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <AirportSearch label="Departure" role="dep" value={departure} onChange={onDepartureChange} />
+          <ProcSelector label="SID" procs={sids} selected={selectedSID} onChange={onSIDChange} />
 
-          {/* Swap / connector */}
+          {/* Connector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ flex: 1, height: 1, background: 'var(--line-2)' }} />
             <div style={{
@@ -422,6 +508,7 @@ export default function FlightInput({ departure, arrival, alternate, routeState,
           </div>
 
           <AirportSearch label="Arrival" role="arr" value={arrival} onChange={onArrivalChange} />
+          <ProcSelector label="STAR" procs={stars} selected={selectedSTAR} onChange={onSTARChange} />
           <AircraftCombobox selectedAircraftProfile={selectedAircraftProfile} onAircraftChange={onAircraftChange} />
           <CruiseAltitudeInput
             value={cruisingAltitude}
@@ -493,54 +580,6 @@ export default function FlightInput({ departure, arrival, alternate, routeState,
         </button>
       </div>
 
-      {/* Procedure selection */}
-      {routeState === 'ready' && (
-        <div style={{
-          background: 'var(--glass-2)', border: '1px solid var(--line)',
-          borderRadius: 'var(--r-lg)', padding: '20px',
-          display: 'flex', flexDirection: 'column', gap: 10,
-        }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--muted)', marginBottom: 4, letterSpacing: '0.02em' }}>
-            PROCEDURES
-          </div>
-
-          <ProcButton
-            label="SID"
-            sub={selectedSID ? selectedSID.name : 'Select departure procedure'}
-            active={!!selectedSID}
-            onClick={() => onNavigate('sid')}
-          />
-          <ProcButton
-            label="STAR"
-            sub={selectedSTAR ? selectedSTAR.name : 'Select arrival procedure'}
-            active={!!selectedSTAR}
-            onClick={() => onNavigate('star')}
-          />
-        </div>
-      )}
     </div>
-  )
-}
-
-function ProcButton({ label, sub, active, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 14px', borderRadius: 'var(--r)',
-        background: active ? 'var(--mint-soft)' : 'var(--glass)',
-        border: `1px solid ${active ? 'rgba(0,229,168,.3)' : 'var(--line)'}`,
-        cursor: 'pointer', transition: 'all .15s', textAlign: 'left', width: '100%',
-      }}
-      onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--glass-hover)' }}
-      onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'var(--glass)' }}
-    >
-      <div>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: active ? 'var(--mint)' : 'var(--violet)', letterSpacing: '0.06em' }}>{label}</div>
-        <div style={{ fontSize: 12, color: active ? 'var(--text)' : 'var(--muted)', marginTop: 2 }}>{sub}</div>
-      </div>
-      <span style={{ color: active ? 'var(--mint)' : 'var(--dim)', fontSize: 16 }}>{active ? '✓' : '›'}</span>
-    </button>
   )
 }

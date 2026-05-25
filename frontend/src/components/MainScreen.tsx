@@ -12,7 +12,7 @@ import { useWindowWidth } from '../hooks/useWindowWidth.ts'
 export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
-  onAlternateChange, onCalculate, onNavigate, routeWarning, routeConfigError, alternatives,
+  onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
 }) {
   const width    = useWindowWidth()
   const isNarrow = width < 1024
@@ -20,7 +20,7 @@ export default function MainScreen({
   if (isNarrow) return <NarrowLayout {...{
     departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
     cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
-    onAlternateChange, onCalculate, onNavigate, routeWarning, routeConfigError, alternatives,
+    onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
   }} />
 
   return (
@@ -53,6 +53,8 @@ export default function MainScreen({
           onAlternateChange={onAlternateChange}
           onCalculate={onCalculate}
           onNavigate={onNavigate}
+          onSIDChange={onSIDChange}
+          onSTARChange={onSTARChange}
         />
 
         {alternatives && alternatives.length > 0 && (
@@ -151,7 +153,7 @@ export default function MainScreen({
 function NarrowLayout({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
-  onAlternateChange, onCalculate, onNavigate, routeWarning, routeConfigError, alternatives,
+  onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -174,6 +176,8 @@ function NarrowLayout({
           onAlternateChange={onAlternateChange}
           onCalculate={onCalculate}
           onNavigate={onNavigate}
+          onSIDChange={onSIDChange}
+          onSTARChange={onSTARChange}
         />
 
         {alternatives && alternatives.length > 0 && (
