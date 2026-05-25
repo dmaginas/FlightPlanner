@@ -65,7 +65,8 @@ internal static class NavDataParser
 
         foreach (var nav in navaids)
         {
-            if (nav.RowCode != 3) continue; // VORs only
+            if (nav.RowCode != 3) continue;   // VORs only
+            if (nav.Range < 50.0) continue;   // skip terminal/approach VORs
 
             var vorKey = NodeKey(nav.Lat, nav.Lon);
             nodes.TryAdd(vorKey, new NavNode(nav.Ident, nav.Lat, nav.Lon));
