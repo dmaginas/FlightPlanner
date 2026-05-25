@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import NavDataLayer from './NavDataLayer'
@@ -109,7 +109,10 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
     ? [departure.lat, departure.lon]
     : [51.0, 10.0]
 
-  const routeCoords = buildRouteCoords(route, selectedSID, selectedSTAR)
+  const routeCoords = useMemo(
+    () => buildRouteCoords(route, selectedSID, selectedSTAR),
+    [route, selectedSID, selectedSTAR],
+  )
 
   const airportStyle = (isActive) => ({
     color: isActive ? '#fff' : 'rgba(255,255,255,.5)',
