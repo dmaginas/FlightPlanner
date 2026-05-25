@@ -76,7 +76,6 @@ export default function AIPanel({ departure, arrival, alternate, route, selected
     insights.push({ icon: '◈', text: `Alternate ${alternate.icao} selected — ICAO fuel reserve requirement met.`, type: 'success' })
   } else {
     insights.push({ icon: '⛽', text: `Estimated trip fuel: ~${tripFuel.toFixed(1)}T — open Fuel & Performance for full breakdown.`, type: 'info' })
-    insights.push({ icon: '⚠', text: 'No alternate airport set — required by ICAO regulations for IFR flights.', type: 'warning' })
   }
 
   const confidence = Math.min(98, 72 + (selectedSID ? 10 : 0) + (selectedSTAR ? 12 : 0))

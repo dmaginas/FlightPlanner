@@ -213,10 +213,6 @@ export default function WeatherPanel({ departure, arrival }) {
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 600, color: 'var(--muted)', letterSpacing: '0.02em' }}>
         WEATHER BRIEFING
       </div>
-      <div style={{ fontSize: 11, color: 'var(--amber)', lineHeight: 1.5 }}>
-        METAR/TAF data is shown for flight simulation only and must not be used for real-world aviation decisions.
-      </div>
-
       {departure ? <AirportWeather airport={departure} role="dep" /> : <EmptySlot label="Select departure airport" />}
       {arrival   ? <AirportWeather airport={arrival}   role="arr" /> : <EmptySlot label="Select arrival airport" />}
     </div>

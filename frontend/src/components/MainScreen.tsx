@@ -70,6 +70,7 @@ export default function MainScreen({
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
           route={route}
+          alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
         />
         <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
@@ -183,6 +184,7 @@ function NarrowLayout({
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
           route={route}
+          alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
         />
       </div>
@@ -250,19 +252,26 @@ function NarrowLayout({
 
 // ── Notification bar (above map) ───────────────────────────────────────────────
 
-function NotificationBar({ routeWarning, routeConfigError, route, selectedAircraftProfile }) {
+function NotificationBar({ routeWarning, routeConfigError, route, alternate, selectedAircraftProfile }) {
   const routeNm = route?.routeDistanceNm ?? route?.waypoints?.[route.waypoints.length - 1]?.distCum
   const rangeExceeded = route && selectedAircraftProfile && routeNm && routeNm > selectedAircraftProfile.maxRangeNm
+
+  const amber = {
+    padding: '6px 11px', borderRadius: 'var(--r-sm)',
+    background: 'var(--amber-soft)', border: '1px solid rgba(255,180,80,.4)',
+    fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
+    display: 'flex', alignItems: 'center', gap: 8,
+  } as React.CSSProperties
+
+  const amberIcon = <span style={{ color: 'var(--amber)', flexShrink: 0, fontSize: 13 }}>⚡</span>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
 
-      {/* Disclaimer — always shown */}
+      {/* Simulation disclaimer — always shown */}
       <div style={{
-        padding: '6px 11px',
-        borderRadius: 'var(--r-sm)',
-        background: 'rgba(233,69,96,.08)',
-        border: '1px solid rgba(233,69,96,.25)',
+        padding: '6px 11px', borderRadius: 'var(--r-sm)',
+        background: 'rgba(233,69,96,.08)', border: '1px solid rgba(233,69,96,.25)',
         fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
@@ -270,13 +279,17 @@ function NotificationBar({ routeWarning, routeConfigError, route, selectedAircra
         <span><strong>Flight simulation only</strong> — Routes must not be used for real-world navigation.</span>
       </div>
 
+      {/* METAR/TAF disclaimer — always shown */}
+      <div style={amber}>
+        {amberIcon}
+        <span>METAR/TAF data is shown for flight simulation only and must not be used for real-world aviation decisions.</span>
+      </div>
+
       {/* Server config error */}
       {routeConfigError && (
         <div style={{
-          padding: '6px 11px',
-          borderRadius: 'var(--r-sm)',
-          background: 'rgba(233,69,96,.12)',
-          border: '1px solid rgba(233,69,96,.45)',
+          padding: '6px 11px', borderRadius: 'var(--r-sm)',
+          background: 'rgba(233,69,96,.12)', border: '1px solid rgba(233,69,96,.45)',
           fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
           display: 'flex', alignItems: 'flex-start', gap: 8,
         }}>
@@ -287,34 +300,25 @@ function NotificationBar({ routeWarning, routeConfigError, route, selectedAircra
 
       {/* Route warning */}
       {routeWarning && !routeConfigError && (
-        <div style={{
-          padding: '6px 11px',
-          borderRadius: 'var(--r-sm)',
-          background: 'var(--amber-soft)',
-          border: '1px solid rgba(255,180,80,.4)',
-          fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span style={{ color: 'var(--amber)', flexShrink: 0, fontSize: 13 }}>⚡</span>
-          <span>{routeWarning}</span>
-        </div>
+        <div style={amber}>{amberIcon}<span>{routeWarning}</span></div>
       )}
 
       {/* Range warning */}
       {rangeExceeded && (
-        <div style={{
-          padding: '6px 11px',
-          borderRadius: 'var(--r-sm)',
-          background: 'var(--amber-soft)',
-          border: '1px solid rgba(255,180,80,.4)',
-          fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
-          display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span style={{ color: 'var(--amber)', flexShrink: 0, fontSize: 13 }}>⚡</span>
+        <div style={amber}>
+          {amberIcon}
           <span>
             Route distance ({routeNm.toLocaleString()} NM) exceeds the approximate range of{' '}
             {selectedAircraftProfile.icaoCode} ({selectedAircraftProfile.maxRangeNm.toLocaleString()} NM).
           </span>
+        </div>
+      )}
+
+      {/* No alternate warning */}
+      {route && !alternate && (
+        <div style={amber}>
+          {amberIcon}
+          <span>No alternate airport set — required by ICAO regulations for IFR flights.</span>
         </div>
       )}
 
