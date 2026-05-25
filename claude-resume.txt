@@ -1,1 +1,1 @@
-"claude --resume fbf986fb-2768-4eda-9953-010463faf392" 
+claude --resume fbf986fb-2768-4eda-9953-010463faf392

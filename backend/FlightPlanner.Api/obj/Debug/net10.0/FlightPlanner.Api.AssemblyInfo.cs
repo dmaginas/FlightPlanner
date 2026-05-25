@@ -10,11 +10,12 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("flightplanner-api-secrets")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("FlightPlanner ASP.NET Core Backend — METAR proxy and static frontend serving")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+cee21417cf4e69410eb722298f56e39780d370fc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+779213ac82386b7d96bc8ed0e255db4a51f6e9a9")]
 [assembly: System.Reflection.AssemblyProductAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]

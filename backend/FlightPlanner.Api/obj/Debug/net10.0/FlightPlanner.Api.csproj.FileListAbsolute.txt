@@ -37,3 +37,5 @@ C:\Users\dimos\source\repos\dmaginas\FlightPlanner\backend\FlightPlanner.Api\obj
 C:\Users\dimos\source\repos\dmaginas\FlightPlanner\backend\FlightPlanner.Api\obj\Debug\net10.0\FlightPlanner.Api.pdb
 C:\Users\dimos\source\repos\dmaginas\FlightPlanner\backend\FlightPlanner.Api\obj\Debug\net10.0\FlightPlanner.Api.genruntimeconfig.cache
 C:\Users\dimos\source\repos\dmaginas\FlightPlanner\backend\FlightPlanner.Api\obj\Debug\net10.0\ref\FlightPlanner.Api.dll
+C:\Users\dimos\source\repos\dmaginas\FlightPlanner\backend\FlightPlanner.Api\bin\Debug\net10.0\NavData\earth_awy.dat
+C:\Users\dimos\source\repos\dmaginas\FlightPlanner\backend\FlightPlanner.Api\bin\Debug\net10.0\NavData\earth_fix.dat
