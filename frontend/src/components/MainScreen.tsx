@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import FlightInput    from './FlightInput.tsx'
 import WeatherPanel   from './WeatherPanel.tsx'
 import AIPanel        from './AIPanel.tsx'
@@ -87,12 +88,14 @@ export default function MainScreen({
         </div>
       </main>
 
-      {/* ── Waypoint table (below map) ── */}
+      {/* ── Route string + waypoint table (below map) ── */}
       <section style={{
         gridColumn: '2 / 3',
         padding: '0 12px 16px',
         overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', gap: 8,
       }}>
+        {route && <RouteTextBox route={route} />}
         {route
           ? <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
           : <EmptyTable />
@@ -203,8 +206,9 @@ function NarrowLayout({
         />
       </div>
 
-      {/* Waypoint table */}
-      <div style={{ padding: '0 16px 16px' }}>
+      {/* Route string + waypoint table */}
+      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {route && <RouteTextBox route={route} />}
         {route
           ? <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
           : <EmptyTable />
@@ -327,6 +331,63 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
 }
 
 // ── Shared sub-components ───────────────────────────────────────────────────────
+
+function RouteTextBox({ route }) {
+  const [copied, setCopied] = useState(false)
+
+  const text = route.waypoints
+    .map(wp => wp.id.toUpperCase())
+    .join(' ')
+
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <div style={{
+      background: 'var(--glass-2)', border: '1px solid var(--line)',
+      borderRadius: 'var(--r-lg)', padding: '12px 16px',
+      display: 'flex', alignItems: 'flex-end', gap: 10,
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 10, fontWeight: 600, color: 'var(--dim)',
+          textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6,
+        }}>
+          Route String
+        </div>
+        <input
+          readOnly
+          value={text}
+          onFocus={e => e.currentTarget.select()}
+          style={{
+            width: '100%', padding: '8px 10px',
+            background: 'var(--glass)', border: '1px solid var(--line)',
+            borderRadius: 'var(--r-sm)',
+            fontFamily: 'var(--font-mono)', fontSize: 12,
+            color: 'var(--text)', letterSpacing: '0.03em',
+          }}
+        />
+      </div>
+      <button
+        onClick={handleCopy}
+        style={{
+          flexShrink: 0, padding: '8px 14px', borderRadius: 'var(--r-sm)',
+          fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          color: copied ? 'var(--mint)' : 'var(--text)',
+          background: copied ? 'var(--mint-soft)' : 'var(--glass)',
+          border: `1px solid ${copied ? 'rgba(0,229,168,.3)' : 'var(--line)'}`,
+          transition: 'all .15s',
+        }}
+      >
+        {copied ? '✓ Copied' : 'Copy'}
+      </button>
+    </div>
+  )
+}
 
 function EmptyTable() {
   return (
