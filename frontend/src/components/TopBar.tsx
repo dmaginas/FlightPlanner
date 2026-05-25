@@ -75,7 +75,17 @@ export default function TopBar({ screen, onNavigate, departure, arrival, selecte
       {/* Logo */}
       <div style={S.logo}>
         <div style={S.logoIcon}>✦</div>
-        {!isNarrow && 'FlightPlanner'}
+        {!isNarrow && (
+          <>
+            FlightPlanner
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 400,
+              color: 'var(--muted)', letterSpacing: '0.04em',
+            }}>
+              v{__APP_VERSION__}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Nav tabs */}

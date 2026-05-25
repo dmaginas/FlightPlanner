@@ -21,6 +21,10 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
 
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
+    },
+
     server: {
       proxy: {
         // In local development, forward /api/* to the selected backend.
