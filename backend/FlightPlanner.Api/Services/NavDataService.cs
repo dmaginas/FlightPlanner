@@ -25,20 +25,7 @@ public sealed class NavDataService : INavDataService
             return;
         }
 
-        try
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            _graph = NavDataParser.BuildGraph(awyPath);
-            sw.Stop();
-            _logger.LogInformation(
-                "NavData loaded: {Nodes} nodes, {Edges} edges in {Ms}ms (AIRAC 2012.08)",
-                _graph.NodeCount, _graph.EdgeCount, sw.ElapsedMilliseconds);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to load NavData from {Path}", awyPath);
-        }
-
+        // Load navaids first so VORs can be injected into the routing graph.
         var navPath = Path.Combine(AppContext.BaseDirectory, "NavData", "earth_nav.dat");
         if (File.Exists(navPath))
         {
@@ -51,6 +38,20 @@ public sealed class NavDataService : INavDataService
             {
                 _logger.LogError(ex, "Failed to load navaids from {Path}", navPath);
             }
+        }
+
+        try
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            _graph = NavDataParser.BuildGraph(awyPath, _navaids);
+            sw.Stop();
+            _logger.LogInformation(
+                "NavData loaded: {Nodes} nodes, {Edges} edges in {Ms}ms (AIRAC 2012.08, VORs injected)",
+                _graph.NodeCount, _graph.EdgeCount, sw.ElapsedMilliseconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load NavData from {Path}", awyPath);
         }
     }
 

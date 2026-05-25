@@ -4,10 +4,10 @@ namespace FlightPlanner.Api.NavData;
 
 internal static class NavDataParser
 {
-    public static NavGraph BuildGraph(string awyFilePath)
+    public static NavGraph BuildGraph(string awyFilePath, IReadOnlyList<NavItem>? navaids = null)
     {
-        var nodes = new Dictionary<string, NavNode>(80_000);
-        var adj   = new Dictionary<string, List<NavEdge>>(80_000);
+        var nodes = new Dictionary<string, NavNode>(95_000);
+        var adj   = new Dictionary<string, List<NavEdge>>(95_000);
 
         foreach (var line in File.ReadLines(awyFilePath))
         {
@@ -37,7 +37,63 @@ internal static class NavDataParser
             if (dir == 2) AddEdge(adj, key2, new NavEdge(key1, airway, dist));
         }
 
+        // Inject VOR nodes from earth_nav.dat and connect them DCT to nearby airway fixes.
+        // Uses a 1°×1° spatial grid to avoid O(n²) distance comparisons at startup.
+        if (navaids is { Count: > 0 })
+            InjectVors(nodes, adj, navaids);
+
         return new NavGraph(nodes, adj);
+    }
+
+    private static void InjectVors(
+        Dictionary<string, NavNode>      nodes,
+        Dictionary<string, List<NavEdge>> adj,
+        IReadOnlyList<NavItem>            navaids)
+    {
+        const double MaxRadiusNm = 80.0;
+        const int    MaxEdges    = 6;
+
+        // Spatial grid over existing airway-fix nodes (snapshot before adding VORs)
+        var grid = new Dictionary<(int lat, int lon), List<string>>(4_000);
+        foreach (var (key, node) in nodes)
+        {
+            var cell = ((int)Math.Floor(node.Lat), (int)Math.Floor(node.Lon));
+            if (!grid.TryGetValue(cell, out var bucket))
+            { bucket = new List<string>(8); grid[cell] = bucket; }
+            bucket.Add(key);
+        }
+
+        foreach (var nav in navaids)
+        {
+            if (nav.RowCode != 3) continue; // VORs only
+
+            var vorKey = NodeKey(nav.Lat, nav.Lon);
+            nodes.TryAdd(vorKey, new NavNode(nav.Ident, nav.Lat, nav.Lon));
+
+            // Search 5×5 grid cells (covers ≈ 5° ≈ 300 NM — more than MaxRadiusNm)
+            int latCell = (int)Math.Floor(nav.Lat);
+            int lonCell = (int)Math.Floor(nav.Lon);
+            var candidates = new List<(string key, double dist)>(32);
+
+            for (int dlat = -2; dlat <= 2; dlat++)
+            for (int dlon = -2; dlon <= 2; dlon++)
+            {
+                if (!grid.TryGetValue((latCell + dlat, lonCell + dlon), out var bucket)) continue;
+                foreach (var nodeKey in bucket)
+                {
+                    if (nodeKey == vorKey) continue;
+                    var n = nodes[nodeKey];
+                    var d = GeoMath.HaversineNm(nav.Lat, nav.Lon, n.Lat, n.Lon);
+                    if (d <= MaxRadiusNm) candidates.Add((nodeKey, d));
+                }
+            }
+
+            foreach (var (targetKey, d) in candidates.OrderBy(c => c.dist).Take(MaxEdges))
+            {
+                AddEdge(adj, vorKey,     new NavEdge(targetKey, "DCT", d));
+                AddEdge(adj, targetKey,  new NavEdge(vorKey,    "DCT", d));
+            }
+        }
     }
 
     public static IReadOnlyList<NavItem> ParseNavaids(string navFilePath)
