@@ -10,9 +10,9 @@ export interface GrametWaypointInput {
 export interface GrametLevelData {
   pressureHPa: number
   flightLevelFt: number
-  tempC: number
-  windSpeedKt: number
-  windDirDeg: number
+  tempC: number | null
+  windSpeedKt: number | null
+  windDirDeg: number | null
   cloudCoverPct: number
 }
 

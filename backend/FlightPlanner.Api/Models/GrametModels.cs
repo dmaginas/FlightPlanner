@@ -41,8 +41,9 @@ public sealed class GrametLevelData
     public int PressureHPa { get; init; }
     /// <summary>Approximate altitude in feet (ISA standard).</summary>
     public int FlightLevelFt { get; init; }
-    public double TempC { get; init; }
-    public double WindSpeedKt { get; init; }
-    public int WindDirDeg { get; init; }
+    /// <summary>Null when the model has no data for this level (e.g. above tropopause).</summary>
+    public double? TempC { get; init; }
+    public double? WindSpeedKt { get; init; }
+    public int?    WindDirDeg { get; init; }
     public int CloudCoverPct { get; init; }
 }

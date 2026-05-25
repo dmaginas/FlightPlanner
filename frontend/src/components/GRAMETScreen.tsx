@@ -81,8 +81,9 @@ function IsoTherm({ wps, ml, mt }: {
   wps.forEach((wp, wi) => {
     const cx = ml + wi * CELL_W + CELL_W / 2
     for (let li = 0; li < LEVELS.length - 1; li++) {
-      const t0 = wp.levels.find(l => l.pressureHPa === LEVELS[li].pressureHPa)?.tempC ?? 0
-      const t1 = wp.levels.find(l => l.pressureHPa === LEVELS[li + 1].pressureHPa)?.tempC ?? 0
+      const t0 = wp.levels.find(l => l.pressureHPa === LEVELS[li].pressureHPa)?.tempC ?? null
+      const t1 = wp.levels.find(l => l.pressureHPa === LEVELS[li + 1].pressureHPa)?.tempC ?? null
+      if (t0 === null || t1 === null) continue
       if ((t0 >= 0) !== (t1 >= 0)) {
         const frac = (0 - t0) / (t1 - t0)
         const y0   = mt + li * CELL_H + CELL_H / 2
@@ -180,9 +181,9 @@ function GrametChart({ data, dep, arr }: {
           return wps.map((wp, wi) => {
             const xCell = MARGIN.left + wi * CELL_W
             const ld    = wp.levels.find(l => l.pressureHPa === lvl.pressureHPa)
-            const kts   = ld?.windSpeedKt ?? 0
-            const dir   = ld?.windDirDeg  ?? 0
-            const temp  = ld?.tempC       ?? 0
+            const kts   = ld?.windSpeedKt ?? null
+            const dir   = ld?.windDirDeg  ?? null
+            const temp  = ld?.tempC       ?? null
             const cx    = xCell + CELL_W / 2
             const cy    = yCell + CELL_H / 2
 
@@ -191,18 +192,22 @@ function GrametChart({ data, dep, arr }: {
                 <rect
                   x={xCell + 1} y={yCell + 1}
                   width={CELL_W - 2} height={CELL_H - 2}
-                  rx={3} fill={windColor(kts)}
+                  rx={3} fill={kts !== null ? windColor(kts) : '#0d1225'}
                   stroke="rgba(244,247,255,0.07)" strokeWidth={1}
                 />
-                <text x={xCell + CELL_W - 6} y={yCell + 13} textAnchor="end"
-                  fill="rgba(255,255,255,0.48)" fontSize={9} fontFamily="monospace">
-                  {Math.round(kts)}kt
-                </text>
-                <WindArrow cx={cx} cy={cy - 7} dirDeg={dir} kts={kts} />
+                {kts !== null && (
+                  <text x={xCell + CELL_W - 6} y={yCell + 13} textAnchor="end"
+                    fill="rgba(255,255,255,0.48)" fontSize={9} fontFamily="monospace">
+                    {Math.round(kts)}kt
+                  </text>
+                )}
+                {dir !== null && kts !== null && (
+                  <WindArrow cx={cx} cy={cy - 7} dirDeg={dir} kts={kts} />
+                )}
                 <text x={cx} y={yCell + CELL_H - 9} textAnchor="middle"
-                  fill={tempColor(temp)}
+                  fill={temp !== null ? tempColor(temp) : 'rgba(244,247,255,0.25)'}
                   fontSize={11} fontFamily="monospace" fontWeight={600}>
-                  {temp > 0 ? '+' : ''}{temp.toFixed(1)}°
+                  {temp !== null ? `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°` : '—'}
                 </text>
               </g>
             )

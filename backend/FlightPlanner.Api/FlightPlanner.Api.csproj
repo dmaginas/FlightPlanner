@@ -4,9 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
+    <Version>0.1.1</Version>
+    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <FileVersion>0.1.1.0</FileVersion>
     <Description>FlightPlanner ASP.NET Core Backend — METAR proxy and static frontend serving</Description>
     <RootNamespace>FlightPlanner.Api</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>

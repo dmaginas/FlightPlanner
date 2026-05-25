@@ -108,10 +108,10 @@ public sealed class GrametService : IGrametService
         {
             PressureHPa   = p,
             FlightLevelFt = PressureToFt[p],
-            TempC         = Math.Round(Read(hourly, $"temperature_{p}hPa",    hourIndex), 1),
-            WindSpeedKt   = Math.Round(Read(hourly, $"wind_speed_{p}hPa",     hourIndex), 0),
-            WindDirDeg    = (int)Math.Round(Read(hourly, $"wind_direction_{p}hPa", hourIndex)),
-            CloudCoverPct = (int)Math.Round(Read(hourly, $"cloud_cover_{p}hPa",    hourIndex)),
+            TempC         = Read(hourly, $"temperature_{p}hPa",    hourIndex) is { } t   ? Math.Round(t, 1)          : null,
+            WindSpeedKt   = Read(hourly, $"wind_speed_{p}hPa",     hourIndex) is { } ws  ? Math.Round(ws, 0)         : null,
+            WindDirDeg    = Read(hourly, $"wind_direction_{p}hPa", hourIndex) is { } wd  ? (int)Math.Round(wd)       : null,
+            CloudCoverPct = Read(hourly, $"cloud_cover_{p}hPa",    hourIndex) is { } cc  ? (int)Math.Round(cc)       : 0,
         }).ToList();
 
         return new GrametWaypointData
@@ -124,17 +124,17 @@ public sealed class GrametService : IGrametService
         };
     }
 
-    private static double Read(JsonElement hourly, string key, int index)
+    // Returns null when the JSON value is null or the key is absent.
+    private static double? Read(JsonElement hourly, string key, int index)
     {
         if (!hourly.TryGetProperty(key, out var arr) || arr.ValueKind != JsonValueKind.Array)
-            return 0;
+            return null;
 
         var len = arr.GetArrayLength();
-        if (len == 0) return 0;
+        if (len == 0) return null;
 
-        var i  = Math.Clamp(index, 0, len - 1);
-        var el = arr[i];
-        return el.ValueKind == JsonValueKind.Number ? el.GetDouble() : 0;
+        var el = arr[Math.Clamp(index, 0, len - 1)];
+        return el.ValueKind == JsonValueKind.Number ? el.GetDouble() : null;
     }
 
     private static GrametWaypointData Fallback(GrametWaypointInput wp) => new()
@@ -147,6 +147,9 @@ public sealed class GrametService : IGrametService
         {
             PressureHPa   = p,
             FlightLevelFt = PressureToFt[p],
+            TempC         = null,
+            WindSpeedKt   = null,
+            WindDirDeg    = null,
         }).ToList(),
     };
 }
