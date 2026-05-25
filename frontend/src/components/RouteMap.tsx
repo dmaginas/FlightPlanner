@@ -25,7 +25,9 @@ function buildRouteCoords(route, selectedSID, selectedSTAR) {
   const first = route.waypoints[0]
   const last  = route.waypoints[route.waypoints.length - 1]
 
-  if (sidPath.length) sidPath.forEach((coord) => dedupePush(coords, coord))
+  // Start: last SID waypoint (transition to en-route), or departure airport if no SID.
+  // The SID procedure itself is drawn separately as a dashed overlay.
+  if (sidPath.length) dedupePush(coords, sidPath[sidPath.length - 1])
   else if (first.lat != null && first.lon != null) dedupePush(coords, [first.lat, first.lon])
 
   route.waypoints
@@ -33,7 +35,9 @@ function buildRouteCoords(route, selectedSID, selectedSTAR) {
     .map((w) => [w.lat, w.lon])
     .forEach((coord) => dedupePush(coords, coord))
 
-  if (starPath.length) starPath.forEach((coord) => dedupePush(coords, coord))
+  // End: first STAR waypoint (transition from en-route), or arrival airport if no STAR.
+  // The STAR procedure itself is drawn separately as a dashed overlay.
+  if (starPath.length) dedupePush(coords, starPath[0])
   else if (last.lat != null && last.lon != null) dedupePush(coords, [last.lat, last.lon])
 
   return coords
