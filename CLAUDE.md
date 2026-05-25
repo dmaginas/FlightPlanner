@@ -6,6 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Never commit or push without explicit instruction from the user.** Make all code changes first, then wait for the user to say "commit", "push", or similar before running any `git commit` or `git push` commands.
 
+## Versioning
+
+Bump the version on every change before committing:
+
+- **Frontend change** → increment `version` in `frontend/package.json` (displayed in the TopBar at runtime via `__APP_VERSION__`)
+- **Backend change** → increment `version` in `backend/FlightPlanner.Api/FlightPlanner.Api.csproj` (`<Version>` tag)
+
+Use [semantic versioning](https://semver.org): `MAJOR.MINOR.PATCH`
+- `PATCH` — bug fix or small tweak
+- `MINOR` — new feature, backwards compatible
+- `MAJOR` — breaking change
+
 ## Project Language
 
 **The project language is English.** All source code, UI strings, comments, variable names, log messages, error messages, and API responses must be in English. Conversation with the user may be in any language, but everything written into the codebase must be English.
