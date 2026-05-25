@@ -123,9 +123,12 @@ app.UseCors();
 app.UseHttpsRedirection();
 
 // ── Static frontend serving ─────────────────────────────────────────────────
-// In production the backend serves the built Vite frontend from frontend/dist.
-var frontendDistPath = Path.GetFullPath(
-    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "frontend", "dist"));
+// Development:  bin/Debug/net10.0/ → ../../../../frontend/dist
+// Production:   /opt/flightplanner/frontend/dist  (copied there by deploy script)
+var devPath          = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "frontend", "dist"));
+var frontendDistPath = Directory.Exists(devPath)
+    ? devPath
+    : Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "frontend", "dist"));
 
 if (Directory.Exists(frontendDistPath))
 {
