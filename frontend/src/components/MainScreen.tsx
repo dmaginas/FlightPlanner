@@ -10,16 +10,16 @@ import { useWindowWidth } from '../hooks/useWindowWidth.ts'
 
 export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-  onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
-  routeWarning, routeConfigError, alternatives,
+  cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
+  onAlternateChange, onCalculate, onNavigate, routeWarning, routeConfigError, alternatives,
 }) {
   const width    = useWindowWidth()
   const isNarrow = width < 1024
 
   if (isNarrow) return <NarrowLayout {...{
     departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-    onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
-    routeWarning, routeConfigError, alternatives,
+    cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
+    onAlternateChange, onCalculate, onNavigate, routeWarning, routeConfigError, alternatives,
   }} />
 
   return (
@@ -48,7 +48,9 @@ export default function MainScreen({
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
           selectedAircraftProfile={selectedAircraftProfile}
+          cruisingAltitude={cruisingAltitude}
           onAircraftChange={onAircraftChange}
+          onAltitudeChange={onAltitudeChange}
           onDepartureChange={onDepartureChange}
           onArrivalChange={onArrivalChange}
           onAlternateChange={onAlternateChange}
@@ -142,8 +144,8 @@ export default function MainScreen({
 
 function NarrowLayout({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-  onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate,
-  routeWarning, routeConfigError, alternatives,
+  cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
+  onAlternateChange, onCalculate, onNavigate, routeWarning, routeConfigError, alternatives,
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -162,7 +164,9 @@ function NarrowLayout({
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
           selectedAircraftProfile={selectedAircraftProfile}
+          cruisingAltitude={cruisingAltitude}
           onAircraftChange={onAircraftChange}
+          onAltitudeChange={onAltitudeChange}
           onDepartureChange={onDepartureChange}
           onArrivalChange={onArrivalChange}
           onAlternateChange={onAlternateChange}

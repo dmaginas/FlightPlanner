@@ -301,7 +301,93 @@ function AlternateSearch({ value, onChange }) {
   )
 }
 
-export default function FlightInput({ departure, arrival, alternate, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, onAircraftChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate }) {
+function CruiseAltitudeInput({ value, onChange, aircraftDefault }: {
+  value: number | null
+  onChange: (alt: number | null) => void
+  aircraftDefault?: number
+}) {
+  const toText = (ft: number | null) => ft !== null ? `FL${Math.round(ft / 100)}` : ''
+  const [text, setText] = useState(toText(value))
+  const [focused, setFocused] = useState(false)
+
+  useEffect(() => { setText(toText(value)) }, [value])
+
+  function parseAlt(raw: string): number | null {
+    const s = raw.trim().toUpperCase().replace(/\s/g, '')
+    if (!s) return null
+    const fl = s.match(/^FL(\d{1,3})$/)
+    if (fl) return parseInt(fl[1]) * 100
+    const n = parseInt(s)
+    if (!isNaN(n) && n >= 10 && n <= 999) return n * 100
+    if (!isNaN(n) && n >= 1000 && n <= 99000) return n
+    return null
+  }
+
+  function handleBlur() {
+    setFocused(false)
+    const alt = parseAlt(text)
+    if (alt !== null) {
+      setText(`FL${Math.round(alt / 100)}`)
+      onChange(alt)
+    } else {
+      setText('')
+      onChange(null)
+    }
+  }
+
+  const defaultLabel = aircraftDefault ? `FL${Math.round(aircraftDefault / 100)}` : 'FL350'
+
+  return (
+    <div>
+      <div style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: 'var(--violet)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6,
+      }}>
+        <span style={{ width: 16, height: 16, borderRadius: 5, background: 'var(--violet-soft)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9 }}>
+          ✈
+        </span>
+        Cruise Altitude
+      </div>
+      <div style={{
+        borderRadius: 'var(--r)', border: `1px solid ${focused ? 'rgba(139,124,255,.5)' : value !== null ? 'rgba(139,124,255,.3)' : 'var(--line)'}`,
+        background: focused ? 'rgba(139,124,255,.06)' : 'var(--glass-2)',
+        transition: 'all .2s', display: 'flex', alignItems: 'center', overflow: 'hidden',
+      }}>
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={handleBlur}
+          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+          placeholder={`${defaultLabel} (default)`}
+          style={{
+            flex: 1, padding: '12px 14px',
+            fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 500,
+            background: 'transparent', color: 'var(--text)', letterSpacing: '0.03em',
+          }}
+        />
+        {value !== null && (
+          <button
+            onMouseDown={e => { e.preventDefault(); onChange(null); setText('') }}
+            title="Reset to aircraft default"
+            style={{
+              padding: '0 12px', height: '100%', flexShrink: 0,
+              background: 'transparent', border: 'none', borderLeft: '1px solid var(--line)',
+              color: 'var(--dim)', fontSize: 14, cursor: 'pointer',
+            }}
+          >×</button>
+        )}
+      </div>
+      {value !== null && (
+        <div style={{ marginTop: 5, fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+          {value.toLocaleString()} ft — override active
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function FlightInput({ departure, arrival, alternate, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onNavigate }) {
   const roughNm = (a, b) => a && b
     ? Math.round(Math.sqrt(((a.lat - b.lat) * 111) ** 2 + ((a.lon - b.lon) * 79) ** 2) * 0.54)
     : null
@@ -337,6 +423,11 @@ export default function FlightInput({ departure, arrival, alternate, routeState,
 
           <AirportSearch label="Arrival" role="arr" value={arrival} onChange={onArrivalChange} />
           <AircraftCombobox selectedAircraftProfile={selectedAircraftProfile} onAircraftChange={onAircraftChange} />
+          <CruiseAltitudeInput
+            value={cruisingAltitude}
+            onChange={onAltitudeChange}
+            aircraftDefault={selectedAircraftProfile?.preferredCruiseAltitudeFt}
+          />
         </div>
 
         {/* Distance */}
