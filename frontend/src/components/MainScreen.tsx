@@ -257,75 +257,84 @@ function NarrowLayout({
 // ── Notification bar (above map) ───────────────────────────────────────────────
 
 function NotificationBar({ routeWarning, routeConfigError, route, alternate, selectedAircraftProfile }) {
+  const [expanded, setExpanded] = useState(false)
+
   const routeNm = route?.routeDistanceNm ?? route?.waypoints?.[route.waypoints.length - 1]?.distCum
   const rangeExceeded = route && selectedAircraftProfile && routeNm && routeNm > selectedAircraftProfile.maxRangeNm
 
-  const amber = {
-    padding: '6px 11px', borderRadius: 'var(--r-sm)',
-    background: 'var(--amber-soft)', border: '1px solid rgba(255,180,80,.4)',
-    fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
-    display: 'flex', alignItems: 'center', gap: 8,
-  } as React.CSSProperties
+  type Msg = { kind: 'error' | 'warn'; text: string }
+  const msgs: Msg[] = [
+    { kind: 'error', text: 'Flight simulation only — routes must not be used for real-world navigation.' },
+    { kind: 'warn',  text: 'METAR/TAF data is for flight simulation only and must not be used for real-world aviation decisions.' },
+  ]
+  if (routeConfigError)
+    msgs.push({ kind: 'error', text: `Server configuration error — ${routeConfigError}` })
+  if (routeWarning && !routeConfigError)
+    msgs.push({ kind: 'warn', text: routeWarning })
+  if (rangeExceeded)
+    msgs.push({ kind: 'warn', text: `Route distance (${routeNm.toLocaleString()} NM) exceeds the approximate range of ${selectedAircraftProfile.icaoCode} (${selectedAircraftProfile.maxRangeNm.toLocaleString()} NM).` })
+  if (route && !alternate)
+    msgs.push({ kind: 'warn', text: 'No alternate airport set — required by ICAO regulations for IFR flights.' })
 
-  const amberIcon = <span style={{ color: 'var(--amber)', flexShrink: 0, fontSize: 13 }}>⚡</span>
+  const hasError  = msgs.some(m => m.kind === 'error')
+  const accentClr = hasError ? 'var(--red)' : 'var(--amber)'
+  const borderClr = hasError ? 'rgba(233,69,96,.3)' : 'rgba(255,180,80,.35)'
+  const bgClr     = hasError ? 'rgba(233,69,96,.08)' : 'rgba(255,180,80,.07)'
+  const n         = msgs.length
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
+    <div style={{ flexShrink: 0 }}>
+      {/* ── Collapsed summary ── */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          width: '100%', padding: '5px 11px',
+          borderRadius: expanded ? 'var(--r-sm) var(--r-sm) 0 0' : 'var(--r-sm)',
+          background: bgClr,
+          border: `1px solid ${borderClr}`,
+          borderBottom: expanded ? 'none' : `1px solid ${borderClr}`,
+          display: 'flex', alignItems: 'center', gap: 8,
+          cursor: 'pointer', textAlign: 'left' as const,
+        }}
+      >
+        <span style={{ color: accentClr, fontSize: 13, flexShrink: 0 }}>
+          {hasError ? '⊗' : '⚠'}
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--muted)', flex: 1 }}>
+          {n} {n === 1 ? 'notice' : 'notices'}
+          {hasError && <span style={{ color: 'var(--red)', marginLeft: 6 }}>· configuration error</span>}
+        </span>
+        <span style={{
+          color: 'var(--dim)', fontSize: 10,
+          display: 'inline-block',
+          transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform .15s',
+        }}>▾</span>
+      </button>
 
-      {/* Simulation disclaimer — always shown */}
-      <div style={{
-        padding: '6px 11px', borderRadius: 'var(--r-sm)',
-        background: 'rgba(233,69,96,.08)', border: '1px solid rgba(233,69,96,.25)',
-        fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
-        display: 'flex', alignItems: 'center', gap: 8,
-      }}>
-        <span style={{ color: 'var(--red)', flexShrink: 0, fontSize: 13 }}>⚠</span>
-        <span><strong>Flight simulation only</strong> — Routes must not be used for real-world navigation.</span>
-      </div>
-
-      {/* METAR/TAF disclaimer — always shown */}
-      <div style={amber}>
-        {amberIcon}
-        <span>METAR/TAF data is shown for flight simulation only and must not be used for real-world aviation decisions.</span>
-      </div>
-
-      {/* Server config error */}
-      {routeConfigError && (
+      {/* ── Expanded list ── */}
+      {expanded && (
         <div style={{
-          padding: '6px 11px', borderRadius: 'var(--r-sm)',
-          background: 'rgba(233,69,96,.12)', border: '1px solid rgba(233,69,96,.45)',
-          fontSize: 11, color: 'var(--text)', lineHeight: 1.4,
-          display: 'flex', alignItems: 'flex-start', gap: 8,
+          border: `1px solid ${borderClr}`,
+          borderRadius: '0 0 var(--r-sm) var(--r-sm)',
+          overflow: 'hidden',
         }}>
-          <span style={{ color: 'var(--red)', flexShrink: 0, fontSize: 13 }}>⊗</span>
-          <span><strong>Server configuration error</strong> — {routeConfigError}</span>
+          {msgs.map((msg, i) => (
+            <div key={i} style={{
+              padding: '6px 11px',
+              background: msg.kind === 'error' ? 'rgba(233,69,96,.10)' : 'rgba(255,180,80,.08)',
+              borderTop: i > 0 ? `1px solid ${borderClr}` : 'none',
+              fontSize: 11, color: 'var(--text)', lineHeight: 1.45,
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+            }}>
+              <span style={{ color: msg.kind === 'error' ? 'var(--red)' : 'var(--amber)', flexShrink: 0, fontSize: 12, marginTop: 1 }}>
+                {msg.kind === 'error' ? '⊗' : '⚡'}
+              </span>
+              <span>{msg.text}</span>
+            </div>
+          ))}
         </div>
       )}
-
-      {/* Route warning */}
-      {routeWarning && !routeConfigError && (
-        <div style={amber}>{amberIcon}<span>{routeWarning}</span></div>
-      )}
-
-      {/* Range warning */}
-      {rangeExceeded && (
-        <div style={amber}>
-          {amberIcon}
-          <span>
-            Route distance ({routeNm.toLocaleString()} NM) exceeds the approximate range of{' '}
-            {selectedAircraftProfile.icaoCode} ({selectedAircraftProfile.maxRangeNm.toLocaleString()} NM).
-          </span>
-        </div>
-      )}
-
-      {/* No alternate warning */}
-      {route && !alternate && (
-        <div style={amber}>
-          {amberIcon}
-          <span>No alternate airport set — required by ICAO regulations for IFR flights.</span>
-        </div>
-      )}
-
     </div>
   )
 }
