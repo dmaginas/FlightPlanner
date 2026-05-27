@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip } from 'react-leaflet'
-import { getSIDs } from '../data/mockData.ts'
+import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
 
 const TILE_URL  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const TILE_ATTR = '&copy; OpenStreetMap &copy; CARTO'
@@ -32,8 +32,17 @@ function WindBadge({ score }) {
 }
 
 export default function SIDScreen({ departure, route, selectedSID, onSelect, onBack }) {
-  const sids = getSIDs(departure?.icao ?? '', departure, route)
-  const [hover, setHover] = useState(null)
+  const [sids, setSids] = useState<DisplayProcedure[]>([])
+  useEffect(() => {
+    if (!departure?.icao) { setSids([]); return }
+    const ctrl = new AbortController()
+    fetchProcedures(departure.icao, ctrl.signal)
+      .then(data => setSids(toDisplayProcedures(data.sids)))
+      .catch(() => setSids([]))
+    return () => ctrl.abort()
+  }, [departure?.icao])
+
+  const [hover, setHover] = useState<DisplayProcedure | null>(null)
   const active = hover ?? selectedSID
 
   const depCoord = departure ? [departure.lat, departure.lon] : [50.0, 10.0]
@@ -108,27 +117,36 @@ export default function SIDScreen({ departure, route, selectedSID, onSelect, onB
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: isSelected ? 'var(--mint)' : 'var(--text)', letterSpacing: '0.01em' }}>
                       {sid.name}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 3 }}>
-                      Runway {sid.runway} · Initial {sid.initialAlt}
-                    </div>
+                    {sid.runway && (
+                      <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 3 }}>
+                        Runway {sid.runway}
+                        {(sid as any).initialAlt && ` · Initial ${(sid as any).initialAlt}`}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-                    <WindBadge score={sid.windScore} />
+                    {(sid as any).windScore && <WindBadge score={(sid as any).windScore} />}
                     {isSelected && <span style={{ fontSize: 12, color: 'var(--mint)', fontWeight: 600 }}>✓ Selected</span>}
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>{sid.note}</div>
+                {(sid as any).note && (
+                  <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>{(sid as any).note}</div>
+                )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    Confidence: {sid.confidence}%
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: sid.confidence >= 80 ? 'var(--mint)' : sid.confidence >= 60 ? 'var(--amber)' : 'var(--red)' }}>
-                    {sid.confidence}%
-                  </span>
-                </div>
-                <ConfBar value={sid.confidence} />
+                {(sid as any).confidence != null && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        Confidence: {(sid as any).confidence}%
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: (sid as any).confidence >= 80 ? 'var(--mint)' : (sid as any).confidence >= 60 ? 'var(--amber)' : 'var(--red)' }}>
+                        {(sid as any).confidence}%
+                      </span>
+                    </div>
+                    <ConfBar value={(sid as any).confidence} />
+                  </>
+                )}
               </button>
             )
           })
@@ -159,11 +177,11 @@ export default function SIDScreen({ departure, route, selectedSID, onSelect, onB
               <>
                 <Polyline
                   positions={active.path}
-                  pathOptions={{ color: active.windScore === 'Favorable' ? '#00E5A8' : '#FFC457', weight: 3, opacity: 0.9 }}
+                  pathOptions={{ color: (active as any).windScore === 'Favorable' ? '#00E5A8' : '#FFC457', weight: 3, opacity: 0.9 }}
                 />
                 {active.path.map((pos, i) => (
                   <CircleMarker key={i} center={pos} radius={5}
-                    pathOptions={{ color: '#fff', fillColor: active.windScore === 'Favorable' ? '#00E5A8' : '#FFC457', fillOpacity: 1, weight: 1.5 }}
+                    pathOptions={{ color: '#fff', fillColor: (active as any).windScore === 'Favorable' ? '#00E5A8' : '#FFC457', fillOpacity: 1, weight: 1.5 }}
                   >
                     {i === active.path.length - 1 && (
                       <Tooltip permanent direction="right" offset={[8, 0]}>
@@ -202,9 +220,9 @@ export default function SIDScreen({ departure, route, selectedSID, onSelect, onB
               {active.name}
             </div>
             <div style={{ display: 'flex', gap: 16 }}>
-              <InfoItem label="Runway"  value={active.runway} />
-              <InfoItem label="Init Alt" value={active.initialAlt} />
-              <InfoItem label="Score"   value={`${active.confidence}%`} color={active.confidence >= 80 ? 'var(--mint)' : 'var(--amber)'} />
+              {active.runway && <InfoItem label="Runway" value={active.runway} />}
+              {(active as any).initialAlt  && <InfoItem label="Init Alt" value={(active as any).initialAlt} />}
+              {(active as any).confidence != null && <InfoItem label="Score" value={`${(active as any).confidence}%`} color={(active as any).confidence >= 80 ? 'var(--mint)' : 'var(--amber)'} />}
             </div>
           </div>
         )}

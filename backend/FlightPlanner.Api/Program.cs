@@ -1,7 +1,33 @@
+using FlightPlanner.Api.NavData;
 using FlightPlanner.Api.Options;
 using FlightPlanner.Api.Services;
 using Microsoft.AspNetCore.SpaServices.StaticFiles;
 using Microsoft.Extensions.FileProviders;
+
+// ── CLI: import-cifp mode ────────────────────────────────────────────────────
+// Usage:
+//   dotnet run --project FlightPlanner.Api -- import-cifp <cifp-dir>
+//   dotnet run --project FlightPlanner.Api -- import-cifp <cifp-dir> <navdata-dir>
+// If <navdata-dir> is provided, earth_fix.dat and earth_nav.dat are read from there
+// (recommended: use X-Plane's full navdata for best fix coverage).
+if (args.Length >= 2 && args[0] == "import-cifp")
+{
+    var cifpDir  = args[1];
+    var baseDir  = AppContext.BaseDirectory;
+    var navDataDir = args.Length >= 3 ? args[2] : Path.Combine(baseDir, "NavData");
+    var fixPath  = Path.Combine(navDataDir, "earth_fix.dat");
+    var navPath  = Path.Combine(navDataDir, "earth_nav.dat");
+    var dbPath   = Path.Combine(baseDir, "NavData", "procedures.sqlite");
+
+    Console.WriteLine($"CIFP directory : {cifpDir}");
+    Console.WriteLine($"Fix data from  : {navDataDir}");
+    Console.WriteLine($"Output         : {dbPath}");
+    Console.WriteLine();
+
+    CifpImporter.ImportAll(cifpDir, fixPath, navPath, dbPath,
+        msg => Console.WriteLine(msg));
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 

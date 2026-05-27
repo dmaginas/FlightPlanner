@@ -56,6 +56,22 @@ dotnet user-secrets set "FaaNotam:ApiKey" "YOUR_KEY"             # api.faa.gov (
 
 The OpenAIP key goes in `frontend/.env` as `VITE_OPENAIP_API_KEY`.
 
+### SID/STAR procedure database (one-time import)
+
+Requires X-Plane CIFP files. Run once to populate `NavData/procedures.sqlite`:
+```bash
+cd backend
+# Use X-Plane's full navdata for best coordinate coverage (~99.6%)
+dotnet run --project FlightPlanner.Api -- import-cifp "<cifp-dir>" "<navdata-dir>"
+
+# Example with X-Plane 12:
+dotnet run --project FlightPlanner.Api -- import-cifp \
+  "D:\X-Plane 12\Resources\default data\CIFP" \
+  "D:\X-Plane 12\Resources\default data"
+```
+
+The database is written to `bin/Debug/net10.0/NavData/procedures.sqlite`. Without it, `GET /api/procedures/{icao}` returns 503. The importer reads `earth_fix.dat` and `earth_nav.dat` from `<navdata-dir>` for fix coordinate resolution.
+
 ## Architecture
 
 ### Overview

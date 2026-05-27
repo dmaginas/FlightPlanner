@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { searchAirports } from '../data/airports.ts'
 import { filterAircraftProfiles, getAircraftDisplayLabel } from '../data/aircraftPerformance.ts'
-import { getSIDs, getSTARs } from '../data/mockData.ts'
+import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
 
 function AirportSearch({ label, role, value, onChange }) {
   const [query, setQuery]       = useState(value ? `${value.icao} — ${value.name}` : '')
@@ -388,21 +388,19 @@ function CruiseAltitudeInput({ value, onChange, aircraftDefault }: {
   )
 }
 
-function windColor(score: string) {
-  if (score === 'Favorable') return 'var(--mint)'
-  if (score === 'Tailwind')  return '#ef4444'
-  return 'var(--amber)'
-}
-
 function ProcSelector({ label, procs, selected, onChange }: {
-  label: string
-  procs: any[]
-  selected: any
-  onChange: (proc: any | null) => void
+  label:    string
+  procs:    DisplayProcedure[]
+  selected: DisplayProcedure | null
+  onChange: (proc: DisplayProcedure | null) => void
 }) {
   const [open, setOpen] = useState(false)
 
   if (!procs || procs.length === 0) return null
+
+  const selectedSummary = selected
+    ? selected.runway ? `${selected.name}  RWY ${selected.runway}` : selected.name
+    : `Select ${label === 'SID' ? 'departure' : 'arrival'} procedure`
 
   return (
     <div>
@@ -418,7 +416,7 @@ function ProcSelector({ label, procs, selected, onChange }: {
       >
         <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: selected ? 'var(--mint)' : 'var(--violet)', flexShrink: 0 }}>{label}</span>
         <span style={{ flex: 1, fontSize: 11, color: selected ? 'var(--text)' : 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selected ? `${selected.name}  RWY ${selected.runway}` : `Select ${label === 'SID' ? 'departure' : 'arrival'} procedure`}
+          {selectedSummary}
         </span>
         {selected && <span style={{ fontSize: 10, color: 'var(--mint)', flexShrink: 0 }}>✓</span>}
         <span style={{ fontSize: 9, color: 'var(--dim)', flexShrink: 0 }}>{open ? '▴' : '▾'}</span>
@@ -427,7 +425,7 @@ function ProcSelector({ label, procs, selected, onChange }: {
       {open && (
         <div style={{
           marginTop: 2, borderRadius: 'var(--r)', border: '1px solid var(--line)',
-          background: 'var(--bg-2)', overflow: 'hidden',
+          background: 'var(--bg-2)', overflow: 'hidden', maxHeight: 240, overflowY: 'auto',
         }}>
           <button
             onClick={() => { onChange(null); setOpen(false) }}
@@ -455,11 +453,7 @@ function ProcSelector({ label, procs, selected, onChange }: {
             >
               <div>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: selected?.id === proc.id ? 'var(--mint)' : 'var(--text)' }}>{proc.name}</span>
-                <span style={{ fontSize: 10, color: 'var(--dim)', marginLeft: 6 }}>RWY {proc.runway}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <span style={{ fontSize: 9, color: windColor(proc.windScore) }}>{proc.windScore}</span>
-                <span style={{ fontSize: 9, color: 'var(--dim)' }}>{proc.confidence}%</span>
+                {proc.runway && <span style={{ fontSize: 10, color: 'var(--dim)', marginLeft: 6 }}>RWY {proc.runway}</span>}
               </div>
             </button>
           ))}
@@ -477,8 +471,26 @@ export default function FlightInput({ departure, arrival, alternate, routeState,
   const dist    = roughNm(departure, arrival)
   const altDist = roughNm(arrival, alternate)
 
-  const sids  = useMemo(() => departure ? getSIDs(departure.icao,  departure, null) : [], [departure?.icao])
-  const stars = useMemo(() => arrival   ? getSTARs(arrival.icao,   arrival,   null) : [], [arrival?.icao])
+  const [sids,  setSids]  = useState<DisplayProcedure[]>([])
+  const [stars, setStars] = useState<DisplayProcedure[]>([])
+
+  useEffect(() => {
+    if (!departure?.icao) { setSids([]); return }
+    const ctrl = new AbortController()
+    fetchProcedures(departure.icao, ctrl.signal)
+      .then(data => setSids(toDisplayProcedures(data.sids)))
+      .catch(() => setSids([]))
+    return () => ctrl.abort()
+  }, [departure?.icao])
+
+  useEffect(() => {
+    if (!arrival?.icao) { setStars([]); return }
+    const ctrl = new AbortController()
+    fetchProcedures(arrival.icao, ctrl.signal)
+      .then(data => setStars(toDisplayProcedures(data.stars)))
+      .catch(() => setStars([]))
+    return () => ctrl.abort()
+  }, [arrival?.icao])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

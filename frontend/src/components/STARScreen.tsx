@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip } from 'react-leaflet'
-import { getSTARs } from '../data/mockData.ts'
+import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
 
 const TILE_URL  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const TILE_ATTR = '&copy; OpenStreetMap &copy; CARTO'
@@ -32,11 +32,24 @@ function WindBadge({ score }) {
 }
 
 export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onBack }) {
-  const stars = getSTARs(arrival?.icao ?? '', arrival, route)
-  const [hover, setHover] = useState(null)
+  const [stars, setStars] = useState<DisplayProcedure[]>([])
+  useEffect(() => {
+    if (!arrival?.icao) { setStars([]); return }
+    const ctrl = new AbortController()
+    fetchProcedures(arrival.icao, ctrl.signal)
+      .then(data => setStars(toDisplayProcedures(data.stars)))
+      .catch(() => setStars([]))
+    return () => ctrl.abort()
+  }, [arrival?.icao])
+
+  const [hover, setHover] = useState<DisplayProcedure | null>(null)
   const active = hover ?? selectedSTAR
 
   const arrCoord = arrival ? [arrival.lat, arrival.lon] : [51.5, 0.0]
+  const pathColor = (s: any) =>
+    (s as any).windScore === 'Favorable' ? '#00E5A8'
+    : (s as any).windScore === 'Tailwind' ? '#FF5C72'
+    : '#FFC457'
 
   return (
     <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '340px 1fr', overflow: 'hidden' }}>
@@ -68,15 +81,15 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
           </div>
         </div>
 
-        {/* AI recommendation chip */}
+        {/* Recommendation chip */}
         {stars.length > 0 && (
           <div style={{
             padding: '10px 14px', borderRadius: 'var(--r)',
             background: 'var(--mint-soft)', border: '1px solid rgba(0,229,168,.25)',
             fontSize: 12, color: 'var(--muted)', lineHeight: 1.6,
           }}>
-            <span style={{ color: 'var(--mint)', fontWeight: 600 }}>AI Dispatcher: </span>
-            {stars[0]?.name} is recommended for current arrival weather. Into-wind approach minimises go-around risk.
+            <span style={{ color: 'var(--mint)', fontWeight: 600 }}>Procedures: </span>
+            {stars.length} arrival procedure{stars.length !== 1 ? 's' : ''} available for {arrival?.icao}.
           </div>
         )}
 
@@ -108,27 +121,37 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: isSelected ? 'var(--mint)' : 'var(--text)', letterSpacing: '0.01em' }}>
                       {star.name}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 3 }}>
-                      Runway {star.runway} · Final {star.finalAlt}
-                    </div>
+                    {(star.runway || (star as any).finalAlt) && (
+                      <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 3 }}>
+                        {star.runway && `Runway ${star.runway}`}
+                        {star.runway && (star as any).finalAlt && ' · '}
+                        {(star as any).finalAlt && `Final ${(star as any).finalAlt}`}
+                      </div>
+                    )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5 }}>
-                    <WindBadge score={star.windScore} />
+                    {(star as any).windScore && <WindBadge score={(star as any).windScore} />}
                     {isSelected && <span style={{ fontSize: 12, color: 'var(--mint)', fontWeight: 600 }}>✓ Selected</span>}
                   </div>
                 </div>
 
-                <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>{star.note}</div>
+                {(star as any).note && (
+                  <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 8 }}>{(star as any).note}</div>
+                )}
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    Confidence: {star.confidence}%
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: star.confidence >= 80 ? 'var(--mint)' : star.confidence >= 60 ? 'var(--amber)' : 'var(--red)' }}>
-                    {star.confidence}%
-                  </span>
-                </div>
-                <ConfBar value={star.confidence} />
+                {(star as any).confidence != null && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        Confidence: {(star as any).confidence}%
+                      </span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 600, color: (star as any).confidence >= 80 ? 'var(--mint)' : (star as any).confidence >= 60 ? 'var(--amber)' : 'var(--red)' }}>
+                        {(star as any).confidence}%
+                      </span>
+                    </div>
+                    <ConfBar value={(star as any).confidence} />
+                  </>
+                )}
               </button>
             )
           })
@@ -159,22 +182,19 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
               <>
                 <Polyline
                   positions={active.path}
-                  pathOptions={{ color: active.windScore === 'Favorable' ? '#00E5A8' : active.windScore === 'Tailwind' ? '#FF5C72' : '#FFC457', weight: 3, opacity: 0.9 }}
+                  pathOptions={{ color: pathColor(active), weight: 3, opacity: 0.9 }}
                 />
-                {active.path.map((pos, i) => {
-                  const pathColor = active.windScore === 'Favorable' ? '#00E5A8' : active.windScore === 'Tailwind' ? '#FF5C72' : '#FFC457'
-                  return (
-                    <CircleMarker key={i} center={pos} radius={5}
-                      pathOptions={{ color: '#fff', fillColor: pathColor, fillOpacity: 1, weight: 1.5 }}
-                    >
-                      {i === 0 && (
-                        <Tooltip permanent direction="left" offset={[-8, 0]}>
-                          <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{active.name.split(' ')[0]}</span>
-                        </Tooltip>
-                      )}
-                    </CircleMarker>
-                  )
-                })}
+                {active.path.map((pos, i) => (
+                  <CircleMarker key={i} center={pos} radius={5}
+                    pathOptions={{ color: '#fff', fillColor: pathColor(active), fillOpacity: 1, weight: 1.5 }}
+                  >
+                    {i === 0 && (
+                      <Tooltip permanent direction="left" offset={[-8, 0]}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{active.name.split(' ')[0]}</span>
+                      </Tooltip>
+                    )}
+                  </CircleMarker>
+                ))}
               </>
             )}
 
@@ -205,9 +225,9 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
               {active.name}
             </div>
             <div style={{ display: 'flex', gap: 16 }}>
-              <InfoItem label="Runway"    value={active.runway} />
-              <InfoItem label="Final Alt" value={active.finalAlt} />
-              <InfoItem label="Score"     value={`${active.confidence}%`} color={active.confidence >= 80 ? 'var(--mint)' : 'var(--amber)'} />
+              {active.runway && <InfoItem label="Runway" value={active.runway} />}
+              {(active as any).finalAlt    && <InfoItem label="Final Alt" value={(active as any).finalAlt} />}
+              {(active as any).confidence != null && <InfoItem label="Score" value={`${(active as any).confidence}%`} color={(active as any).confidence >= 80 ? 'var(--mint)' : 'var(--amber)'} />}
             </div>
           </div>
         )}
@@ -229,7 +249,8 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
   )
 }
 
-function InfoItem({ label, value, color }) {
+function InfoItem({ label, value, color = undefined }) {
+  if (!value) return null
   return (
     <div>
       <div style={{ fontSize: 10, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>{label}</div>
