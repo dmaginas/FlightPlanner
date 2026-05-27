@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip } from 'react-leaflet'
 import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
 import NavDataLayer from './NavDataLayer.tsx'
+import NatLayer from './NatLayer.tsx'
 
 const TILE_URL  = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
 const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
@@ -11,6 +12,7 @@ const LAYER_DEFS = [
   { id: 'ndb',    label: 'NDB',  color: '#0369a1' },
   { id: 'fix',    label: 'FIX',  color: '#6b7280' },
   { id: 'airway', label: 'AWY',  color: '#3b82f6' },
+  { id: 'nat',    label: 'NAT',  color: '#f59e0b' },
 ] as const
 
 function ConfBar({ value }) {
@@ -213,6 +215,7 @@ export default function SIDScreen({ departure, route, selectedSID, onSelect, onB
             )}
 
             <NavDataLayer enabledLayers={enabledLayers} />
+            <NatLayer enabledLayers={enabledLayers} />
           </MapContainer>
         </div>
 

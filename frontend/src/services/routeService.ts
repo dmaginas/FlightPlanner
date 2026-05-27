@@ -49,6 +49,7 @@ export interface SelectedRoute {
   etaMinutes?: number
   fuelEstimateTons?: number
   aircraftProfile?: unknown
+  natTrackId?: string
 }
 
 export interface AlternativeRoute {
@@ -120,6 +121,7 @@ interface BackendSelectedRoute {
   waypoints: BackendWaypoint[]
   distanceNm?: number | null
   source: string
+  natTrackId?: string | null
 }
 
 interface BackendAlternative {
@@ -222,6 +224,7 @@ function mapSelectedRoute(
     etaMinutes,
     fuelEstimateTons,
     aircraftProfile,
+    natTrackId: dto.natTrackId ?? undefined,
   }
 }
 

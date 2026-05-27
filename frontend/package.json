@@ -1,6 +1,6 @@
 {
   "name": "flightplanner",
-  "version": "0.5.7",
+  "version": "0.5.11",
   "private": true,
   "type": "module",
   "scripts": {

@@ -36,6 +36,9 @@ public sealed class SelectedRouteDto
 
     /// <summary>"flight-plan-database", "navdata-airac2012", or "local-fallback".</summary>
     public required string Source { get; init; }
+
+    /// <summary>NAT track identifier applied to the oceanic segment (e.g. "A"), or null for non-transatlantic routes.</summary>
+    public string? NatTrackId { get; init; }
 }
 
 /// <summary>Single waypoint in the route.</summary>

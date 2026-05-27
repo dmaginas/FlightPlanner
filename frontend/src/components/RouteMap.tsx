@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import NavDataLayer from './NavDataLayer'
+import NatLayer from './NatLayer'
 
 // Fix Leaflet default icon (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl
@@ -95,6 +96,7 @@ const LAYER_DEFS = [
   { id: 'ndb',    label: 'NDB',  color: '#0369a1' },
   { id: 'fix',    label: 'FIX',  color: '#6b7280' },
   { id: 'airway', label: 'AWY',  color: '#3b82f6' },
+  { id: 'nat',    label: 'NAT',  color: '#f59e0b' },
 ] as const
 
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, enabledLayers, onToggleLayer }) {
@@ -207,6 +209,11 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         )}
 
         <NavDataLayer enabledLayers={enabledLayers} />
+        <NatLayer
+          enabledLayers={enabledLayers}
+          departureLon={departure?.lon}
+          arrivalLon={arrival?.lon}
+        />
         <MapController departure={departure} arrival={arrival} routeCoords={routeCoords} />
       </MapContainer>
 
@@ -274,8 +281,9 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
       }}>
         {route && (
           <>
-            <MapBadge label={route.altitude}  color="var(--violet)" />
-            <MapBadge label={route.aircraft}  color="var(--muted)"  />
+            <MapBadge label={route.altitude}                               color="var(--violet)" />
+            <MapBadge label={route.aircraft}                               color="var(--muted)"  />
+            {route.natTrackId && <MapBadge label={`NAT ${route.natTrackId}`} color="#f59e0b" />}
           </>
         )}
       </div>

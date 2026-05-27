@@ -116,6 +116,14 @@ builder.Services.AddHttpClient<IGrametService, GrametService>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 
+// NAT track service — FPD /nav/NATS endpoint, cached 15 min
+// FlightPlanDatabaseOptions is resolved automatically from the DI container (registered above)
+builder.Services.AddHttpClient<INatService, NatService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ─────────────────────────────────────────────────────

@@ -105,9 +105,7 @@ export default function App() {
       const fallback = computeLocalFallback(departure, arrival, aircraftProfile)
       setRoute(fallback)
       setRouteState('ready')
-      setRouteWarning(
-        'External IFR route lookup failed. Showing locally calculated fallback route.'
-      )
+      setRouteWarning('External IFR route lookup failed. Showing locally calculated fallback route.')
     }
   }
 
