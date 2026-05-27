@@ -72,7 +72,10 @@
       "Bash(kill %1)",
       "WebFetch(domain:ganderoceanic.ca)",
       "WebFetch(domain:nattrak.vatsim.net)",
-      "WebFetch(domain:api.ganderoceanic.ca)"
+      "WebFetch(domain:api.ganderoceanic.ca)",
+      "Bash(Select-String -Pattern \"\\(route|airac|navdata|astar|graph|path|fix|vor|ndb|airway\\)\" -AllMatches)",
+      "Bash(Sort-Object -Unique)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\dimos\\\\source\\\\repos\\\\dmaginas\\\\FlightPlanner\\\\backend\" -Recurse -File | Where-Object { $_.Name -match \"\\(route|airac|navdata|astar|graph|path|fix|vor|ndb|airway\\)\" } | Select-Object -ExpandProperty FullName)"
     ]
   }
 }

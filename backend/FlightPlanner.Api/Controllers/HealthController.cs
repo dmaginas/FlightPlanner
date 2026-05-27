@@ -14,12 +14,10 @@ namespace FlightPlanner.Api.Controllers;
 public sealed class HealthController : ControllerBase
 {
     private readonly FlightPlanDatabaseOptions _fpdOptions;
-    private readonly NotamOptions _notamOptions;
 
-    public HealthController(FlightPlanDatabaseOptions fpdOptions, NotamOptions notamOptions)
+    public HealthController(FlightPlanDatabaseOptions fpdOptions)
     {
-        _fpdOptions   = fpdOptions;
-        _notamOptions = notamOptions;
+        _fpdOptions = fpdOptions;
     }
 
     /// <summary>
@@ -40,8 +38,7 @@ public sealed class HealthController : ControllerBase
             ? version[..version.IndexOf('+')]
             : version;
 
-        bool fpdConfigured   = !string.IsNullOrWhiteSpace(_fpdOptions.ApiKey);
-        bool notamConfigured = !string.IsNullOrWhiteSpace(_notamOptions.ApiKey);
+        bool fpdConfigured = !string.IsNullOrWhiteSpace(_fpdOptions.ApiKey);
 
         var apiServices = new List<ApiServiceStatus>
         {
@@ -69,16 +66,6 @@ public sealed class HealthController : ControllerBase
                 Note       = fpdConfigured
                     ? "IFR routes — API key configured"
                     : "IFR routes — set via: dotnet user-secrets set \"FlightPlanDatabase:ApiKey\" \"YOUR_KEY\"",
-                KeyRequired = true,
-            },
-            new()
-            {
-                Key        = "faa_notam",
-                Name       = "FAA NOTAM API",
-                Status     = notamConfigured ? "ok" : "not_configured",
-                Note       = notamConfigured
-                    ? "NOTAMs — API key configured"
-                    : "NOTAMs — free key at api.faa.gov, then: dotnet user-secrets set \"FaaNotam:ApiKey\" \"YOUR_KEY\"",
                 KeyRequired = true,
             },
             new()

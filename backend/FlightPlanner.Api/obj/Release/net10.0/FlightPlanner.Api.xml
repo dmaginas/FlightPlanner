@@ -70,15 +70,6 @@
             <param name="neLon">North-east corner longitude.</param>
             <param name="types">Comma-separated list of layer types: vor, ndb, fix, airway. Defaults to all.</param>
         </member>
-        <member name="T:FlightPlanner.Api.Controllers.NotamController">
-             <summary>
-             NOTAM endpoint — GET /api/notam?icao=EDDF
-            
-             Fetches active NOTAMs from the FAA NOTAM API and returns them as JSON.
-             Requires FaaNotam:ApiKey in server configuration (user secrets).
-             Free registration: https://api.faa.gov/
-             </summary>
-        </member>
         <member name="T:FlightPlanner.Api.Controllers.RoutesController">
              <summary>
              IFR Route Lookup — GET /api/routes
@@ -163,6 +154,9 @@
         </member>
         <member name="P:FlightPlanner.Api.Models.GrametLevelData.FlightLevelFt">
             <summary>Approximate altitude in feet (ISA standard).</summary>
+        </member>
+        <member name="P:FlightPlanner.Api.Models.GrametLevelData.TempC">
+            <summary>Null when the model has no data for this level (e.g. above tropopause).</summary>
         </member>
         <member name="T:FlightPlanner.Api.Models.HealthResponse">
             <summary>
@@ -427,19 +421,6 @@
             <summary>
             Fetches pressure-level weather data for each waypoint in parallel.
             Returns a fallback with zero values for any waypoint that fails.
-            </summary>
-        </member>
-        <member name="M:FlightPlanner.Api.Services.INotamService.FetchNotamsAsync(System.String,System.Threading.CancellationToken)">
-            <summary>
-            Fetches active NOTAMs for the given ICAO code from the FAA NOTAM API.
-            </summary>
-        </member>
-        <member name="T:FlightPlanner.Api.Services.NotamService">
-            <summary>
-            Fetches NOTAMs from the FAA NOTAM API (api.faa.gov).
-            Configuration: set FaaNotam:ApiKey in user secrets.
-              dotnet user-secrets set "FaaNotam:ApiKey" "YOUR_KEY"
-            Free registration: https://api.faa.gov/
             </summary>
         </member>
     </members>

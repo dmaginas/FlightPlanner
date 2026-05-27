@@ -14,11 +14,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyDescriptionAttribute("FlightPlanner ASP.NET Core Backend — METAR proxy and static frontend serving")]
-[assembly: System.Reflection.AssemblyFileVersionAttribute("0.1.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.1.0+7a473d8cb2dacd270a9e452b7b6c1ba92da47b1a")]
+[assembly: System.Reflection.AssemblyFileVersionAttribute("0.2.2.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("0.2.2+3c89926a05bdf7813ae6b79a3f7ca45fc21f3fbf")]
 [assembly: System.Reflection.AssemblyProductAttribute("FlightPlanner.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FlightPlanner.Api")]
-[assembly: System.Reflection.AssemblyVersionAttribute("0.1.0.0")]
+[assembly: System.Reflection.AssemblyVersionAttribute("0.2.2.0")]
 
 // Von der MSBuild WriteCodeFragment-Klasse generiert.
 

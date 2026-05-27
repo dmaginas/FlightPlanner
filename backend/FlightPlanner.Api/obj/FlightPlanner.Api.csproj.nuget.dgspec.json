@@ -5,7 +5,7 @@
   },
   "projects": {
     "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj": {
-      "version": "0.1.0",
+      "version": "0.2.2",
       "restore": {
         "projectUniqueName": "c:\\Users\\dimos\\source\\repos\\dmaginas\\FlightPlanner\\backend\\FlightPlanner.Api\\FlightPlanner.Api.csproj",
         "projectName": "FlightPlanner.Api",

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchMetarByIcao, MetarServiceError, normalizeIcaoCode } from '../services/metarService.ts'
 import { fetchTafByIcao, TafServiceError } from '../services/tafService.ts'
-import { fetchNotamsByIcao, NotamServiceError, type NotamItem } from '../services/notamService.ts'
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -44,40 +43,6 @@ function SectionLabel({ text }: { text: string }) {
   )
 }
 
-function NotamList({ notams }: { notams: NotamItem[] }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-      {notams.map((n) => (
-        <div key={n.id} style={{
-          padding: '7px 10px', borderRadius: 'var(--r-sm)',
-          background: 'rgba(0,0,0,.2)', border: '1px solid var(--line-2)',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>
-              {n.number}
-            </span>
-            {n.classification && (
-              <span style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.05em' }}>
-                {n.classification}
-              </span>
-            )}
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--dim)',
-            lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-          }}>
-            {n.text}
-          </div>
-          <div style={{ marginTop: 4, fontSize: 9.5, color: 'var(--muted)' }}>
-            {n.effectiveStart && `From ${n.effectiveStart}`}
-            {n.effectiveEnd   && ` · Until ${n.effectiveEnd}`}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 // ── AirportWeather ────────────────────────────────────────────────────────────
 
 function AirportWeather({ airport, role }) {
@@ -89,10 +54,6 @@ function AirportWeather({ airport, role }) {
   const [taf, setTaf] = useState<{ status: string; text: string; message: string }>(
     { status: 'idle', text: '', message: '' }
   )
-  const [notam, setNotam] = useState<{ status: string; items: NotamItem[]; total: number; message: string }>(
-    { status: 'idle', items: [], total: 0, message: '' }
-  )
-
   useEffect(() => {
     const controller = new AbortController()
     const normalizedIcao = normalizeIcaoCode(airport?.icao)
@@ -103,7 +64,6 @@ function AirportWeather({ airport, role }) {
         : 'No ICAO code available for this airport.'
       setMetar({ status: 'empty', text: '', message: msg })
       setTaf(  { status: 'empty', text: '', message: msg })
-      setNotam({ status: 'empty', items: [], total: 0, message: msg })
       return
     }
 
@@ -145,25 +105,6 @@ function AirportWeather({ airport, role }) {
         }
       })
 
-    // ── NOTAMs ────────────────────────────────────────────────────────────
-    setNotam({ status: 'loading', items: [], total: 0, message: '' })
-    fetchNotamsByIcao(normalizedIcao, controller.signal)
-      .then((record) => {
-        if (!record || record.notams.length === 0) {
-          setNotam({ status: 'empty', items: [], total: 0, message: 'No active NOTAMs.' })
-        } else {
-          setNotam({ status: 'ready', items: record.notams, total: record.total, message: '' })
-        }
-      })
-      .catch((err) => {
-        if (controller.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return
-        if (err instanceof NotamServiceError && err.kind === 'config_error') {
-          setNotam({ status: 'error', items: [], total: 0, message: 'NOTAM API key not configured.' })
-        } else {
-          setNotam({ status: 'error', items: [], total: 0, message: 'NOTAMs could not be loaded.' })
-        }
-      })
-
     return () => controller.abort()
   }, [airport?.icao])
 
@@ -196,11 +137,6 @@ function AirportWeather({ airport, role }) {
       {(taf.status === 'empty' || taf.status === 'error') && <StatusText text={taf.message} />}
       {taf.status === 'ready' && <DataBlock text={taf.text} />}
 
-      {/* NOTAMs */}
-      <SectionLabel text={notam.status === 'ready' ? `NOTAMs (${notam.total})` : 'NOTAMs'} />
-      {notam.status === 'loading' && <StatusText text="Loading NOTAMs…" />}
-      {(notam.status === 'empty' || notam.status === 'error') && <StatusText text={notam.message} />}
-      {notam.status === 'ready' && <NotamList notams={notam.items} />}
     </div>
   )
 }
