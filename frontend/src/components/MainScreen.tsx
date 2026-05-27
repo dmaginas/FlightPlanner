@@ -97,7 +97,7 @@ export default function MainScreen({
         overflow: 'hidden',
         display: 'flex', flexDirection: 'column', gap: 8,
       }}>
-        {route && <RouteTextBox route={route} />}
+        {route && <RouteTextBox route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />}
         {route
           ? <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
           : <EmptyTable />
@@ -212,7 +212,7 @@ function NarrowLayout({
 
       {/* Route string + waypoint table */}
       <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {route && <RouteTextBox route={route} />}
+        {route && <RouteTextBox route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />}
         {route
           ? <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
           : <EmptyTable />
@@ -345,12 +345,23 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
 
 // ── Shared sub-components ───────────────────────────────────────────────────────
 
-function RouteTextBox({ route }) {
+function RouteTextBox({ route, selectedSID, selectedSTAR }) {
   const [copied, setCopied] = useState(false)
 
-  const text = route.waypoints
-    .map(wp => wp.id.toUpperCase())
-    .join(' ')
+  const wps = route.waypoints
+  const depIsAirport = wps[0]?.type === 'airport'
+  const arrIsAirport = wps[wps.length - 1]?.type === 'airport'
+  const parts: string[] = []
+  wps.forEach((wp, i) => {
+    parts.push(wp.id.toUpperCase())
+    if (depIsAirport && i === 0 && selectedSID)
+      parts.push(selectedSID.name.toUpperCase())
+    if (arrIsAirport && i === wps.length - 2 && selectedSTAR)
+      parts.push(selectedSTAR.name.toUpperCase())
+  })
+  if (!depIsAirport && selectedSID)  parts.unshift(selectedSID.name.toUpperCase())
+  if (!arrIsAirport && selectedSTAR) parts.push(selectedSTAR.name.toUpperCase())
+  const text = parts.join(' ')
 
   function handleCopy() {
     navigator.clipboard.writeText(text).then(() => {

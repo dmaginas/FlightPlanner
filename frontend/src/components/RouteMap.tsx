@@ -56,12 +56,14 @@ function MapController({ departure, arrival, routeCoords }) {
   return null
 }
 
-function SIDPath({ sid }) {
+function SIDPath({ sid, departure }) {
   if (!sid?.path) return null
+  const aptCoord: [number, number] | null = departure ? [departure.lat, departure.lon] : null
+  const positions = aptCoord ? [aptCoord, ...sid.path] : sid.path
   return (
     <>
       <Polyline
-        positions={sid.path}
+        positions={positions}
         pathOptions={{ color: '#8B7CFF', weight: 2, opacity: 0.7, dashArray: '6 4' }}
       />
       {sid.path.map((pos, i) => (
@@ -73,12 +75,14 @@ function SIDPath({ sid }) {
   )
 }
 
-function STARPath({ star }) {
+function STARPath({ star, arrival }) {
   if (!star?.path) return null
+  const aptCoord: [number, number] | null = arrival ? [arrival.lat, arrival.lon] : null
+  const positions = aptCoord ? [...star.path, aptCoord] : star.path
   return (
     <>
       <Polyline
-        positions={star.path}
+        positions={positions}
         pathOptions={{ color: '#00E5A8', weight: 2, opacity: 0.7, dashArray: '6 4' }}
       />
       {star.path.map((pos, i) => (
@@ -190,8 +194,8 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         )}
 
         {/* SID / STAR overlay paths */}
-        <SIDPath  sid={selectedSID}  />
-        <STARPath star={selectedSTAR} />
+        <SIDPath  sid={selectedSID}  departure={departure} />
+        <STARPath star={selectedSTAR} arrival={arrival} />
 
         {/* Airport markers */}
         {departure && (
