@@ -62,13 +62,11 @@ function SIDPath({ sid, departure }) {
   const positions = aptCoord ? [aptCoord, ...sid.path] : sid.path
   return (
     <>
-      <Polyline
-        positions={positions}
-        pathOptions={{ color: '#8B7CFF', weight: 2, opacity: 0.7, dashArray: '6 4' }}
-      />
+      <Polyline positions={positions} pathOptions={{ color: '#fff', weight: 6, opacity: 0.55, dashArray: '8 5' }} />
+      <Polyline positions={positions} pathOptions={{ color: '#FF6B00', weight: 3, opacity: 1, dashArray: '8 5' }} />
       {sid.path.map((pos, i) => (
-        <CircleMarker key={i} center={pos} radius={3}
-          pathOptions={{ color: '#8B7CFF', fillColor: '#8B7CFF', fillOpacity: 0.8, weight: 1 }}
+        <CircleMarker key={i} center={pos} radius={4}
+          pathOptions={{ color: '#fff', fillColor: '#FF6B00', fillOpacity: 1, weight: 1.5 }}
         />
       ))}
     </>
@@ -81,13 +79,11 @@ function STARPath({ star, arrival }) {
   const positions = aptCoord ? [...star.path, aptCoord] : star.path
   return (
     <>
-      <Polyline
-        positions={positions}
-        pathOptions={{ color: '#00E5A8', weight: 2, opacity: 0.7, dashArray: '6 4' }}
-      />
+      <Polyline positions={positions} pathOptions={{ color: '#fff', weight: 6, opacity: 0.55, dashArray: '8 5' }} />
+      <Polyline positions={positions} pathOptions={{ color: '#E8003D', weight: 3, opacity: 1, dashArray: '8 5' }} />
       {star.path.map((pos, i) => (
-        <CircleMarker key={i} center={pos} radius={3}
-          pathOptions={{ color: '#00E5A8', fillColor: '#00E5A8', fillOpacity: 0.8, weight: 1 }}
+        <CircleMarker key={i} center={pos} radius={4}
+          pathOptions={{ color: '#fff', fillColor: '#E8003D', fillOpacity: 1, weight: 1.5 }}
         />
       ))}
     </>
@@ -113,9 +109,9 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
   )
 
   const airportStyle = (isActive) => ({
-    color: isActive ? '#fff' : 'rgba(255,255,255,.5)',
-    fillColor: isActive ? '#8B7CFF' : '#444',
-    fillOpacity: 1, weight: 2, radius: 7,
+    color: '#fff',
+    fillColor: isActive ? '#1a56db' : '#444',
+    fillOpacity: 1, weight: 2.5, radius: 8,
   })
 
   return (
@@ -131,16 +127,12 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
 
         {route && routeCoords.length > 1 && (
           <>
-            {/* Route shadow glow */}
-            <Polyline
-              positions={routeCoords}
-              pathOptions={{ color: '#8B7CFF', weight: 14, opacity: 0.08 }}
-            />
+            {/* Route glow */}
+            <Polyline positions={routeCoords} pathOptions={{ color: '#1a56db', weight: 18, opacity: 0.15 }} />
+            {/* Route halo */}
+            <Polyline positions={routeCoords} pathOptions={{ color: '#fff', weight: 9, opacity: 0.6 }} />
             {/* Main route line */}
-            <Polyline
-              positions={routeCoords}
-              pathOptions={{ color: '#8B7CFF', weight: 2.5, opacity: 0.9 }}
-            />
+            <Polyline positions={routeCoords} pathOptions={{ color: '#1a56db', weight: 5, opacity: 1 }} />
 
             {/* Waypoint markers */}
             {route.waypoints.map((wp, i) => {
@@ -150,8 +142,8 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
                 <CircleMarker
                   key={`${wp.id}-${i}`}
                   center={[wp.lat, wp.lon]}
-                  radius={4}
-                  pathOptions={{ color: '#8B7CFF', fillColor: '#8B7CFF', fillOpacity: 0.9, weight: 1.5 }}
+                  radius={5}
+                  pathOptions={{ color: '#fff', fillColor: '#1a56db', fillOpacity: 1, weight: 2 }}
                 >
                   <Tooltip permanent={false} direction="top" offset={[0, -6]}>
                     <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{wp.id}</span>
@@ -205,7 +197,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           <CircleMarker
             center={[arrival.lat, arrival.lon]}
             radius={8}
-            pathOptions={{ ...airportStyle(true), fillColor: '#00E5A8', color: '#fff' }}
+            pathOptions={{ ...airportStyle(true), fillColor: '#059669' }}
           >
             <Tooltip permanent direction="top" offset={[0, -10]}>
               <span style={{ fontFamily: 'monospace', fontWeight: 700 }}>{arrival.icao}</span>
