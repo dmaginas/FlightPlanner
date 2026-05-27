@@ -13,6 +13,7 @@ export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
   onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
+  enabledLayers, onToggleLayer,
 }) {
   const width    = useWindowWidth()
   const isNarrow = width < 1024
@@ -86,6 +87,8 @@ export default function MainScreen({
             selectedSTAR={selectedSTAR}
             routeState={routeState}
             selectedAircraftProfile={selectedAircraftProfile}
+            enabledLayers={enabledLayers}
+            onToggleLayer={onToggleLayer}
           />
         </div>
       </main>
@@ -207,6 +210,8 @@ function NarrowLayout({
           selectedSTAR={selectedSTAR}
           routeState={routeState}
           selectedAircraftProfile={selectedAircraftProfile}
+          enabledLayers={enabledLayers}
+          onToggleLayer={onToggleLayer}
         />
       </div>
 

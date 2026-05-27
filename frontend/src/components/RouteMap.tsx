@@ -101,17 +101,7 @@ const LAYER_DEFS = [
   { id: 'airway', label: 'AWY',  color: '#3b82f6' },
 ] as const
 
-export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState }) {
-  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>())
-
-  function toggleLayer(id: string) {
-    setEnabledLayers(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, enabledLayers, onToggleLayer }) {
 
   const initialCenter = departure
     ? [departure.lat, departure.lon]
@@ -262,7 +252,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           return (
             <button
               key={layer.id}
-              onClick={() => toggleLayer(layer.id)}
+              onClick={() => onToggleLayer(layer.id)}
               style={{
                 padding: '4px 10px',
                 borderRadius: 6,

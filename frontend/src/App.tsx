@@ -17,6 +17,10 @@ export default function App() {
   const [alternate, setAlternate]     = useState(null)
   const [selectedSID, setSelectedSID] = useState(null)
   const [selectedSTAR, setSelectedSTAR] = useState(null)
+  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>())
+  const toggleLayer = useCallback((id: string) => {
+    setEnabledLayers(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }, [])
   const [routeState, setRouteState]   = useState('idle') // idle | loading | ready
   const [selectedAircraftType, setSelectedAircraftType] = useState(DEFAULT_AIRCRAFT_TYPE)
   const [cruisingAltitude, setCruisingAltitude] = useState<number | null>(null)
@@ -166,6 +170,8 @@ export default function App() {
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
           alternatives={alternatives}
+          enabledLayers={enabledLayers}
+          onToggleLayer={toggleLayer}
         />
       )}
 
@@ -176,6 +182,8 @@ export default function App() {
           selectedSID={selectedSID}
           onSelect={sid => { setSelectedSID(sid); setScreen('plan') }}
           onBack={() => setScreen('plan')}
+          enabledLayers={enabledLayers}
+          onToggleLayer={toggleLayer}
         />
       )}
 
@@ -186,6 +194,8 @@ export default function App() {
           selectedSTAR={selectedSTAR}
           onSelect={star => { setSelectedSTAR(star); setScreen('plan') }}
           onBack={() => setScreen('plan')}
+          enabledLayers={enabledLayers}
+          onToggleLayer={toggleLayer}
         />
       )}
 

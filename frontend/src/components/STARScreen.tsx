@@ -39,7 +39,7 @@ function WindBadge({ score }) {
   )
 }
 
-export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onBack }) {
+export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onBack, enabledLayers, onToggleLayer }) {
   const [stars, setStars] = useState<DisplayProcedure[]>([])
   useEffect(() => {
     if (!arrival?.icao) { setStars([]); return }
@@ -52,11 +52,6 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
 
   const [hover, setHover] = useState<DisplayProcedure | null>(null)
   const active = hover ?? selectedSTAR
-
-  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>())
-  function toggleLayer(id: string) {
-    setEnabledLayers(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-  }
 
   const arrCoord = arrival ? [arrival.lat, arrival.lon] : [51.5, 0.0]
   const pathColor = (s: any) =>
@@ -234,7 +229,7 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
           {LAYER_DEFS.map(layer => {
             const on = enabledLayers.has(layer.id)
             return (
-              <button key={layer.id} onClick={() => toggleLayer(layer.id)} style={{
+              <button key={layer.id} onClick={() => onToggleLayer(layer.id)} style={{
                 padding: '4px 10px', borderRadius: 6,
                 background: on ? 'rgba(13,18,41,.92)' : 'rgba(13,18,41,.6)',
                 border: `1px solid ${on ? layer.color : 'rgba(244,247,255,.15)'}`,
