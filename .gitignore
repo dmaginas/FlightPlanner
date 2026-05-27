@@ -1,0 +1,12 @@
+# Build output
+publish/
+backend/**/bin/
+backend/**/obj/
+frontend/dist/
+
+# Node
+frontend/node_modules/
+
+# Secrets & local config
+**/*.user
+**/appsettings.Local.json
