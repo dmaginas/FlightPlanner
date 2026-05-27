@@ -168,20 +168,18 @@ export default function SIDScreen({ departure, route, selectedSID, onSelect, onB
             {route?.waypoints && (
               <Polyline
                 positions={route.waypoints.map(w => [w.lat, w.lon])}
-                pathOptions={{ color: '#8B7CFF', weight: 1.5, opacity: 0.25, dashArray: '4 6' }}
+                pathOptions={{ color: '#4a3fbf', weight: 2, opacity: 0.45, dashArray: '4 6' }}
               />
             )}
 
             {/* Active SID path */}
             {active?.path && (
               <>
-                <Polyline
-                  positions={active.path}
-                  pathOptions={{ color: (active as any).windScore === 'Favorable' ? '#00E5A8' : '#FFC457', weight: 3, opacity: 0.9 }}
-                />
+                <Polyline positions={active.path} pathOptions={{ color: '#fff', weight: 7, opacity: 0.55 }} />
+                <Polyline positions={active.path} pathOptions={{ color: '#FF6B00', weight: 4, opacity: 1 }} />
                 {active.path.map((pos, i) => (
                   <CircleMarker key={i} center={pos} radius={5}
-                    pathOptions={{ color: '#fff', fillColor: (active as any).windScore === 'Favorable' ? '#00E5A8' : '#FFC457', fillOpacity: 1, weight: 1.5 }}
+                    pathOptions={{ color: '#fff', fillColor: '#FF6B00', fillOpacity: 1, weight: 1.5 }}
                   >
                     {i === active.path.length - 1 && (
                       <Tooltip permanent direction="right" offset={[8, 0]}>

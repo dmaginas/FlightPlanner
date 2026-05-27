@@ -173,20 +173,18 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
             {route?.waypoints && (
               <Polyline
                 positions={route.waypoints.map(w => [w.lat, w.lon])}
-                pathOptions={{ color: '#8B7CFF', weight: 1.5, opacity: 0.25, dashArray: '4 6' }}
+                pathOptions={{ color: '#4a3fbf', weight: 2, opacity: 0.45, dashArray: '4 6' }}
               />
             )}
 
             {/* Active STAR path */}
             {active?.path && (
               <>
-                <Polyline
-                  positions={active.path}
-                  pathOptions={{ color: pathColor(active), weight: 3, opacity: 0.9 }}
-                />
+                <Polyline positions={active.path} pathOptions={{ color: '#fff', weight: 7, opacity: 0.55 }} />
+                <Polyline positions={active.path} pathOptions={{ color: '#E8003D', weight: 4, opacity: 1 }} />
                 {active.path.map((pos, i) => (
                   <CircleMarker key={i} center={pos} radius={5}
-                    pathOptions={{ color: '#fff', fillColor: pathColor(active), fillOpacity: 1, weight: 1.5 }}
+                    pathOptions={{ color: '#fff', fillColor: '#E8003D', fillOpacity: 1, weight: 1.5 }}
                   >
                     {i === 0 && (
                       <Tooltip permanent direction="left" offset={[-8, 0]}>
