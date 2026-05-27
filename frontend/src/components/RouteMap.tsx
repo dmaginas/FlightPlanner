@@ -7,8 +7,8 @@ import NavDataLayer from './NavDataLayer'
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({ iconUrl: null, iconRetinaUrl: null, shadowUrl: null })
 
-const TILE_URL   = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>'
+const TILE_URL   = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+const TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
 
 function buildRouteCoords(route, selectedSID, selectedSTAR) {
   if (!route?.waypoints?.length) return []
@@ -137,7 +137,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         zoomControl={true}
         attributionControl={true}
       >
-        <TileLayer url={TILE_URL} attribution={TILE_ATTR} maxZoom={18} />
+        <TileLayer url={TILE_URL} attribution={TILE_ATTR} maxZoom={17} />
 
         {route && routeCoords.length > 1 && (
           <>

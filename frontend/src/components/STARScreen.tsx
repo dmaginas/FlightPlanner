@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip } from 'react-leaflet'
 import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
 
-const TILE_URL  = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTR = '&copy; OpenStreetMap &copy; CARTO'
+const TILE_URL  = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
 
 function ConfBar({ value }) {
   const c = value >= 80 ? 'var(--mint)' : value >= 60 ? 'var(--amber)' : 'var(--red)'
