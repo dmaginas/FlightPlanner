@@ -86,7 +86,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
           <Polyline
             key={`awy-${i}`}
             positions={[[seg.fromLat, seg.fromLon], [seg.toLat, seg.toLon]]}
-            pathOptions={{ color: '#4a5568', weight: 1, opacity: 0.55 }}
+            pathOptions={{ color: '#1e40af', weight: 1.5, opacity: 0.7 }}
           />
         ))}
 
@@ -102,7 +102,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
         if (angle < -90 || angle > 90) angle += 180 // keep text right-side-up
         const icon = L.divIcon({
           className: '',
-          html: `<div style="transform:translate(-50%,-50%);display:inline-block;"><span style="display:inline-block;white-space:nowrap;transform:rotate(${angle.toFixed(1)}deg);font-family:monospace;font-size:9px;color:rgba(148,163,184,0.6);text-shadow:0 0 3px #0d1225,0 0 3px #0d1225;pointer-events:none;letter-spacing:0.03em;">${seg.airway}</span></div>`,
+          html: `<div style="transform:translate(-50%,-50%);display:inline-block;"><span style="display:inline-block;white-space:nowrap;transform:rotate(${angle.toFixed(1)}deg);font-family:monospace;font-size:9px;color:#1e3a8a;text-shadow:0 0 3px #fff,0 0 3px #fff;pointer-events:none;letter-spacing:0.03em;font-weight:600;">${seg.airway}</span></div>`,
           iconSize:   [0, 0],
           iconAnchor: [0, 0],
         })
@@ -115,7 +115,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
           key={`fix-${i}`}
           center={[fix.lat, fix.lon]}
           radius={3}
-          pathOptions={{ color: '#9ca3af', fillColor: '#9ca3af', fillOpacity: 0.7, weight: 1 }}
+          pathOptions={{ color: '#374151', fillColor: '#374151', fillOpacity: 0.85, weight: 1.5 }}
         >
           <Tooltip direction="top" offset={[0, -5]}>
             <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{fix.ident}</span>

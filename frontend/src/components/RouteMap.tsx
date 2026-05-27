@@ -95,10 +95,10 @@ function STARPath({ star, arrival }) {
 }
 
 const LAYER_DEFS = [
-  { id: 'vor',    label: 'VOR',  color: '#a855f7' },
-  { id: 'ndb',    label: 'NDB',  color: '#06b6d4' },
-  { id: 'fix',    label: 'FIX',  color: '#9ca3af' },
-  { id: 'airway', label: 'AWY',  color: '#4a5568' },
+  { id: 'vor',    label: 'VOR',  color: '#7c3aed' },
+  { id: 'ndb',    label: 'NDB',  color: '#0369a1' },
+  { id: 'fix',    label: 'FIX',  color: '#6b7280' },
+  { id: 'airway', label: 'AWY',  color: '#3b82f6' },
 ] as const
 
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState }) {

@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip } from 'react-leaflet'
 import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
+import NavDataLayer from './NavDataLayer.tsx'
 
 const TILE_URL  = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
 const TILE_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+
+const LAYER_DEFS = [
+  { id: 'vor',    label: 'VOR',  color: '#7c3aed' },
+  { id: 'ndb',    label: 'NDB',  color: '#0369a1' },
+  { id: 'fix',    label: 'FIX',  color: '#6b7280' },
+  { id: 'airway', label: 'AWY',  color: '#3b82f6' },
+] as const
 
 function ConfBar({ value }) {
   const c = value >= 80 ? 'var(--mint)' : value >= 60 ? 'var(--amber)' : 'var(--red)'
@@ -44,6 +52,11 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
 
   const [hover, setHover] = useState<DisplayProcedure | null>(null)
   const active = hover ?? selectedSTAR
+
+  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>())
+  function toggleLayer(id: string) {
+    setEnabledLayers(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
 
   const arrCoord = arrival ? [arrival.lat, arrival.lon] : [51.5, 0.0]
   const pathColor = (s: any) =>
@@ -208,7 +221,32 @@ export default function STARScreen({ arrival, route, selectedSTAR, onSelect, onB
                 </Tooltip>
               </CircleMarker>
             )}
+
+            <NavDataLayer enabledLayers={enabledLayers} />
           </MapContainer>
+        </div>
+
+        {/* NavData layer toggles */}
+        <div style={{
+          position: 'absolute', bottom: 28, right: 12, zIndex: 1000,
+          display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
+        }}>
+          {LAYER_DEFS.map(layer => {
+            const on = enabledLayers.has(layer.id)
+            return (
+              <button key={layer.id} onClick={() => toggleLayer(layer.id)} style={{
+                padding: '4px 10px', borderRadius: 6,
+                background: on ? 'rgba(13,18,41,.92)' : 'rgba(13,18,41,.6)',
+                border: `1px solid ${on ? layer.color : 'rgba(244,247,255,.15)'}`,
+                color: on ? layer.color : 'rgba(244,247,255,.4)',
+                fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600,
+                cursor: 'pointer', backdropFilter: 'blur(6px)',
+                letterSpacing: '0.04em', transition: 'all .15s', minWidth: 48,
+              }}>
+                {layer.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Map info overlay */}
