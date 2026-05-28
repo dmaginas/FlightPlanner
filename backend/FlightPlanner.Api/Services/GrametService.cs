@@ -8,13 +8,16 @@ namespace FlightPlanner.Api.Services;
 /// Fetches pressure-level weather data from the Open Meteo free API
 /// (https://api.open-meteo.com) for GRAMET cross-section visualisation.
 ///
-/// No API key required. One HTTP request is made per waypoint in parallel.
-/// On any per-waypoint failure the service returns zero-filled fallback data
-/// instead of propagating the error, so the chart is always renderable.
+/// No API key required. Requests are throttled to 5 concurrent connections
+/// to avoid HTTP 429 on the free tier. On any per-waypoint failure the
+/// service returns zero-filled fallback data so the chart is always renderable.
 /// </summary>
 public sealed class GrametService : IGrametService
 {
     private const string OpenMeteoUrl = "https://api.open-meteo.com/v1/forecast";
+
+    // Limit concurrent Open Meteo requests to stay within free-tier rate limits.
+    private static readonly SemaphoreSlim _throttle = new(5, 5);
 
     private static readonly int[] Pressures = [850, 700, 500, 300, 250, 200];
 
@@ -53,6 +56,21 @@ public sealed class GrametService : IGrametService
     }
 
     private async Task<GrametWaypointData> FetchWaypointAsync(
+        GrametWaypointInput wp,
+        CancellationToken ct)
+    {
+        await _throttle.WaitAsync(ct);
+        try
+        {
+            return await FetchWaypointCoreAsync(wp, ct);
+        }
+        finally
+        {
+            _throttle.Release();
+        }
+    }
+
+    private async Task<GrametWaypointData> FetchWaypointCoreAsync(
         GrametWaypointInput wp,
         CancellationToken ct)
     {
