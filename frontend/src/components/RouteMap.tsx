@@ -396,6 +396,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           padding: 5px 8px !important;
           box-shadow: 0 8px 24px rgba(0,0,0,.4) !important;
           font-size: 12px !important;
+          white-space: normal !important;
         }
         .leaflet-tooltip::before { display: none !important; }
         .leaflet-popup-content-wrapper {
