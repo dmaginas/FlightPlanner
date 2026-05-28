@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { calculateFuel, type FuelBreakdown } from '../utils/fuelCalculator.ts'
+import { fetchWinds } from '../services/windsService.ts'
 
 function haversineNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3440.065
@@ -13,6 +14,11 @@ function formatTime(minutes: number): string {
   const h = Math.floor(minutes / 60)
   const m = Math.round(minutes % 60)
   return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+function utcNow(): string {
+  const d = new Date()
+  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
 }
 
 function WindSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -76,8 +82,56 @@ function ReserveRow({ label, fuel, color = 'var(--dim)' }: { label: string; fuel
   )
 }
 
-export default function FuelPanel({ route, arrival, alternate, selectedAircraftProfile }) {
-  const [windKts, setWindKts] = useState(0)
+export default function FuelPanel({ route, arrival, alternate, selectedAircraftProfile, cruisingAltitude }) {
+  const [windKts, setWindKts]           = useState(0)
+  const [forecastKts, setForecastKts]   = useState<number | null>(null)
+  const [windSource, setWindSource]     = useState<'manual' | 'live'>('manual')
+  const [windLoading, setWindLoading]   = useState(false)
+  const [departureTime, setDepartureTime] = useState<string>(utcNow)
+  const abortRef = useRef<AbortController | null>(null)
+
+  const altFt: number = cruisingAltitude ?? selectedAircraftProfile?.preferredCruiseAltitudeFt ?? 35_000
+
+  // Auto-fetch winds when route or altitude changes
+  useEffect(() => {
+    const wps = (route?.waypoints ?? [])
+      .filter((w: any) => w.lat != null && w.lon != null)
+      .map((w: any) => ({ lat: w.lat as number, lon: w.lon as number }))
+
+    if (wps.length < 2) return
+
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
+    setWindLoading(true)
+
+    fetchWinds(wps, altFt, abortRef.current.signal)
+      .then(result => {
+        const hw = Math.round(result.averageHeadwindKts)
+        setForecastKts(hw)
+        setWindKts(hw)
+        setWindSource('live')
+        setWindLoading(false)
+      })
+      .catch(err => {
+        if (err?.name === 'AbortError') return
+        console.warn('Winds aloft fetch failed:', err)
+        setWindLoading(false)
+      })
+
+    return () => abortRef.current?.abort()
+  }, [route, altFt])
+
+  function handleWindChange(v: number) {
+    setWindKts(v)
+    setWindSource('manual')
+  }
+
+  function resetToForecast() {
+    if (forecastKts !== null) {
+      setWindKts(forecastKts)
+      setWindSource('live')
+    }
+  }
 
   if (!route || !selectedAircraftProfile) return null
 
@@ -89,11 +143,26 @@ export default function FuelPanel({ route, arrival, alternate, selectedAircraftP
     : undefined
 
   const fuel: FuelBreakdown = calculateFuel({
-    distanceNm:       distNm,
-    aircraftProfile:  selectedAircraftProfile,
-    windComponentKts: windKts,
-    altDistanceNm:    altDistNm,
+    distanceNm: distNm, aircraftProfile: selectedAircraftProfile,
+    windComponentKts: windKts, altDistanceNm: altDistNm,
   })
+
+  // Block time = taxi out + en-route; ETA = blockOff + blockTime
+  const blockTimeMin = fuel.taxi.timeMin + fuel.totalTimeMin
+
+  const eta = (() => {
+    if (!departureTime) return null
+    const [hStr, mStr] = departureTime.split(':')
+    const depMin = parseInt(hStr, 10) * 60 + parseInt(mStr, 10)
+    if (isNaN(depMin)) return null
+    const arrMin = depMin + blockTimeMin
+    const arrH   = Math.floor(arrMin / 60) % 24
+    const arrM   = Math.round(arrMin % 60)
+    return {
+      str:     `${String(arrH).padStart(2, '0')}:${String(arrM).padStart(2, '0')}`,
+      nextDay: arrMin >= 24 * 60,
+    }
+  })()
 
   const windEffect = windKts !== 0
     ? `GS ${fuel.groundSpeedKts} kt (${windKts > 0 ? '-' : '+'}${Math.abs(Math.round(selectedAircraftProfile.cruiseSpeedKts - fuel.groundSpeedKts))} kt)`
@@ -122,17 +191,89 @@ export default function FuelPanel({ route, arrival, alternate, selectedAircraftP
         </div>
       </div>
 
+      {/* Departure time + ETA */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8,
+        padding: '12px 14px', borderRadius: 'var(--r)',
+        background: 'var(--glass)', border: '1px solid var(--line-2)',
+      }}>
+        <div>
+          <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
+            Block Off (UTC)
+          </div>
+          <input
+            type="time"
+            value={departureTime}
+            onChange={e => setDepartureTime(e.target.value)}
+            style={{
+              width: '100%', padding: '6px 8px', borderRadius: 'var(--r-sm)',
+              background: 'var(--glass-2)', border: '1px solid var(--line)',
+              fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600,
+              color: 'var(--text)', colorScheme: 'dark',
+            }}
+          />
+        </div>
+        <div>
+          <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5 }}>
+            ETA (UTC)
+          </div>
+          <div style={{
+            padding: '6px 8px', borderRadius: 'var(--r-sm)',
+            background: eta ? 'rgba(0,229,168,.06)' : 'var(--glass-2)',
+            border: `1px solid ${eta ? 'rgba(0,229,168,.2)' : 'var(--line)'}`,
+            fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600,
+            color: eta ? 'var(--mint)' : 'var(--dim)',
+            display: 'flex', alignItems: 'center', gap: 6, height: 31,
+          }}>
+            {eta ? eta.str : '—'}
+            {eta?.nextDay && (
+              <span style={{ fontSize: 9, color: 'var(--amber)', background: 'rgba(245,158,11,.1)', padding: '1px 5px', borderRadius: 4 }}>+1</span>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Wind input */}
       <div style={{
         padding: '12px 14px', borderRadius: 'var(--r)',
         background: 'var(--glass)', border: '1px solid var(--line-2)',
       }}>
-        <WindSlider value={windKts} onChange={setWindKts} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          {windLoading ? (
+            <span style={{ fontSize: 10, color: 'var(--muted)' }}>Fetching winds…</span>
+          ) : windSource === 'live' ? (
+            <span style={{
+              fontSize: 9, padding: '2px 7px', borderRadius: 10,
+              background: 'rgba(0,229,168,.1)', border: '1px solid rgba(0,229,168,.3)',
+              color: 'var(--mint)', letterSpacing: '0.06em',
+            }}>LIVE WINDS</span>
+          ) : (
+            <>
+              <span style={{
+                fontSize: 9, padding: '2px 7px', borderRadius: 10,
+                background: 'rgba(255,180,80,.1)', border: '1px solid rgba(255,180,80,.3)',
+                color: 'var(--amber)', letterSpacing: '0.06em',
+              }}>MANUAL</span>
+              {forecastKts !== null && (
+                <button
+                  onClick={resetToForecast}
+                  style={{
+                    fontSize: 9, padding: '2px 7px', borderRadius: 10,
+                    background: 'transparent', border: '1px solid var(--line)',
+                    color: 'var(--muted)', cursor: 'pointer',
+                  }}
+                >
+                  Reset to forecast ({forecastKts > 0 ? `${forecastKts} kt HW` : forecastKts < 0 ? `${Math.abs(forecastKts)} kt TW` : 'calm'})
+                </button>
+              )}
+            </>
+          )}
+        </div>
+        <WindSlider value={windKts} onChange={handleWindChange} />
       </div>
 
       {/* Phase table */}
       <div style={{ borderRadius: 'var(--r-sm)', overflow: 'hidden', border: '1px solid var(--line-2)' }}>
-        {/* Column headers */}
         <div style={{
           display: 'grid', gridTemplateColumns: '80px 1fr 1fr 1fr',
           padding: '5px 10px', background: 'var(--glass)',
@@ -142,13 +283,10 @@ export default function FuelPanel({ route, arrival, alternate, selectedAircraftP
             <span key={h} style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: h === 'Phase' ? 'left' : 'right' }}>{h}</span>
           ))}
         </div>
-
-        <PhaseRow label="Taxi"    dist={0}                    time={fuel.taxi.timeMin}    fuel={fuel.taxi.fuelTons}    />
-        <PhaseRow label="Climb"   dist={fuel.climb.distanceNm}  time={fuel.climb.timeMin}   fuel={fuel.climb.fuelTons}   />
-        <PhaseRow label="Cruise"  dist={fuel.cruise.distanceNm} time={fuel.cruise.timeMin}  fuel={fuel.cruise.fuelTons}  />
-        <PhaseRow label="Descent" dist={fuel.descent.distanceNm}time={fuel.descent.timeMin} fuel={fuel.descent.fuelTons} />
-
-        {/* Trip fuel subtotal */}
+        <PhaseRow label="Taxi"     dist={0}                     time={fuel.taxi.timeMin}     fuel={fuel.taxi.fuelTons}    />
+        <PhaseRow label="Climb"    dist={fuel.climb.distanceNm} time={fuel.climb.timeMin}    fuel={fuel.climb.fuelTons}   />
+        <PhaseRow label="Cruise"   dist={fuel.cruise.distanceNm}time={fuel.cruise.timeMin}   fuel={fuel.cruise.fuelTons}  />
+        <PhaseRow label="Descent"  dist={fuel.descent.distanceNm}time={fuel.descent.timeMin} fuel={fuel.descent.fuelTons} />
         <PhaseRow label="Trip Fuel" dist={distNm} time={fuel.totalTimeMin} fuel={fuel.tripFuel} accent />
       </div>
 

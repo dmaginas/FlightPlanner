@@ -247,7 +247,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
       }}>
         {LAYER_DEFS.map(layer => {
-          const on = enabledLayers.has(layer.id)
+          const on = enabledLayers?.has(layer.id) ?? false
           return (
             <button
               key={layer.id}

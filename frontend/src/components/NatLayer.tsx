@@ -49,7 +49,7 @@ function relevantDirection(depLon?: number, arrLon?: number): 'east' | 'west' | 
 export default function NatLayer({ enabledLayers, departureLon, arrivalLon }: Props) {
   const [tracks, setTracks] = useState<NatTrack[]>([])
   const abortRef = useRef<AbortController | null>(null)
-  const natEnabled = useMemo(() => enabledLayers.has('nat'), [enabledLayers])
+  const natEnabled = useMemo(() => enabledLayers?.has('nat') ?? false, [enabledLayers])
 
   useEffect(() => {
     if (!natEnabled) {

@@ -34,10 +34,10 @@ export default function NavDataLayer({ enabledLayers }: Props) {
       const bounds = map.getBounds().pad(0.15)
 
       const types: string[] = []
-      if (enabledLayers.has('vor'))                types.push('vor')
-      if (enabledLayers.has('ndb')    && z >= 5)   types.push('ndb')
-      if (enabledLayers.has('fix')    && z >= 8)   types.push('fix')
-      if (enabledLayers.has('airway') && z >= 7)   types.push('airway')
+      if (enabledLayers?.has('vor'))                types.push('vor')
+      if (enabledLayers?.has('ndb')    && z >= 5)   types.push('ndb')
+      if (enabledLayers?.has('fix')    && z >= 8)   types.push('fix')
+      if (enabledLayers?.has('airway') && z >= 7)   types.push('airway')
 
       if (types.length === 0) { setData(EMPTY); return }
 
@@ -80,7 +80,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
   return (
     <>
       {/* Airways — grey polylines, zoom ≥ 7 (DCT segments excluded) */}
-      {enabledLayers.has('airway') && zoom >= 7 && data.airways
+      {enabledLayers?.has('airway') && zoom >= 7 && data.airways
         .filter(seg => seg.airway !== 'DCT')
         .map((seg, i) => (
           <Polyline
@@ -91,7 +91,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
         ))}
 
       {/* Airway labels — mid-segment, rotated along segment direction, zoom ≥ 9 */}
-      {enabledLayers.has('airway') && zoom >= 9 && data.airways
+      {enabledLayers?.has('airway') && zoom >= 9 && data.airways
         .filter(seg => seg.airway !== 'DCT')
         .map((seg, i) => {
         const midLat = (seg.fromLat + seg.toLat) / 2
@@ -110,7 +110,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
       })}
 
       {/* Fixes — small grey dots, zoom ≥ 8 */}
-      {enabledLayers.has('fix') && zoom >= 8 && data.fixes.map((fix, i) => (
+      {enabledLayers?.has('fix') && zoom >= 8 && data.fixes.map((fix, i) => (
         <CircleMarker
           key={`fix-${i}`}
           center={[fix.lat, fix.lon]}
@@ -124,7 +124,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
       ))}
 
       {/* NDBs — custom icon, zoom ≥ 5 */}
-      {enabledLayers.has('ndb') && zoom >= 5 && data.ndbs.map((ndb, i) => (
+      {enabledLayers?.has('ndb') && zoom >= 5 && data.ndbs.map((ndb, i) => (
         <Marker key={`ndb-${i}`} position={[ndb.lat, ndb.lon]} icon={ndbIcon}>
           <Tooltip direction="top" offset={[0, -10]}>
             <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 11 }}>{ndb.ident}</span>
@@ -134,7 +134,7 @@ export default function NavDataLayer({ enabledLayers }: Props) {
       ))}
 
       {/* VORs — custom icon, always visible */}
-      {enabledLayers.has('vor') && data.vors.map((vor, i) => (
+      {enabledLayers?.has('vor') && data.vors.map((vor, i) => (
         <Marker key={`vor-${i}`} position={[vor.lat, vor.lon]} icon={vorIcon}>
           <Tooltip direction="top" offset={[0, -11]}>
             <span style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 11 }}>{vor.ident}</span>

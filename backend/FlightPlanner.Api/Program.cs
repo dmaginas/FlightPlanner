@@ -124,6 +124,20 @@ builder.Services.AddHttpClient<INatService, NatService>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 
+// Winds aloft service — Open Meteo pressure-level winds at cruise altitude
+builder.Services.AddHttpClient<IWindsService, WindsService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
+// SigMet/AIRMET service — AviationWeather.gov airsigmet feed, cached 5 min
+builder.Services.AddHttpClient<ISigmetService, SigmetService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(15);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ─────────────────────────────────────────────────────

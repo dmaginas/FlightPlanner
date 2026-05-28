@@ -22,6 +22,7 @@ export default function MainScreen({
     departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
     cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
     onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
+    enabledLayers, onToggleLayer,
   }} />
 
   return (
@@ -143,6 +144,7 @@ export default function MainScreen({
           arrival={arrival}
           alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
+          cruisingAltitude={cruisingAltitude}
         />
 
         <WeatherPanel departure={departure} arrival={arrival} />
@@ -157,6 +159,7 @@ function NarrowLayout({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
   onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
+  enabledLayers, onToggleLayer,
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -255,6 +258,7 @@ function NarrowLayout({
           arrival={arrival}
           alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
+          cruisingAltitude={cruisingAltitude}
         />
 
         <WeatherPanel departure={departure} arrival={arrival} />
