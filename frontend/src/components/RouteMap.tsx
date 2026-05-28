@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polyline, CircleMarker, Tooltip, useMap } from
 import L from 'leaflet'
 import NavDataLayer from './NavDataLayer'
 import NatLayer from './NatLayer'
+import AirspaceLayer from './AirspaceLayer'
 
 // Fix Leaflet default icon (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl
@@ -92,6 +93,8 @@ function STARPath({ star, arrival }) {
 }
 
 const LAYER_DEFS = [
+  { id: 'fir',    label: 'FIR',  color: '#818cf8' },
+  { id: 'uir',    label: 'UIR',  color: '#c4b5fd' },
   { id: 'vor',    label: 'VOR',  color: '#7c3aed' },
   { id: 'ndb',    label: 'NDB',  color: '#0369a1' },
   { id: 'fix',    label: 'FIX',  color: '#6b7280' },
@@ -115,6 +118,16 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
     fillColor: isActive ? '#1a56db' : '#444',
     fillOpacity: 1, weight: 2.5, radius: 8,
   })
+
+  // FIR and UIR are mutually exclusive — enabling one disables the other
+  function handleLayerToggle(id: string) {
+    if (id === 'fir' && !enabledLayers?.has('fir') && enabledLayers?.has('uir')) {
+      onToggleLayer('uir')
+    } else if (id === 'uir' && !enabledLayers?.has('uir') && enabledLayers?.has('fir')) {
+      onToggleLayer('fir')
+    }
+    onToggleLayer(id)
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 'var(--r-xl)', overflow: 'hidden' }}>
@@ -208,6 +221,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           </CircleMarker>
         )}
 
+        <AirspaceLayer enabledLayers={enabledLayers} />
         <NavDataLayer enabledLayers={enabledLayers} />
         <NatLayer
           enabledLayers={enabledLayers}
@@ -251,7 +265,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           return (
             <button
               key={layer.id}
-              onClick={() => onToggleLayer(layer.id)}
+              onClick={() => handleLayerToggle(layer.id)}
               style={{
                 padding: '4px 10px',
                 borderRadius: 6,

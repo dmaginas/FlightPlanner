@@ -22,7 +22,7 @@ export function fetchSigmets(
   signal?: AbortSignal,
 ): Promise<SigmetResponse> {
   return apiClient.get<SigmetResponse>(
-    `/api/sigmets?depLat=${depLat}&depLon=${depLon}&arrLat=${arrLat}&arrLon=${arrLon}`,
+    `/api/sigmet?depLat=${depLat}&depLon=${depLon}&arrLat=${arrLat}&arrLon=${arrLon}`,
     signal,
   )
 }

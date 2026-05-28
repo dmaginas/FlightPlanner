@@ -138,6 +138,13 @@ builder.Services.AddHttpClient<ISigmetService, SigmetService>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 
+// Airspace (FIR/UIR) boundary service — vatspy-data-project GeoJSON, cached 24 h
+builder.Services.AddHttpClient<IAirspaceService, AirspaceService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ─────────────────────────────────────────────────────
