@@ -8,7 +8,7 @@ import type { SelectedRoute } from '../services/routeService.ts'
 const MARGIN    = { top: 44, right: 24, bottom: 90, left: 76 }
 const CELL_H    = 68
 const CELL_W    = 110
-const MAX_WPS   = 12
+const MAX_WPS   = 110  // SVG cell width × waypoints; kept as a safeguard only
 const CLOUD_H   = 11
 const CLOUD_GAP = 2
 
@@ -392,16 +392,10 @@ export default function GRAMETScreen({
 
   const sampledWps = useMemo<Array<{ id: string; lat: number; lon: number; distCum: number }>>(() => {
     if (!route?.waypoints) return []
-    const valid = route.waypoints.filter(
-      (w): w is typeof w & { lat: number; lon: number } => w.lat != null && w.lon != null,
-    )
-    if (valid.length <= MAX_WPS)
-      return valid.map(w => ({ id: w.id, lat: w.lat, lon: w.lon, distCum: w.distCum ?? 0 }))
-    const step = valid.length / MAX_WPS
-    return Array.from({ length: MAX_WPS }, (_, i) => {
-      const w = valid[Math.round(i * step)]
-      return { id: w.id, lat: w.lat, lon: w.lon, distCum: w.distCum ?? 0 }
-    })
+    return route.waypoints
+      .filter((w): w is typeof w & { lat: number; lon: number } => w.lat != null && w.lon != null)
+      .slice(0, MAX_WPS)
+      .map(w => ({ id: w.id, lat: w.lat, lon: w.lon, distCum: w.distCum ?? 0 }))
   }, [route])
 
   const load = useCallback(async (signal?: AbortSignal) => {

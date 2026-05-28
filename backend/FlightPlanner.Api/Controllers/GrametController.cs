@@ -17,7 +17,7 @@ namespace FlightPlanner.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class GrametController : ControllerBase
 {
-    private const int MaxWaypoints = 15;
+    private const int MaxWaypoints = 110;
 
     private readonly IGrametService _gramet;
     private readonly ILogger<GrametController> _logger;
