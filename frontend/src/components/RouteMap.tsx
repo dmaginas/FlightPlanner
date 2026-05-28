@@ -5,6 +5,7 @@ import NavDataLayer from './NavDataLayer'
 import NatLayer from './NatLayer'
 import AirspaceLayer from './AirspaceLayer'
 import SigmetLayer from './SigmetLayer'
+import EtopsLayer from './EtopsLayer'
 
 // Fix Leaflet default icon (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl
@@ -102,9 +103,10 @@ const LAYER_DEFS = [
   { id: 'airway', label: 'AWY',    color: '#3b82f6' },
   { id: 'nat',    label: 'NAT',    color: '#f59e0b' },
   { id: 'sigmet', label: 'SIGMET', color: '#ef4444' },
+  { id: 'etops',  label: 'ETOPS',  color: '#22c55e' },
 ] as const
 
-export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, enabledLayers, onToggleLayer }) {
+export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile, enabledLayers, onToggleLayer }) {
 
   const initialCenter = departure
     ? [departure.lat, departure.lon]
@@ -226,6 +228,13 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         <AirspaceLayer enabledLayers={enabledLayers} />
         <NavDataLayer enabledLayers={enabledLayers} />
         <SigmetLayer enabledLayers={enabledLayers} />
+        <EtopsLayer
+          enabledLayers={enabledLayers}
+          departure={departure}
+          arrival={arrival}
+          route={route}
+          aircraftProfile={selectedAircraftProfile}
+        />
         <NatLayer
           enabledLayers={enabledLayers}
           departureLon={departure?.lon}

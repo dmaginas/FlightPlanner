@@ -7,6 +7,7 @@ import ExportPanel    from './ExportPanel.tsx'
 import WaypointTable  from './WaypointTable.tsx'
 import RouteMap       from './RouteMap.tsx'
 import AlternativesPanel from './AlternativesPanel.tsx'
+import EtopsPanel from './EtopsPanel.tsx'
 import { useWindowWidth } from '../hooks/useWindowWidth.ts'
 
 export default function MainScreen({
@@ -150,6 +151,13 @@ export default function MainScreen({
           cruisingAltitude={cruisingAltitude}
         />
 
+        <EtopsPanel
+          departure={departure}
+          arrival={arrival}
+          route={route}
+          aircraftProfile={selectedAircraftProfile}
+        />
+
         <WeatherPanel departure={departure} arrival={arrival} />
       </aside>
     </div>
@@ -265,6 +273,13 @@ function NarrowLayout({
           alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
           cruisingAltitude={cruisingAltitude}
+        />
+
+        <EtopsPanel
+          departure={departure}
+          arrival={arrival}
+          route={route}
+          aircraftProfile={selectedAircraftProfile}
         />
 
         <WeatherPanel departure={departure} arrival={arrival} />
