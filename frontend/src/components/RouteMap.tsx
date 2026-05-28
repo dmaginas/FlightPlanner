@@ -96,6 +96,14 @@ function STARPath({ star, arrival }) {
 
 const OWM_KEY = import.meta.env.VITE_OWM_API_KEY as string | undefined
 
+const OWM_LAYERS = [
+  { id: 'clouds', label: 'CLOUDS', color: '#93c5fd', owmId: 'clouds_new'        },
+  { id: 'precip', label: 'PRECIP', color: '#60a5fa', owmId: 'precipitation_new' },
+  { id: 'wind',   label: 'WIND',   color: '#a78bfa', owmId: 'wind_new'          },
+  { id: 'temp',   label: 'TEMP',   color: '#f97316', owmId: 'temp_new'          },
+  { id: 'press',  label: 'PRESS',  color: '#94a3b8', owmId: 'pressure_new'      },
+]
+
 const LAYER_DEFS = [
   { id: 'fir',    label: 'FIR',    color: '#818cf8' },
   { id: 'uir',    label: 'UIR',    color: '#c4b5fd' },
@@ -106,7 +114,7 @@ const LAYER_DEFS = [
   { id: 'nat',    label: 'NAT',    color: '#f59e0b' },
   { id: 'sigmet', label: 'SIGMET', color: '#ef4444' },
   { id: 'etops',  label: 'ETOPS',  color: '#22c55e' },
-  ...(OWM_KEY ? [{ id: 'clouds', label: 'CLOUDS', color: '#93c5fd' }] : []),
+  ...(OWM_KEY ? OWM_LAYERS.map(({ id, label, color }) => ({ id, label, color })) : []),
 ] as const
 
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile, enabledLayers, onToggleLayer }) {
@@ -147,12 +155,15 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
       >
         <TileLayer url={TILE_URL} attribution={TILE_ATTR} maxZoom={17} />
 
-        {OWM_KEY && enabledLayers?.has('clouds') && (
-          <TileLayer
-            url={`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`}
-            opacity={0.6}
-            attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
-          />
+        {OWM_KEY && OWM_LAYERS.map(layer =>
+          enabledLayers?.has(layer.id) ? (
+            <TileLayer
+              key={layer.id}
+              url={`https://tile.openweathermap.org/map/${layer.owmId}/{z}/{x}/{y}.png?appid=${OWM_KEY}`}
+              opacity={0.6}
+              attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
+            />
+          ) : null
         )}
 
         {route && routeCoords.length > 1 && (
