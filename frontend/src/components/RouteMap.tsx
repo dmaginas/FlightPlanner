@@ -6,6 +6,7 @@ import NatLayer from './NatLayer'
 import AirspaceLayer from './AirspaceLayer'
 import SigmetLayer from './SigmetLayer'
 import EtopsLayer from './EtopsLayer'
+import ConflictZoneLayer from './ConflictZoneLayer'
 
 // Fix Leaflet default icon (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl
@@ -105,6 +106,7 @@ const OWM_LAYERS = [
 ]
 
 const LAYER_DEFS = [
+  { id: 'cflct',  label: 'CFLCT',  color: '#ef4444' },
   { id: 'fir',    label: 'FIR',    color: '#818cf8' },
   { id: 'uir',    label: 'UIR',    color: '#c4b5fd' },
   { id: 'vor',    label: 'VOR',    color: '#7c3aed' },
@@ -249,6 +251,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           </CircleMarker>
         )}
 
+        {enabledLayers?.has('cflct') && <ConflictZoneLayer />}
         <AirspaceLayer enabledLayers={enabledLayers} />
         <NavDataLayer enabledLayers={enabledLayers} />
         <SigmetLayer enabledLayers={enabledLayers} />
@@ -291,20 +294,24 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         </div>
       )}
 
-      {/* Layer toggle panel — bottom-right */}
-      <div style={{ position: 'absolute', bottom: 28, right: 12, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+      {/* Layer toggle panel — bottom-right, spans full available height so list can scroll */}
+      <div style={{
+        position: 'absolute', top: 16, bottom: 28, right: 12, zIndex: 1000,
+        display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
+        alignItems: 'flex-end', gap: 6,
+        pointerEvents: 'none',
+      }}>
 
-        {/* Expandable layer list */}
-        <div
-          style={{
-            display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
-            maxHeight: layersOpen ? 400 : 0,
-            overflowY: layersOpen ? 'auto' : 'hidden',
-            overflowX: 'visible',
-            transition: 'max-height .25s ease',
-            paddingRight: 2,
-          }}
-        >
+        {/* Scrollable layer list — shrinks to fit available space */}
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
+          overflowY: 'auto',
+          maxHeight: layersOpen ? '100%' : 0,
+          flexShrink: 1, minHeight: 0,
+          transition: 'max-height .25s ease',
+          paddingRight: 2,
+          pointerEvents: layersOpen ? 'auto' : 'none',
+        }}>
           {LAYER_DEFS.map(layer => {
             const on = enabledLayers?.has(layer.id) ?? false
             return (
@@ -351,6 +358,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
             backdropFilter: 'blur(8px)',
             letterSpacing: '0.06em',
             display: 'flex', alignItems: 'center', gap: 6,
+            flexShrink: 0, pointerEvents: 'auto',
           }}
         >
           <span style={{ fontSize: 10, transition: 'transform .2s', transform: layersOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▲</span>

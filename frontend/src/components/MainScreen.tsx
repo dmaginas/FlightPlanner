@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { checkRouteConflicts, CONFLICT_ZONES } from '../data/conflictZones'
 import FlightInput    from './FlightInput.tsx'
 import WeatherPanel   from './WeatherPanel.tsx'
 import AIPanel        from './AIPanel.tsx'
@@ -335,6 +336,12 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
   const routeNm = route?.routeDistanceNm ?? route?.waypoints?.[route.waypoints.length - 1]?.distCum
   const rangeExceeded = route && selectedAircraftProfile && routeNm && routeNm > selectedAircraftProfile.maxRangeNm
 
+  const hitZones = useMemo(
+    () => route?.waypoints ? checkRouteConflicts(route.waypoints, CONFLICT_ZONES) : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [route?.waypoints],
+  )
+
   type Msg = { kind: 'error' | 'warn'; text: string }
   const msgs: Msg[] = [
     { kind: 'error', text: 'Flight simulation only — routes must not be used for real-world navigation.' },
@@ -348,6 +355,12 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
     msgs.push({ kind: 'warn', text: `Route distance (${routeNm.toLocaleString()} NM) exceeds the approximate range of ${selectedAircraftProfile.icaoCode} (${selectedAircraftProfile.maxRangeNm.toLocaleString()} NM).` })
   if (route && !alternate)
     msgs.push({ kind: 'warn', text: 'No alternate airport set — required by ICAO regulations for IFR flights.' })
+  hitZones.forEach(zone =>
+    msgs.push({
+      kind: zone.level === 'avoid' ? 'error' : 'warn',
+      text: `Restricted airspace — ${zone.name}: ${zone.reason}`,
+    })
+  )
 
   const hasError  = msgs.some(m => m.kind === 'error')
   const accentClr = hasError ? 'var(--red)' : 'var(--amber)'

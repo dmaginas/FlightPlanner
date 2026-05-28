@@ -17,7 +17,7 @@ export default function App() {
   const [alternate, setAlternate]     = useState(null)
   const [selectedSID, setSelectedSID] = useState(null)
   const [selectedSTAR, setSelectedSTAR] = useState(null)
-  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>())
+  const [enabledLayers, setEnabledLayers] = useState<Set<string>>(() => new Set<string>(['cflct']))
   const toggleLayer = useCallback((id: string) => {
     setEnabledLayers(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }, [])
