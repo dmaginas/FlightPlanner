@@ -9,11 +9,16 @@ export interface SigmetItem {
   altHighFt?: number
   validTo?: string
   rawText: string
+  coords?: [number, number][]  // polygon vertices as [lat, lon] pairs
 }
 
 export interface SigmetResponse {
   items: SigmetItem[]
   fetchedAt: string
+}
+
+export function fetchAllSigmets(signal?: AbortSignal): Promise<SigmetResponse> {
+  return apiClient.get<SigmetResponse>('/api/sigmet', signal)
 }
 
 export function fetchSigmets(

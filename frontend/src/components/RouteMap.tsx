@@ -4,6 +4,7 @@ import L from 'leaflet'
 import NavDataLayer from './NavDataLayer'
 import NatLayer from './NatLayer'
 import AirspaceLayer from './AirspaceLayer'
+import SigmetLayer from './SigmetLayer'
 
 // Fix Leaflet default icon (Vite issue)
 delete L.Icon.Default.prototype._getIconUrl
@@ -93,13 +94,14 @@ function STARPath({ star, arrival }) {
 }
 
 const LAYER_DEFS = [
-  { id: 'fir',    label: 'FIR',  color: '#818cf8' },
-  { id: 'uir',    label: 'UIR',  color: '#c4b5fd' },
-  { id: 'vor',    label: 'VOR',  color: '#7c3aed' },
-  { id: 'ndb',    label: 'NDB',  color: '#0369a1' },
-  { id: 'fix',    label: 'FIX',  color: '#6b7280' },
-  { id: 'airway', label: 'AWY',  color: '#3b82f6' },
-  { id: 'nat',    label: 'NAT',  color: '#f59e0b' },
+  { id: 'fir',    label: 'FIR',    color: '#818cf8' },
+  { id: 'uir',    label: 'UIR',    color: '#c4b5fd' },
+  { id: 'vor',    label: 'VOR',    color: '#7c3aed' },
+  { id: 'ndb',    label: 'NDB',    color: '#0369a1' },
+  { id: 'fix',    label: 'FIX',    color: '#6b7280' },
+  { id: 'airway', label: 'AWY',    color: '#3b82f6' },
+  { id: 'nat',    label: 'NAT',    color: '#f59e0b' },
+  { id: 'sigmet', label: 'SIGMET', color: '#ef4444' },
 ] as const
 
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, enabledLayers, onToggleLayer }) {
@@ -223,6 +225,7 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
 
         <AirspaceLayer enabledLayers={enabledLayers} />
         <NavDataLayer enabledLayers={enabledLayers} />
+        <SigmetLayer enabledLayers={enabledLayers} />
         <NatLayer
           enabledLayers={enabledLayers}
           departureLon={departure?.lon}
@@ -314,6 +317,26 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
           font-size: 12px !important;
         }
         .leaflet-tooltip::before { display: none !important; }
+        .leaflet-popup-content-wrapper {
+          background: rgba(13,18,41,.95) !important;
+          border: 1px solid rgba(244,247,255,.12) !important;
+          border-radius: 10px !important;
+          color: #F4F7FF !important;
+          box-shadow: 0 8px 32px rgba(0,0,0,.5) !important;
+          padding: 0 !important;
+        }
+        .leaflet-popup-content {
+          margin: 12px 14px !important;
+          color: #F4F7FF !important;
+        }
+        .leaflet-popup-tip-container { display: none !important; }
+        .leaflet-popup-close-button {
+          color: rgba(244,247,255,.5) !important;
+          font-size: 18px !important;
+          top: 6px !important;
+          right: 8px !important;
+        }
+        .leaflet-popup-close-button:hover { color: #F4F7FF !important; }
       `}</style>
     </div>
   )

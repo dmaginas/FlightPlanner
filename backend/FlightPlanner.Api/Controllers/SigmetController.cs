@@ -26,7 +26,10 @@ public sealed class SigmetController : ControllerBase
         _logger  = logger;
     }
 
-    /// <summary>Returns active SIGMETs and AIRMETs within the route bounding box (+ 5° buffer).</summary>
+    /// <summary>
+    /// Returns active SIGMETs and AIRMETs.
+    /// Without coords: returns all worldwide. With coords: filters to the route bounding box (+ 5° buffer).
+    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(SigmetResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponse),  StatusCodes.Status400BadRequest)]
@@ -38,21 +41,32 @@ public sealed class SigmetController : ControllerBase
         [FromQuery] double? arrLon,
         CancellationToken cancellationToken)
     {
-        if (depLat is null || depLon is null || arrLat is null || arrLon is null)
+        var coordsProvided = new[] { depLat, depLon, arrLat, arrLon };
+        var anyProvided  = coordsProvided.Any(c => c is not null);
+        var allProvided  = coordsProvided.All(c => c is not null);
+
+        if (anyProvided && !allProvided)
             return BadRequest(new ErrorResponse
             {
-                Error   = "Missing coordinates.",
-                Details = "depLat, depLon, arrLat, and arrLon are required.",
+                Error   = "Incomplete coordinates.",
+                Details = "Provide all four of depLat, depLon, arrLat, arrLon — or none for global results.",
             });
-
-        var minLat = Math.Min(depLat.Value, arrLat.Value);
-        var maxLat = Math.Max(depLat.Value, arrLat.Value);
-        var minLon = Math.Min(depLon.Value, arrLon.Value);
-        var maxLon = Math.Max(depLon.Value, arrLon.Value);
 
         try
         {
-            var result = await _sigmets.FetchSigmetsAsync(minLat, minLon, maxLat, maxLon, cancellationToken);
+            SigmetResponse result;
+            if (!anyProvided)
+            {
+                result = await _sigmets.FetchAllSigmetsAsync(cancellationToken);
+            }
+            else
+            {
+                var minLat = Math.Min(depLat!.Value, arrLat!.Value);
+                var maxLat = Math.Max(depLat.Value,  arrLat.Value);
+                var minLon = Math.Min(depLon!.Value, arrLon!.Value);
+                var maxLon = Math.Max(depLon.Value,  arrLon.Value);
+                result = await _sigmets.FetchSigmetsAsync(minLat, minLon, maxLat, maxLon, cancellationToken);
+            }
             return Ok(result);
         }
         catch (OperationCanceledException)

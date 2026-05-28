@@ -18,4 +18,6 @@ public sealed class SigmetItem
     public int?    AltHighFt { get; init; }
     public string? ValidTo   { get; init; }
     public string  RawText   { get; init; } = "";
+    /// <summary>Polygon vertices as [lat, lon] pairs. Null if no area geometry available.</summary>
+    public List<double[]>? Coords { get; init; }
 }
