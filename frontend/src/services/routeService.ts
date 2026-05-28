@@ -231,6 +231,58 @@ function mapSelectedRoute(
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
+ * Fetches a single flight plan by its FPD numeric ID.
+ * Used to resolve alternative routes selected by the user.
+ */
+export async function fetchPlanById(
+  planId: string,
+  dep: string,
+  arr: string,
+  aircraftProfile?: unknown,
+  signal?: AbortSignal,
+): Promise<RouteResult> {
+  const qs = new URLSearchParams({ dep, arr })
+
+  let raw: BackendRouteResponse
+  try {
+    raw = await apiClient.get<BackendRouteResponse>(`/api/routes/plan/${encodeURIComponent(planId)}?${qs.toString()}`, signal)
+  } catch (error) {
+    if (signal?.aborted || (error instanceof DOMException && error.name === 'AbortError')) throw error
+
+    if (error instanceof ApiClientError) {
+      if (error.status === 503) {
+        if (error.message.toLowerCase().includes('configuration') || error.message.toLowerCase().includes('not configured') || error.message.toLowerCase().includes('api key')) {
+          throw new RouteServiceError('config_error', error.message, error.status)
+        }
+        throw new RouteServiceError('external_api_failure', error.message, error.status)
+      }
+      if (error.status === 404) throw new RouteServiceError('not_found', error.message, error.status)
+      if (error.status === 400) throw new RouteServiceError('invalid_params', error.message, error.status)
+      throw new RouteServiceError('external_api_failure', error.message, error.status)
+    }
+
+    if (error instanceof TypeError) {
+      throw new RouteServiceError('network', 'Unable to reach the FlightPlanner backend (network error).')
+    }
+
+    throw new RouteServiceError('network', 'An unexpected error occurred while fetching the plan.')
+  }
+
+  if (!raw.selectedRoute) {
+    throw new RouteServiceError('not_found', raw.warning ?? 'No route data was returned by the server.')
+  }
+
+  const profile        = aircraftProfile as Parameters<typeof mapSelectedRoute>[1]
+  const selectedRoute  = mapSelectedRoute(raw.selectedRoute, profile)
+
+  return {
+    selectedRoute,
+    alternatives: raw.alternatives ?? [],
+    warning:      raw.warning ?? undefined,
+  }
+}
+
+/**
  * Fetches an IFR route from the active FlightPlanner backend.
  *
  * @throws RouteServiceError with kind 'config_error' when the backend API key is missing

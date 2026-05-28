@@ -8,7 +8,7 @@ import ApiStatusScreen from './components/ApiStatusScreen.tsx'
 import { getAirport } from './data/airports.ts'
 import { getRoute, generateDynamicRoute } from './data/mockData.ts'
 import { AIRCRAFT_PROFILE_BY_ICAO, DEFAULT_AIRCRAFT_TYPE } from './data/aircraftPerformance.ts'
-import { fetchRoute, RouteServiceError, type AlternativeRoute } from './services/routeService.ts'
+import { fetchRoute, fetchPlanById, RouteServiceError, type AlternativeRoute } from './services/routeService.ts'
 
 export default function App() {
   const [screen, setScreen]           = useState('plan')
@@ -134,6 +134,25 @@ export default function App() {
     setAlternate(apt)
   }
 
+  async function handleSelectAlternative(planId: string) {
+    if (!departure || !arrival) return
+
+    setRouteState('loading')
+    setRouteWarning(null)
+
+    const aircraftProfile = AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]
+
+    try {
+      const result = await fetchPlanById(planId, departure.icao, arrival.icao, aircraftProfile)
+      setRoute(result.selectedRoute)
+      if (result.warning) setRouteWarning(result.warning)
+      setRouteState('ready')
+    } catch {
+      setRouteState('ready')
+      setRouteWarning('Could not load the selected alternative route. Please try again.')
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <TopBar
@@ -171,6 +190,7 @@ export default function App() {
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
           alternatives={alternatives}
+          onSelectAlternative={handleSelectAlternative}
           enabledLayers={enabledLayers}
           onToggleLayer={toggleLayer}
         />

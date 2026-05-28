@@ -254,6 +254,85 @@ public sealed class RoutesController : ControllerBase
         };
     }
 
+    /// <summary>
+    /// Fetches a specific flight plan by its FPD numeric ID and returns full waypoints.
+    /// Used to resolve alternative routes selected by the user.
+    /// </summary>
+    /// <param name="id">FPD plan numeric ID.</param>
+    /// <param name="dep">Departure airport ICAO code.</param>
+    /// <param name="arr">Destination airport ICAO code.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    [HttpGet("plan/{id:int}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(RouteResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> GetPlanById(
+        int id,
+        [FromQuery] string? dep,
+        [FromQuery] string? arr,
+        CancellationToken cancellationToken)
+    {
+        var depIcao = dep?.Trim().ToUpperInvariant();
+        var arrIcao = arr?.Trim().ToUpperInvariant();
+
+        if (string.IsNullOrEmpty(depIcao) || !IcaoPattern.IsMatch(depIcao))
+            return BadRequest(new ErrorResponse
+            {
+                Error   = "Invalid departure ICAO.",
+                Details = "dep must be exactly 4 alphanumeric characters (e.g. EDDF).",
+            });
+
+        if (string.IsNullOrEmpty(arrIcao) || !IcaoPattern.IsMatch(arrIcao))
+            return BadRequest(new ErrorResponse
+            {
+                Error   = "Invalid destination ICAO.",
+                Details = "arr must be exactly 4 alphanumeric characters (e.g. EGLL).",
+            });
+
+        try
+        {
+            var plan     = await _fpdService.FetchPlanByIdAsync(id, cancellationToken);
+            var result   = new FpdRouteResult { Selected = plan, Alternatives = [] };
+            var response = MapToResponse(result, depIcao, arrIcao, null, null);
+            return Ok(response);
+        }
+        catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.ConfigurationMissing)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+            {
+                Error   = "configuration_error",
+                Details = "The Flight Plan Database API key is not configured on this server.",
+            });
+        }
+        catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.NoResults)
+        {
+            return NotFound(new ErrorResponse
+            {
+                Error   = "Plan not found.",
+                Details = $"Plan {id} was not found or contains no waypoints.",
+            });
+        }
+        catch (FlightPlanDatabaseException ex)
+        {
+            _logger.LogError(ex, "FPD error fetching plan {Id}", id);
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+            {
+                Error   = "Service unavailable.",
+                Details = "Could not fetch the plan from Flight Plan Database. Please try again later.",
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+            {
+                Error   = "Request cancelled.",
+                Details = "The plan request was cancelled.",
+            });
+        }
+    }
+
     // ── NAT integration ────────────────────────────────────────────────────────
 
     private async Task<RouteResponse> ApplyNatIfNeededAsync(

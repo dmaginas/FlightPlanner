@@ -92,4 +92,14 @@ public interface IFlightPlanDatabaseService
         string departure,
         string destination,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches a single flight plan by its FPD numeric ID, including full waypoints.
+    /// </summary>
+    /// <exception cref="FlightPlanDatabaseException">
+    /// Thrown on config error, HTTP error, network error, or no results.
+    /// </exception>
+    Task<FpdPlan> FetchPlanByIdAsync(
+        int planId,
+        CancellationToken cancellationToken = default);
 }

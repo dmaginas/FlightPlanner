@@ -14,28 +14,29 @@ export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
   onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
-  enabledLayers, onToggleLayer,
+  onSelectAlternative, enabledLayers, onToggleLayer,
 }) {
   const width    = useWindowWidth()
   const isNarrow = width < 1024
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   if (isNarrow) return <NarrowLayout {...{
     departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
     cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
     onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
-    enabledLayers, onToggleLayer,
+    onSelectAlternative, enabledLayers, onToggleLayer,
   }} />
 
   return (
     <div style={{
       flex: 1, display: 'grid', overflow: 'hidden',
       gridTemplateColumns: '300px 1fr 300px',
-      gridTemplateRows: '1fr auto',
+      gridTemplateRows: '1fr',
       gap: 0,
     }}>
       {/* ── Left panel ── */}
       <aside style={{
-        gridRow: '1 / 3',
+        gridRow: '1 / 2',
         padding: '20px 16px 20px 20px',
         overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
         borderRight: '1px solid var(--line)',
@@ -61,10 +62,6 @@ export default function MainScreen({
           onSIDChange={onSIDChange}
           onSTARChange={onSTARChange}
         />
-
-        {alternatives && alternatives.length > 0 && (
-          <AlternativesPanel alternatives={alternatives} />
-        )}
       </aside>
 
       {/* ── Map center ── */}
@@ -81,6 +78,9 @@ export default function MainScreen({
           alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
         />
+        {alternatives && alternatives.length > 0 && (
+          <AlternativesPanel alternatives={alternatives} onSelect={onSelectAlternative} />
+        )}
         <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
           <RouteMap
             departure={departure}
@@ -94,26 +94,65 @@ export default function MainScreen({
             enabledLayers={enabledLayers}
             onToggleLayer={onToggleLayer}
           />
+
+          {/* ── Route drawer ── */}
+          {route && (
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              zIndex: 450,
+              display: 'flex', flexDirection: 'column',
+              transform: drawerOpen ? 'translateY(0)' : 'translateY(calc(100% - 34px))',
+              transition: 'transform .3s cubic-bezier(.4,0,.2,1)',
+            }}>
+              {/* Handle */}
+              <button
+                onClick={() => setDrawerOpen(o => !o)}
+                style={{
+                  height: 34, flexShrink: 0,
+                  background: 'rgba(13,18,41,.94)',
+                  backdropFilter: 'blur(12px)',
+                  border: 'none',
+                  borderTop: '1px solid rgba(244,247,255,.14)',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '0 16px', cursor: 'pointer', width: '100%',
+                }}
+              >
+                <span style={{
+                  fontSize: 9, color: 'var(--muted)',
+                  display: 'inline-block',
+                  transform: drawerOpen ? 'rotate(180deg)' : 'none',
+                  transition: 'transform .25s',
+                }}>▲</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.07em', textTransform: 'uppercase' }}>
+                  Route
+                </span>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--dim)' }}>
+                  {route.waypoints?.filter(w => w.type === 'fix').length ?? 0} waypoints
+                  {route.routeDistanceNm ? ` · ${route.routeDistanceNm} NM` : ''}
+                </span>
+              </button>
+
+              {/* Content */}
+              <div style={{
+                background: 'rgba(7,7,22,.96)',
+                backdropFilter: 'blur(12px)',
+                borderTop: '1px solid rgba(244,247,255,.08)',
+                maxHeight: '42vh',
+                overflowY: 'auto',
+                display: 'flex', flexDirection: 'column', gap: 8,
+                padding: '10px 12px 14px',
+              }}>
+                <RouteTextBox route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
+                <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
-      {/* ── Route string + waypoint table (below map) ── */}
-      <section style={{
-        gridColumn: '2 / 3',
-        padding: '0 12px 16px',
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column', gap: 8,
-      }}>
-        {route && <RouteTextBox route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />}
-        {route
-          ? <WaypointTable route={route} selectedSID={selectedSID} selectedSTAR={selectedSTAR} />
-          : <EmptyTable />
-        }
-      </section>
-
       {/* ── Right panel ── */}
       <aside style={{
-        gridRow: '1 / 3',
+        gridRow: '1 / 2',
         padding: '20px 20px 20px 16px',
         overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16,
         borderLeft: '1px solid var(--line)',
@@ -170,7 +209,7 @@ function NarrowLayout({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
   onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
-  enabledLayers, onToggleLayer,
+  onSelectAlternative, enabledLayers, onToggleLayer,
 }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -200,7 +239,7 @@ function NarrowLayout({
         />
 
         {alternatives && alternatives.length > 0 && (
-          <AlternativesPanel alternatives={alternatives} />
+          <AlternativesPanel alternatives={alternatives} onSelect={onSelectAlternative} />
         )}
       </div>
 

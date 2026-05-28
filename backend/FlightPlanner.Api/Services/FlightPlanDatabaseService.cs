@@ -150,6 +150,49 @@ public sealed class FlightPlanDatabaseService : IFlightPlanDatabaseService
         return result;
     }
 
+    /// <inheritdoc />
+    public async Task<FpdPlan> FetchPlanByIdAsync(int planId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        {
+            throw new FlightPlanDatabaseException(
+                FpdErrorKind.ConfigurationMissing,
+                "FlightPlanDatabase:ApiKey is not configured on this server.");
+        }
+
+        var planUrl  = $"{_options.BaseUrl}/plan/{planId}";
+        var fullPlan = await CallApiAsync<FpdApiPlan>(planUrl, cancellationToken);
+
+        if (fullPlan?.Route?.Nodes is null || fullPlan.Route.Nodes.Count == 0)
+        {
+            throw new FlightPlanDatabaseException(
+                FpdErrorKind.NoResults,
+                $"Flight plan {planId} returned no waypoints.");
+        }
+
+        return new FpdPlan
+        {
+            Id          = fullPlan.Id,
+            FromIcao    = fullPlan.FromIcao ?? string.Empty,
+            ToIcao      = fullPlan.ToIcao   ?? string.Empty,
+            DistanceNm  = fullPlan.Distance,
+            MaxAltitude = fullPlan.MaxAltitude,
+            Notes       = fullPlan.Notes,
+            UpdatedAt   = fullPlan.UpdatedAt,
+            Popularity  = fullPlan.Popularity,
+            Nodes       = fullPlan.Route.Nodes
+                .Select(n => new FpdNode
+                {
+                    Type  = n.Type  ?? string.Empty,
+                    Ident = n.Ident ?? string.Empty,
+                    Name  = n.Name,
+                    Lat   = n.Lat,
+                    Lon   = n.Lon,
+                })
+                .ToList(),
+        };
+    }
+
     // ── Private helpers ────────────────────────────────────────────────────────
 
     private async Task<T?> CallApiAsync<T>(string url, CancellationToken cancellationToken)
