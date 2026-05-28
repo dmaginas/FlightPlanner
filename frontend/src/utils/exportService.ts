@@ -10,6 +10,7 @@ import { calculateFuel } from './fuelCalculator.ts'
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface ExportData {
+  callsign?:   string
   departure:   { icao: string; name?: string; lat: number; lon: number; elevation?: number }
   arrival:     { icao: string; name?: string; lat: number; lon: number; elevation?: number }
   alternate?:  { icao: string; name?: string; lat: number; lon: number } | null

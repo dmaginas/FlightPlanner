@@ -11,7 +11,7 @@ import { useWindowWidth } from '../hooks/useWindowWidth.ts'
 
 export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-  cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
+  cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
   onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
   enabledLayers, onToggleLayer,
 }) {
@@ -20,7 +20,7 @@ export default function MainScreen({
 
   if (isNarrow) return <NarrowLayout {...{
     departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-    cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
+    cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
     onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
     enabledLayers, onToggleLayer,
   }} />
@@ -48,8 +48,10 @@ export default function MainScreen({
           selectedSTAR={selectedSTAR}
           selectedAircraftProfile={selectedAircraftProfile}
           cruisingAltitude={cruisingAltitude}
+          callsign={callsign}
           onAircraftChange={onAircraftChange}
           onAltitudeChange={onAltitudeChange}
+          onCallsignChange={onCallsignChange}
           onDepartureChange={onDepartureChange}
           onArrivalChange={onArrivalChange}
           onAlternateChange={onAlternateChange}
@@ -137,6 +139,7 @@ export default function MainScreen({
           selectedAircraftProfile={selectedAircraftProfile}
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
+          callsign={callsign}
         />
 
         <FuelPanel
@@ -157,7 +160,7 @@ export default function MainScreen({
 
 function NarrowLayout({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
-  cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange,
+  cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
   onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
   enabledLayers, onToggleLayer,
 }) {
@@ -175,8 +178,10 @@ function NarrowLayout({
           selectedSTAR={selectedSTAR}
           selectedAircraftProfile={selectedAircraftProfile}
           cruisingAltitude={cruisingAltitude}
+          callsign={callsign}
           onAircraftChange={onAircraftChange}
           onAltitudeChange={onAltitudeChange}
+          onCallsignChange={onCallsignChange}
           onDepartureChange={onDepartureChange}
           onArrivalChange={onArrivalChange}
           onAlternateChange={onAlternateChange}
@@ -251,6 +256,7 @@ function NarrowLayout({
           selectedAircraftProfile={selectedAircraftProfile}
           selectedSID={selectedSID}
           selectedSTAR={selectedSTAR}
+          callsign={callsign}
         />
 
         <FuelPanel

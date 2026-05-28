@@ -24,6 +24,7 @@ export default function App() {
   const [routeState, setRouteState]   = useState('idle') // idle | loading | ready
   const [selectedAircraftType, setSelectedAircraftType] = useState(DEFAULT_AIRCRAFT_TYPE)
   const [cruisingAltitude, setCruisingAltitude] = useState<number | null>(null)
+  const [callsign, setCallsign] = useState('')
 
   // Route state — set by handleCalculate, cleared when airports change
   const [route, setRoute]               = useState(null)
@@ -156,8 +157,10 @@ export default function App() {
           routeState={routeState}
           selectedAircraftProfile={AIRCRAFT_PROFILE_BY_ICAO[selectedAircraftType]}
           cruisingAltitude={cruisingAltitude}
+          callsign={callsign}
           onAircraftChange={setSelectedAircraftType}
           onAltitudeChange={setCruisingAltitude}
+          onCallsignChange={setCallsign}
           onDepartureChange={handleDepartureChange}
           onArrivalChange={handleArrivalChange}
           onAlternateChange={handleAlternateChange}

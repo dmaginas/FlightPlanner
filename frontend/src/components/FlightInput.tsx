@@ -463,7 +463,7 @@ function ProcSelector({ label, procs, selected, onChange }: {
   )
 }
 
-export default function FlightInput({ departure, arrival, alternate, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, cruisingAltitude, onAircraftChange, onAltitudeChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onSIDChange, onSTARChange }) {
+export default function FlightInput({ departure, arrival, alternate, routeState, selectedSID, selectedSTAR, selectedAircraftProfile, cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange, onAlternateChange, onCalculate, onSIDChange, onSTARChange }) {
   const roughNm = (a, b) => a && b
     ? Math.round(Math.sqrt(((a.lat - b.lat) * 111) ** 2 + ((a.lon - b.lon) * 79) ** 2) * 0.54)
     : null
@@ -527,6 +527,36 @@ export default function FlightInput({ departure, arrival, alternate, routeState,
             onChange={onAltitudeChange}
             aircraftDefault={selectedAircraftProfile?.preferredCruiseAltitudeFt}
           />
+
+          {/* Callsign */}
+          <div>
+            <div style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: 'var(--violet)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              <span style={{ width: 16, height: 16, borderRadius: 5, background: 'var(--violet-soft)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9 }}>
+                ✈
+              </span>
+              Callsign
+              <span style={{ marginLeft: 'auto', fontSize: 9, color: 'var(--dim)', textTransform: 'none', letterSpacing: 0, fontWeight: 400 }}>
+                optional
+              </span>
+            </div>
+            <input
+              value={callsign}
+              onChange={e => onCallsignChange(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 7))}
+              placeholder="e.g. DLH1234"
+              style={{
+                width: '100%', padding: '12px 14px',
+                borderRadius: 'var(--r)', border: callsign ? '1px solid rgba(139,124,255,.3)' : '1px solid var(--line)',
+                background: callsign ? 'rgba(139,124,255,.06)' : 'var(--glass-2)',
+                fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 500,
+                color: 'var(--text)', letterSpacing: '0.08em',
+                transition: 'all .2s',
+              }}
+            />
+          </div>
+
         </div>
 
         {/* Distance */}

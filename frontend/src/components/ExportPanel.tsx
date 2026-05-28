@@ -28,13 +28,14 @@ function ExportButton({ strategy, onClick, loading }: {
   )
 }
 
-export default function ExportPanel({ route, departure, arrival, alternate, selectedAircraftProfile, selectedSID, selectedSTAR }) {
+export default function ExportPanel({ route, departure, arrival, alternate, selectedAircraftProfile, selectedSID, selectedSTAR, callsign }) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
   if (!route || !departure || !arrival) return null
 
   function buildExportData(): ExportData {
     return {
+      callsign:        callsign || undefined,
       departure:       { icao: departure.icao, name: departure.name, lat: departure.lat, lon: departure.lon, elevation: departure.elevation },
       arrival:         { icao: arrival.icao,   name: arrival.name,   lat: arrival.lat,   lon: arrival.lon,   elevation: arrival.elevation   },
       alternate:       alternate ? { icao: alternate.icao, name: alternate.name, lat: alternate.lat, lon: alternate.lon } : null,
