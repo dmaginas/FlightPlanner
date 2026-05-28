@@ -94,6 +94,8 @@ function STARPath({ star, arrival }) {
   )
 }
 
+const OWM_KEY = import.meta.env.VITE_OWM_API_KEY as string | undefined
+
 const LAYER_DEFS = [
   { id: 'fir',    label: 'FIR',    color: '#818cf8' },
   { id: 'uir',    label: 'UIR',    color: '#c4b5fd' },
@@ -104,6 +106,7 @@ const LAYER_DEFS = [
   { id: 'nat',    label: 'NAT',    color: '#f59e0b' },
   { id: 'sigmet', label: 'SIGMET', color: '#ef4444' },
   { id: 'etops',  label: 'ETOPS',  color: '#22c55e' },
+  ...(OWM_KEY ? [{ id: 'clouds', label: 'CLOUDS', color: '#93c5fd' }] : []),
 ] as const
 
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile, enabledLayers, onToggleLayer }) {
@@ -143,6 +146,14 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         attributionControl={true}
       >
         <TileLayer url={TILE_URL} attribution={TILE_ATTR} maxZoom={17} />
+
+        {OWM_KEY && enabledLayers?.has('clouds') && (
+          <TileLayer
+            url={`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${OWM_KEY}`}
+            opacity={0.6}
+            attribution='&copy; <a href="https://openweathermap.org">OpenWeatherMap</a>'
+          />
+        )}
 
         {route && routeCoords.length > 1 && (
           <>

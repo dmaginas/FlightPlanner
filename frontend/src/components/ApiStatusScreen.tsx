@@ -1,5 +1,26 @@
 import { useEffect, useState } from 'react'
 
+const FRONTEND_SERVICES: ApiServiceStatus[] = [
+  {
+    key:         'openaip',
+    name:        'OpenAIP',
+    status:      import.meta.env.VITE_OPENAIP_API_KEY ? 'ok' : 'not_configured',
+    note:        import.meta.env.VITE_OPENAIP_API_KEY
+      ? 'Airport search is active.'
+      : 'Airport search disabled. Add VITE_OPENAIP_API_KEY to frontend/.env — register free at openaip.net.',
+    keyRequired: true,
+  },
+  {
+    key:         'owm',
+    name:        'OpenWeatherMap',
+    status:      import.meta.env.VITE_OWM_API_KEY ? 'ok' : 'not_configured',
+    note:        import.meta.env.VITE_OWM_API_KEY
+      ? 'Clouds layer is active. New keys may take up to 2 hours to activate on OWM\'s servers.'
+      : 'Clouds layer hidden. Add VITE_OWM_API_KEY to frontend/.env — register free at openweathermap.org.',
+    keyRequired: true,
+  },
+]
+
 interface ApiServiceStatus {
   key: string
   name: string
@@ -107,8 +128,11 @@ export default function ApiStatusScreen({ onBack }: { onBack: () => void }) {
     return () => ctrl.abort()
   }, [])
 
-  const configured   = health?.apiServices.filter(s => s.status === 'ok' || s.status === 'no_key_required').length ?? 0
-  const unconfigured = health?.apiServices.filter(s => s.status === 'not_configured').length ?? 0
+  const frontendUnconfigured = FRONTEND_SERVICES.filter(s => s.status === 'not_configured').length
+  const configured   = (health?.apiServices.filter(s => s.status === 'ok' || s.status === 'no_key_required').length ?? 0)
+                     + FRONTEND_SERVICES.filter(s => s.status === 'ok').length
+  const totalServices = (health?.apiServices.length ?? 0) + FRONTEND_SERVICES.length
+  const unconfigured = (health?.apiServices.filter(s => s.status === 'not_configured').length ?? 0) + frontendUnconfigured
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '32px 40px' }}>
@@ -159,7 +183,7 @@ export default function ApiStatusScreen({ onBack }: { onBack: () => void }) {
             {/* Summary cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
               <SummaryCard label="Backend" value={health.name} sub={`v${health.version}`} color="var(--mint)" />
-              <SummaryCard label="Ready" value={`${configured} / ${health.apiServices.length}`} sub="services configured" color="var(--mint)" />
+              <SummaryCard label="Ready" value={`${configured} / ${totalServices}`} sub="services configured" color="var(--mint)" />
               <SummaryCard
                 label="Action needed"
                 value={unconfigured === 0 ? 'None' : `${unconfigured} service${unconfigured > 1 ? 's' : ''}`}
@@ -187,6 +211,28 @@ export default function ApiStatusScreen({ onBack }: { onBack: () => void }) {
               </div>
 
               {health.apiServices.map(svc => (
+                <ServiceRow key={svc.key} svc={svc} />
+              ))}
+            </div>
+
+            {/* Frontend API keys */}
+            <div style={{
+              background: 'var(--glass-2)', border: '1px solid var(--line)',
+              borderRadius: 'var(--r-lg)', overflow: 'hidden', marginTop: 16,
+            }}>
+              <div style={{
+                padding: '12px 20px', background: 'var(--glass)',
+                borderBottom: '1px solid var(--line)',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: 11, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Frontend API Keys
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--dim)' }}>
+                  {FRONTEND_SERVICES.length} services
+                </span>
+              </div>
+              {FRONTEND_SERVICES.map(svc => (
                 <ServiceRow key={svc.key} svc={svc} />
               ))}
             </div>

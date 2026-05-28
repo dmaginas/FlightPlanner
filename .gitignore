@@ -10,3 +10,4 @@ frontend/node_modules/
 # Secrets & local config
 **/*.user
 **/appsettings.Local.json
+frontend/.env

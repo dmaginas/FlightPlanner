@@ -54,7 +54,10 @@ dotnet user-secrets set "FlightPlanDatabase:ApiKey" "YOUR_KEY"   # flightplandat
 dotnet user-secrets set "FaaNotam:ApiKey" "YOUR_KEY"             # api.faa.gov (free registration)
 ```
 
-The OpenAIP key goes in `frontend/.env` as `VITE_OPENAIP_API_KEY`.
+Frontend API keys go in `frontend/.env` (gitignored). See `frontend/.env.example` for all variables.
+
+- **OpenAIP** (`VITE_OPENAIP_API_KEY`) — register at https://www.openaip.net → My Account → API Keys
+- **OpenWeatherMap** (`VITE_OWM_API_KEY`) — register at https://openweathermap.org/api → Free plan → API keys tab → copy the default key (activates within minutes). Without this key the CLOUDS layer toggle is hidden.
 
 ### SID/STAR procedure database (one-time import)
 
