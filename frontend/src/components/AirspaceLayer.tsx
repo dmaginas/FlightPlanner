@@ -6,56 +6,94 @@ import { fetchAirspaceBoundaries } from '../services/airspaceService'
 // Module-level cache — one HTTP fetch per browser session
 let _cache: unknown = null
 
+const LABEL_MIN_ZOOM = 4
+
 // ── Geometry helpers ──────────────────────────────────────────────────────────
 
-function ringCenter(ring: number[][]): [number, number] {
-  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity
-  for (const [lon, lat] of ring) {
-    if (lat < minLat) minLat = lat
-    if (lat > maxLat) maxLat = lat
-    if (lon < minLon) minLon = lon
-    if (lon > maxLon) maxLon = lon
+function longestEdgeInfo(ring: number[][]): { pos: [number, number]; angle: number } | null {
+  if (ring.length < 2) return null
+  let bestLen = -1
+  let bestMidLat = 0, bestMidLon = 0, bestAngle = 0
+
+  for (let i = 0; i < ring.length - 1; i++) {
+    const [lon1, lat1] = ring[i]
+    const [lon2, lat2] = ring[i + 1]
+    const dLon = lon2 - lon1
+    const dLat = lat2 - lat1
+    const len = dLon * dLon + dLat * dLat
+    if (len > bestLen) {
+      bestLen = len
+      bestMidLat = (lat1 + lat2) / 2
+      bestMidLon = (lon1 + lon2) / 2
+      let angle = Math.atan2(-(dLat), dLon) * 180 / Math.PI
+      if (angle < -90 || angle > 90) angle += 180
+      bestAngle = angle
+    }
   }
-  return [(minLat + maxLat) / 2, (minLon + maxLon) / 2]
+
+  if (bestLen < 0) return null
+  return { pos: [bestMidLat, bestMidLon], angle: bestAngle }
 }
 
-function featureCenter(feature: any): [number, number] | null {
-  const p = feature?.properties
+function featureLabelInfo(feature: any): { pos: [number, number]; angle: number } | null {
   const g = feature?.geometry
-  // vatspy provides explicit label coordinates
-  if (p?.label_lat != null && p?.label_lon != null)
-    return [Number(p.label_lat), Number(p.label_lon)]
   if (!g) return null
-  if (g.type === 'Polygon'      && g.coordinates?.[0])    return ringCenter(g.coordinates[0])
-  if (g.type === 'MultiPolygon' && g.coordinates?.[0]?.[0]) return ringCenter(g.coordinates[0][0])
-  return null
+
+  let ring: number[][] | null = null
+  if (g.type === 'Polygon' && g.coordinates?.[0]) {
+    ring = g.coordinates[0]
+  } else if (g.type === 'MultiPolygon' && g.coordinates?.length) {
+    // Pick largest polygon by bbox area
+    let bestArea = -1
+    for (const poly of g.coordinates) {
+      if (!poly?.[0]?.length) continue
+      let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity
+      for (const [lon, lat] of poly[0]) {
+        if (lat < minLat) minLat = lat
+        if (lat > maxLat) maxLat = lat
+        if (lon < minLon) minLon = lon
+        if (lon > maxLon) maxLon = lon
+      }
+      const area = (maxLat - minLat) * (maxLon - minLon)
+      if (area > bestArea) { bestArea = area; ring = poly[0] }
+    }
+  }
+
+  if (!ring) return null
+  return longestEdgeInfo(ring)
 }
 
-// ── Layer factory ─────────────────────────────────────────────────────────────
+// ── Label factory ─────────────────────────────────────────────────────────────
 
-function makeLabelIcon(text: string, color: string): L.DivIcon {
+function makeLabelIcon(text: string, color: string, angle: number): L.DivIcon {
   return L.divIcon({
     className: '',
-    html: `<div style="transform:translate(-50%,-50%);font-family:monospace;font-size:9px;font-weight:700;color:${color};text-shadow:0 0 3px #070716,0 0 3px #070716,0 0 3px #070716;pointer-events:none;letter-spacing:0.06em;white-space:nowrap;">${text}</div>`,
+    html: `<div style="transform:translate(-50%,-50%);display:inline-block;"><span style="display:inline-block;white-space:nowrap;transform:rotate(${angle.toFixed(1)}deg);font-family:monospace;font-size:9px;font-weight:700;color:${color};text-shadow:0 0 3px #070716,0 0 3px #070716,0 0 3px #070716;pointer-events:none;letter-spacing:0.06em;">${text}</span></div>`,
     iconSize:   [0, 0],
     iconAnchor: [0, 0],
   })
 }
 
-function buildLayer(data: unknown, style: L.PathOptions, labelColor: string): L.GeoJSON {
-  const layer = L.geoJSON(data as any, { style: () => style })
+// ── Layer factory ─────────────────────────────────────────────────────────────
 
-  // Add a permanent label at each polygon centroid
-  layer.eachLayer((featureLayer: any) => {
+function buildLayers(
+  data: unknown,
+  style: L.PathOptions,
+  labelColor: string,
+): [L.GeoJSON, L.LayerGroup] {
+  const polyLayer = L.geoJSON(data as any, { style: () => style })
+  const labelGroup = L.layerGroup()
+
+  polyLayer.eachLayer((featureLayer: any) => {
     const id: string = featureLayer.feature?.properties?.id ?? ''
-    const pos = featureCenter(featureLayer.feature)
-    if (!id || !pos) return
-    layer.addLayer(
-      L.marker(pos, { icon: makeLabelIcon(id, labelColor), interactive: false }),
+    const info = featureLabelInfo(featureLayer.feature)
+    if (!id || !info) return
+    labelGroup.addLayer(
+      L.marker(info.pos, { icon: makeLabelIcon(id, labelColor, info.angle), interactive: false }),
     )
   })
 
-  return layer
+  return [polyLayer, labelGroup]
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -70,8 +108,11 @@ interface Props { enabledLayers?: Set<string> }
 export default function AirspaceLayer({ enabledLayers }: Props) {
   const map = useMap()
   const [data, setData] = useState<unknown>(_cache)
-  const firRef = useRef<L.GeoJSON | null>(null)
-  const uirRef = useRef<L.GeoJSON | null>(null)
+
+  const firPolyRef  = useRef<L.GeoJSON | null>(null)
+  const firLabelRef = useRef<L.LayerGroup | null>(null)
+  const uirPolyRef  = useRef<L.GeoJSON | null>(null)
+  const uirLabelRef = useRef<L.LayerGroup | null>(null)
 
   const firOn = enabledLayers?.has('fir') ?? false
   const uirOn = enabledLayers?.has('uir') ?? false
@@ -84,22 +125,70 @@ export default function AirspaceLayer({ enabledLayers }: Props) {
       .catch(err => console.warn('FIR/UIR boundary fetch failed:', err))
   }, [firOn, uirOn]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // FIR layer: build once, add/remove imperatively
+  // FIR layer
   useEffect(() => {
     if (!data) return
-    firRef.current ??= buildLayer(data, FIR_STYLE, '#818cf8')
-    if (firOn) map.addLayer(firRef.current)
-    else       map.removeLayer(firRef.current)
-    return () => { if (firRef.current) map.removeLayer(firRef.current) }
+
+    if (!firPolyRef.current) {
+      const [poly, labels] = buildLayers(data, FIR_STYLE, '#818cf8')
+      firPolyRef.current  = poly
+      firLabelRef.current = labels
+    }
+
+    if (firOn) {
+      map.addLayer(firPolyRef.current)
+    } else {
+      map.removeLayer(firPolyRef.current)
+      if (firLabelRef.current) map.removeLayer(firLabelRef.current)
+      return
+    }
+
+    const updateLabels = () => {
+      if (!firLabelRef.current) return
+      if (firOn && map.getZoom() >= LABEL_MIN_ZOOM) map.addLayer(firLabelRef.current)
+      else map.removeLayer(firLabelRef.current)
+    }
+    updateLabels()
+    map.on('zoomend', updateLabels)
+
+    return () => {
+      map.off('zoomend', updateLabels)
+      if (firPolyRef.current)  map.removeLayer(firPolyRef.current)
+      if (firLabelRef.current) map.removeLayer(firLabelRef.current)
+    }
   }, [firOn, data, map])
 
-  // UIR layer: build once, add/remove imperatively
+  // UIR layer
   useEffect(() => {
     if (!data) return
-    uirRef.current ??= buildLayer(data, UIR_STYLE, '#c4b5fd')
-    if (uirOn) map.addLayer(uirRef.current)
-    else       map.removeLayer(uirRef.current)
-    return () => { if (uirRef.current) map.removeLayer(uirRef.current) }
+
+    if (!uirPolyRef.current) {
+      const [poly, labels] = buildLayers(data, UIR_STYLE, '#c4b5fd')
+      uirPolyRef.current  = poly
+      uirLabelRef.current = labels
+    }
+
+    if (uirOn) {
+      map.addLayer(uirPolyRef.current)
+    } else {
+      map.removeLayer(uirPolyRef.current)
+      if (uirLabelRef.current) map.removeLayer(uirLabelRef.current)
+      return
+    }
+
+    const updateLabels = () => {
+      if (!uirLabelRef.current) return
+      if (uirOn && map.getZoom() >= LABEL_MIN_ZOOM) map.addLayer(uirLabelRef.current)
+      else map.removeLayer(uirLabelRef.current)
+    }
+    updateLabels()
+    map.on('zoomend', updateLabels)
+
+    return () => {
+      map.off('zoomend', updateLabels)
+      if (uirPolyRef.current)  map.removeLayer(uirPolyRef.current)
+      if (uirLabelRef.current) map.removeLayer(uirLabelRef.current)
+    }
   }, [uirOn, data, map])
 
   return null
