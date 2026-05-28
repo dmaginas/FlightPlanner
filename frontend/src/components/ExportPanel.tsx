@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { exportOFP, exportMsfsPln, type ExportData } from '../utils/exportService.ts'
+import { EXPORT_STRATEGIES, type ExportData, type ExportStrategy } from '../utils/exportStrategies'
 
-function ExportButton({ label, sub, icon, onClick, loading }: {
-  label: string; sub: string; icon: string; onClick: () => void; loading: boolean
+function ExportButton({ strategy, onClick, loading }: {
+  strategy: ExportStrategy; onClick: () => void; loading: boolean
 }) {
   return (
     <button
@@ -19,48 +19,38 @@ function ExportButton({ label, sub, icon, onClick, loading }: {
       onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--glass)' }}
       onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--glass-2)' }}
     >
-      <span style={{ fontSize: 22 }}>{loading ? '⏳' : icon}</span>
+      <span style={{ fontSize: 22 }}>{loading ? '⏳' : strategy.icon}</span>
       <div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{label}</div>
-        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{sub}</div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{strategy.label}</div>
+        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{strategy.subtitle}</div>
       </div>
     </button>
   )
 }
 
 export default function ExportPanel({ route, departure, arrival, alternate, selectedAircraftProfile, selectedSID, selectedSTAR }) {
-  const [pdfLoading,  setPdfLoading]  = useState(false)
-  const [plnLoading,  setPlnLoading]  = useState(false)
+  const [loadingId, setLoadingId] = useState<string | null>(null)
 
   if (!route || !departure || !arrival) return null
 
   function buildExportData(): ExportData {
     return {
-      departure:        { icao: departure.icao, name: departure.name, lat: departure.lat, lon: departure.lon, elevation: departure.elevation },
-      arrival:          { icao: arrival.icao,   name: arrival.name,   lat: arrival.lat,   lon: arrival.lon,   elevation: arrival.elevation   },
-      alternate:        alternate ? { icao: alternate.icao, name: alternate.name, lat: alternate.lat, lon: alternate.lon } : null,
+      departure:       { icao: departure.icao, name: departure.name, lat: departure.lat, lon: departure.lon, elevation: departure.elevation },
+      arrival:         { icao: arrival.icao,   name: arrival.name,   lat: arrival.lat,   lon: arrival.lon,   elevation: arrival.elevation   },
+      alternate:       alternate ? { icao: alternate.icao, name: alternate.name, lat: alternate.lat, lon: alternate.lon } : null,
       route,
-      aircraftProfile:  selectedAircraftProfile ?? null,
-      selectedSID:      selectedSID  ?? null,
-      selectedSTAR:     selectedSTAR ?? null,
+      aircraftProfile: selectedAircraftProfile ?? null,
+      selectedSID:     selectedSID  ?? null,
+      selectedSTAR:    selectedSTAR ?? null,
     }
   }
 
-  async function handlePdf() {
-    setPdfLoading(true)
+  async function handleExport(strategy: ExportStrategy) {
+    setLoadingId(strategy.id)
     try {
-      await exportOFP(buildExportData())
+      await strategy.execute(buildExportData())
     } finally {
-      setPdfLoading(false)
-    }
-  }
-
-  async function handlePln() {
-    setPlnLoading(true)
-    try {
-      exportMsfsPln(buildExportData())
-    } finally {
-      setPlnLoading(false)
+      setLoadingId(null)
     }
   }
 
@@ -74,20 +64,14 @@ export default function ExportPanel({ route, departure, arrival, alternate, sele
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
-        <ExportButton
-          label="OFP PDF"
-          sub="Operational Flight Plan"
-          icon="📄"
-          onClick={handlePdf}
-          loading={pdfLoading}
-        />
-        <ExportButton
-          label="MSFS .pln"
-          sub="Flight Simulator 2020 / 2024"
-          icon="🛫"
-          onClick={handlePln}
-          loading={plnLoading}
-        />
+        {EXPORT_STRATEGIES.map(strategy => (
+          <ExportButton
+            key={strategy.id}
+            strategy={strategy}
+            onClick={() => handleExport(strategy)}
+            loading={loadingId === strategy.id}
+          />
+        ))}
       </div>
     </div>
   )
