@@ -119,6 +119,8 @@ const LAYER_DEFS = [
 
 export default function RouteMap({ departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile, enabledLayers, onToggleLayer }) {
 
+  const [layersOpen, setLayersOpen] = useState(false)
+
   const initialCenter = departure
     ? [departure.lat, departure.lon]
     : [51.0, 10.0]
@@ -289,37 +291,77 @@ export default function RouteMap({ departure, arrival, alternate, route, selecte
         </div>
       )}
 
-      {/* NavData layer toggles — bottom-right */}
-      <div style={{
-        position: 'absolute', bottom: 28, right: 12, zIndex: 1000,
-        display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
-      }}>
-        {LAYER_DEFS.map(layer => {
-          const on = enabledLayers?.has(layer.id) ?? false
-          return (
-            <button
-              key={layer.id}
-              onClick={() => handleLayerToggle(layer.id)}
-              style={{
-                padding: '4px 10px',
-                borderRadius: 6,
-                background: on ? 'rgba(13,18,41,.92)' : 'rgba(13,18,41,.6)',
-                border: `1px solid ${on ? layer.color : 'rgba(244,247,255,.15)'}`,
-                color: on ? layer.color : 'rgba(244,247,255,.4)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: 'pointer',
-                backdropFilter: 'blur(6px)',
-                letterSpacing: '0.04em',
-                transition: 'all .15s',
-                minWidth: 48,
-              }}
-            >
-              {layer.label}
-            </button>
-          )
-        })}
+      {/* Layer toggle panel — bottom-right */}
+      <div style={{ position: 'absolute', bottom: 28, right: 12, zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+
+        {/* Expandable layer list */}
+        <div
+          style={{
+            display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end',
+            maxHeight: layersOpen ? 400 : 0,
+            overflowY: layersOpen ? 'auto' : 'hidden',
+            overflowX: 'visible',
+            transition: 'max-height .25s ease',
+            paddingRight: 2,
+          }}
+        >
+          {LAYER_DEFS.map(layer => {
+            const on = enabledLayers?.has(layer.id) ?? false
+            return (
+              <button
+                key={layer.id}
+                onClick={() => handleLayerToggle(layer.id)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  background: on ? 'rgba(13,18,41,.92)' : 'rgba(13,18,41,.6)',
+                  border: `1px solid ${on ? layer.color : 'rgba(244,247,255,.15)'}`,
+                  color: on ? layer.color : 'rgba(244,247,255,.4)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backdropFilter: 'blur(6px)',
+                  letterSpacing: '0.04em',
+                  transition: 'all .15s',
+                  minWidth: 48,
+                  flexShrink: 0,
+                }}
+              >
+                {layer.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Toggle button */}
+        <button
+          onClick={() => setLayersOpen(o => !o)}
+          title={layersOpen ? 'Hide layers' : 'Show layers'}
+          style={{
+            padding: '5px 12px',
+            borderRadius: 7,
+            background: layersOpen ? 'rgba(13,18,41,.95)' : 'rgba(13,18,41,.75)',
+            border: `1px solid ${layersOpen ? 'rgba(244,247,255,.35)' : 'rgba(244,247,255,.18)'}`,
+            color: layersOpen ? 'rgba(244,247,255,.9)' : 'rgba(244,247,255,.5)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+            backdropFilter: 'blur(8px)',
+            letterSpacing: '0.06em',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}
+        >
+          <span style={{ fontSize: 10, transition: 'transform .2s', transform: layersOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▲</span>
+          LAYERS
+          {(() => {
+            const activeCount = LAYER_DEFS.filter(l => enabledLayers?.has(l.id)).length
+            return activeCount > 0
+              ? <span style={{ background: 'var(--violet)', color: '#fff', borderRadius: 4, fontSize: 9, padding: '1px 5px', fontWeight: 700 }}>{activeCount}</span>
+              : null
+          })()}
+        </button>
       </div>
 
       {/* Map overlay labels */}
