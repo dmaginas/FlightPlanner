@@ -14,10 +14,12 @@ namespace FlightPlanner.Api.Controllers;
 public sealed class HealthController : ControllerBase
 {
     private readonly FlightPlanDatabaseOptions _fpdOptions;
+    private readonly ChartFoxOptions           _chartFoxOptions;
 
-    public HealthController(FlightPlanDatabaseOptions fpdOptions)
+    public HealthController(FlightPlanDatabaseOptions fpdOptions, ChartFoxOptions chartFoxOptions)
     {
-        _fpdOptions = fpdOptions;
+        _fpdOptions      = fpdOptions;
+        _chartFoxOptions = chartFoxOptions;
     }
 
     /// <summary>
@@ -38,7 +40,8 @@ public sealed class HealthController : ControllerBase
             ? version[..version.IndexOf('+')]
             : version;
 
-        bool fpdConfigured = !string.IsNullOrWhiteSpace(_fpdOptions.ApiKey);
+        bool fpdConfigured      = !string.IsNullOrWhiteSpace(_fpdOptions.ApiKey);
+        bool chartFoxConfigured = !string.IsNullOrWhiteSpace(_chartFoxOptions.ApiKey);
 
         var apiServices = new List<ApiServiceStatus>
         {
@@ -83,6 +86,24 @@ public sealed class HealthController : ControllerBase
                 Status     = "no_key_required",
                 Note       = "Airport diagrams & ATC frequencies — no API key required",
                 KeyRequired = false,
+            },
+            new()
+            {
+                Key        = "faa_charts",
+                Name       = "FAA d-TPP Charts",
+                Status     = "no_key_required",
+                Note       = "US airport charts (approach, SID, STAR, taxi) — no API key required",
+                KeyRequired = false,
+            },
+            new()
+            {
+                Key        = "chartfox",
+                Name       = "ChartFox",
+                Status     = chartFoxConfigured ? "ok" : "not_configured",
+                Note       = chartFoxConfigured
+                    ? "Worldwide airport charts — API key configured"
+                    : "Worldwide airport charts — apply at chartfox.org, then: dotnet user-secrets set \"ChartFox:ApiKey\" \"YOUR_KEY\"",
+                KeyRequired = true,
             },
         };
 

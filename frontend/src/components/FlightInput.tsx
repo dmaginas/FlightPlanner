@@ -3,6 +3,7 @@ import { searchAirports } from '../data/airports.ts'
 import { filterAircraftProfiles, getAircraftDisplayLabel } from '../data/aircraftPerformance.ts'
 import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
 import AirportDiagramModal from './AirportDiagramModal.tsx'
+import ChartsModal from './ChartsModal.tsx'
 
 function AirportSearch({ label, role, value, onChange }) {
   const [query, setQuery]           = useState(value ? `${value.icao} — ${value.name}` : '')
@@ -10,6 +11,7 @@ function AirportSearch({ label, role, value, onChange }) {
   const [open, setOpen]             = useState(false)
   const [focused, setFocused]       = useState(false)
   const [showDiagram, setShowDiagram] = useState(false)
+  const [showCharts,  setShowCharts]  = useState(false)
   const inputRef = useRef()
   const valueRef = useRef(value)
 
@@ -67,19 +69,34 @@ function AirportSearch({ label, role, value, onChange }) {
         </span>
         {label}
         {value && (
-          <button
-            onClick={() => setShowDiagram(true)}
-            title={`${value.icao} airport diagram`}
-            style={{
-              marginLeft: 'auto', padding: '2px 7px', borderRadius: 5,
-              background: 'var(--glass)', border: '1px solid var(--line-2)',
-              color: 'var(--dim)', cursor: 'pointer',
-              fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600,
-              letterSpacing: '0.05em', lineHeight: 1.6,
-            }}
-          >
-            APT ⊟
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+            <button
+              onClick={() => setShowDiagram(true)}
+              title={`${value.icao} airport diagram`}
+              style={{
+                padding: '2px 7px', borderRadius: 5,
+                background: 'var(--glass)', border: '1px solid var(--line-2)',
+                color: 'var(--dim)', cursor: 'pointer',
+                fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                letterSpacing: '0.05em', lineHeight: 1.6,
+              }}
+            >
+              APT ⊟
+            </button>
+            <button
+              onClick={() => setShowCharts(true)}
+              title={`${value.icao} charts`}
+              style={{
+                padding: '2px 7px', borderRadius: 5,
+                background: 'var(--glass)', border: '1px solid var(--line-2)',
+                color: 'var(--dim)', cursor: 'pointer',
+                fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                letterSpacing: '0.05em', lineHeight: 1.6,
+              }}
+            >
+              CHT ☰
+            </button>
+          </div>
         )}
       </div>
 
@@ -144,6 +161,13 @@ function AirportSearch({ label, role, value, onChange }) {
           icao={value.icao}
           airportName={value.name}
           onClose={() => setShowDiagram(false)}
+        />
+      )}
+      {showCharts && value && (
+        <ChartsModal
+          icao={value.icao}
+          airportName={value.name}
+          onClose={() => setShowCharts(false)}
         />
       )}
     </div>

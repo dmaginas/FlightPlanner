@@ -41,6 +41,11 @@ var fpdOptions = builder.Configuration
     .GetSection(FlightPlanDatabaseOptions.SectionName)
     .Get<FlightPlanDatabaseOptions>() ?? new FlightPlanDatabaseOptions();
 
+// ── ChartFox options ─────────────────────────────────────────────────────────
+var chartFoxOptions = builder.Configuration
+    .GetSection(ChartFoxOptions.SectionName)
+    .Get<ChartFoxOptions>() ?? new ChartFoxOptions();
+
 // ── Services ────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 
@@ -147,6 +152,14 @@ builder.Services.AddHttpClient<IAirspaceService, AirspaceService>(client =>
 
 // Airport diagram service — OurAirports runways.csv, cached 24 h
 builder.Services.AddHttpClient<IAirportDiagramService, AirportDiagramService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
+// Chart service — FAA d-TPP (US, no key) + ChartFox (worldwide, optional key)
+builder.Services.AddSingleton(chartFoxOptions);
+builder.Services.AddHttpClient<IChartService, ChartService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
