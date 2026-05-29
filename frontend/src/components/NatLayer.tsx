@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Polyline, Marker, Tooltip } from 'react-leaflet'
 import L from 'leaflet'
 import { fetchNatTracks, type NatTrack } from '../services/natService'
@@ -46,30 +47,62 @@ function relevantDirection(depLon?: number, arrLon?: number): 'east' | 'west' | 
   return 'west'
 }
 
+type Status = 'idle' | 'loading' | 'ok' | 'empty' | 'error'
+
 export default function NatLayer({ enabledLayers, departureLon, arrivalLon }: Props) {
   const [tracks, setTracks] = useState<NatTrack[]>([])
+  const [status, setStatus] = useState<Status>('idle')
   const abortRef = useRef<AbortController | null>(null)
   const natEnabled = useMemo(() => enabledLayers?.has('nat') ?? false, [enabledLayers])
 
   useEffect(() => {
     if (!natEnabled) {
       setTracks([])
+      setStatus('idle')
       return
     }
 
+    setStatus('loading')
     abortRef.current?.abort()
     abortRef.current = new AbortController()
 
     fetchNatTracks(abortRef.current.signal)
-      .then(r => setTracks(r.tracks))
+      .then(r => {
+        setTracks(r.tracks)
+        setStatus(r.tracks.length > 0 ? 'ok' : 'empty')
+      })
       .catch(err => {
-        if (err?.name !== 'AbortError') console.warn('NAT track fetch failed:', err)
+        if (err?.name === 'AbortError') return
+        console.warn('NAT track fetch failed:', err)
+        setStatus('error')
       })
 
     return () => abortRef.current?.abort()
   }, [natEnabled])
 
-  if (!natEnabled || tracks.length === 0) return null
+  if (!natEnabled) return null
+
+  // Show a notice when the layer is on but no track data is available
+  if (status === 'empty' || status === 'error') {
+    return createPortal(
+      <div style={{
+        position: 'fixed', bottom: 80, left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 9000, pointerEvents: 'none',
+        background: 'rgba(15,18,40,0.97)',
+        border: '1px solid rgba(245,158,11,0.40)',
+        borderRadius: 8, padding: '7px 14px',
+        fontSize: 12, fontFamily: 'monospace',
+        color: '#f59e0b', whiteSpace: 'nowrap',
+        boxShadow: '0 4px 16px rgba(0,0,0,.45)',
+      }}>
+        ⚠ NAT data currently unavailable — tracks are published twice daily
+      </div>,
+      document.body
+    ) as React.ReactElement
+  }
+
+  if (tracks.length === 0) return null
 
   const atlantic    = isTransatlantic(departureLon, arrivalLon)
   const routeDir    = relevantDirection(departureLon, arrivalLon)

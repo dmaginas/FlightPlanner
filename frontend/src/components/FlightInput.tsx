@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react'
 import { searchAirports } from '../data/airports.ts'
 import { filterAircraftProfiles, getAircraftDisplayLabel } from '../data/aircraftPerformance.ts'
 import { fetchProcedures, toDisplayProcedures, type DisplayProcedure } from '../services/procedureService.ts'
+import AirportDiagramModal from './AirportDiagramModal.tsx'
 
 function AirportSearch({ label, role, value, onChange }) {
-  const [query, setQuery]       = useState(value ? `${value.icao} — ${value.name}` : '')
-  const [results, setResults]   = useState([])
-  const [open, setOpen]         = useState(false)
-  const [focused, setFocused]   = useState(false)
+  const [query, setQuery]           = useState(value ? `${value.icao} — ${value.name}` : '')
+  const [results, setResults]       = useState([])
+  const [open, setOpen]             = useState(false)
+  const [focused, setFocused]       = useState(false)
+  const [showDiagram, setShowDiagram] = useState(false)
   const inputRef = useRef()
   const valueRef = useRef(value)
 
@@ -64,6 +66,21 @@ function AirportSearch({ label, role, value, onChange }) {
           {role === 'dep' ? '↑' : '↓'}
         </span>
         {label}
+        {value && (
+          <button
+            onClick={() => setShowDiagram(true)}
+            title={`${value.icao} airport diagram`}
+            style={{
+              marginLeft: 'auto', padding: '2px 7px', borderRadius: 5,
+              background: 'var(--glass)', border: '1px solid var(--line-2)',
+              color: 'var(--dim)', cursor: 'pointer',
+              fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600,
+              letterSpacing: '0.05em', lineHeight: 1.6,
+            }}
+          >
+            APT ⊟
+          </button>
+        )}
       </div>
 
       <div style={{
@@ -120,6 +137,14 @@ function AirportSearch({ label, role, value, onChange }) {
             </button>
           ))}
         </div>
+      )}
+
+      {showDiagram && value && (
+        <AirportDiagramModal
+          icao={value.icao}
+          airportName={value.name}
+          onClose={() => setShowDiagram(false)}
+        />
       )}
     </div>
   )

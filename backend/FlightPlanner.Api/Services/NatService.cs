@@ -9,32 +9,32 @@ using Microsoft.Extensions.Caching.Memory;
 namespace FlightPlanner.Api.Services;
 
 /// <summary>
-/// Fetches North Atlantic Track (NAT) data from the Flight Plan Database public NATS
-/// endpoint (https://api.flightplandatabase.com/nav/NATS).
+/// Fetches North Atlantic Track (NAT) data.
 ///
-/// Tracks are published twice daily (eastbound ~01:00-08:00 UTC,
-/// westbound ~11:30-19:00 UTC). Outside these windows the endpoint returns an
-/// empty array, which is normal — no NAT tracks are applied to the route.
+/// Sources tried in order:
+///   1. Gander Oceanic public API  (tracks.ganderoceanic.ca/data)
+///   2. Flight Plan Database NATS  (api.flightplandatabase.com/nav/NATS)
 ///
-/// Results are cached server-side for 15 minutes.
-/// No API key required; the FPD key is sent when configured to maximise quota.
+/// Results are cached 15 minutes when tracks are found, 2 minutes when
+/// both sources return nothing (so the next request retries sooner).
 ///
 /// For flight simulation use only.
 /// </summary>
 public sealed class NatService : INatService
 {
-    private const string CacheKey = "nat_tracks_fpd";
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(15);
+    private const string CacheKey = "nat_tracks";
+    private static readonly TimeSpan CacheTtlData  = TimeSpan.FromMinutes(15);
+    private static readonly TimeSpan CacheTtlEmpty = TimeSpan.FromMinutes(2);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
     };
 
-    private readonly HttpClient _http;
+    private readonly HttpClient                _http;
     private readonly FlightPlanDatabaseOptions _fpdOptions;
-    private readonly IMemoryCache _cache;
-    private readonly ILogger<NatService> _logger;
+    private readonly IMemoryCache              _cache;
+    private readonly ILogger<NatService>       _logger;
 
     public NatService(
         HttpClient http,
@@ -53,29 +53,9 @@ public sealed class NatService : INatService
         if (_cache.TryGetValue(CacheKey, out NatResponse? cached) && cached is not null)
             return cached;
 
-        var url = $"{_fpdOptions.BaseUrl}/nav/NATS";
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        // Send API key if available — improves rate limits (endpoint is public without key)
-        if (!string.IsNullOrWhiteSpace(_fpdOptions.ApiKey))
-        {
-            var credential = Convert.ToBase64String(
-                Encoding.UTF8.GetBytes($"{_fpdOptions.ApiKey}:"));
-            request.Headers.Authorization =
-                new AuthenticationHeaderValue("Basic", credential);
-        }
-
-        var response = await _http.SendAsync(request, ct);
-        response.EnsureSuccessStatusCode();
-
-        var json = await response.Content.ReadAsStringAsync(ct);
-        var raw  = JsonSerializer.Deserialize<List<FpdNatTrack>>(json, JsonOptions) ?? [];
-
-        var tracks = raw
-            .Where(t => !string.IsNullOrWhiteSpace(t.Ident) && t.Route?.Nodes?.Count > 1)
-            .Select(Map)
-            .ToList();
+        var tracks = await FetchFromGanderAsync(ct)
+                  ?? await FetchFromFpdAsync(ct)
+                  ?? [];
 
         var result = new NatResponse
         {
@@ -83,13 +63,111 @@ public sealed class NatService : INatService
             FetchedAt = DateTime.UtcNow.ToString("O"),
         };
 
-        _cache.Set(CacheKey, result, CacheTtl);
-        _logger.LogInformation(
-            "Fetched {Count} NAT tracks from FPD NATS endpoint", tracks.Count);
+        _cache.Set(CacheKey, result, tracks.Count > 0 ? CacheTtlData : CacheTtlEmpty);
+        _logger.LogInformation("NAT tracks loaded: {Count}", tracks.Count);
         return result;
     }
 
-    private static NatTrack Map(FpdNatTrack src)
+    // ── Gander Oceanic source ─────────────────────────────────────────────────
+
+    private async Task<List<NatTrack>?> FetchFromGanderAsync(CancellationToken ct)
+    {
+        try
+        {
+            var response = await _http.GetAsync("https://tracks.ganderoceanic.ca/data", ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("Gander Oceanic NAT returned {Status}", (int)response.StatusCode);
+                return null;
+            }
+
+            var json   = await response.Content.ReadAsStringAsync(ct);
+            var raw    = JsonSerializer.Deserialize<List<GanderNatTrack>>(json, JsonOptions);
+            if (raw is null || raw.Count == 0) return null;
+
+            var tracks = raw
+                .Where(t => !string.IsNullOrWhiteSpace(t.Id) && t.Route?.Count > 1)
+                .Select(MapGander)
+                .ToList();
+
+            _logger.LogInformation("Fetched {Count} NAT tracks from Gander Oceanic", tracks.Count);
+            return tracks.Count > 0 ? tracks : null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Gander Oceanic NAT fetch failed: {Message}", ex.Message);
+            return null;
+        }
+    }
+
+    private static NatTrack MapGander(GanderNatTrack src) => new()
+    {
+        Id           = src.Id!,
+        Tmi          = src.Tmi,
+        Route        = (src.Route ?? []).Select(n => new NatPoint
+        {
+            Name      = n.Name,
+            Latitude  = n.Latitude,
+            Longitude = n.Longitude,
+        }).ToList(),
+        // Gander flight levels are in feet (34000 = FL340); convert to FL number strings.
+        FlightLevels = (src.FlightLevels ?? [])
+            .Select(fl => (fl / 100).ToString())
+            .ToList(),
+        Direction    = src.Direction switch
+        {
+            1 => NatDirection.Westbound,
+            2 => NatDirection.Eastbound,
+            _ => NatDirection.Unknown,
+        },
+    };
+
+    // ── Flight Plan Database source (fallback) ────────────────────────────────
+
+    private async Task<List<NatTrack>?> FetchFromFpdAsync(CancellationToken ct)
+    {
+        try
+        {
+            var url = $"{_fpdOptions.BaseUrl}/nav/NATS";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            if (!string.IsNullOrWhiteSpace(_fpdOptions.ApiKey))
+            {
+                var credential = Convert.ToBase64String(
+                    Encoding.UTF8.GetBytes($"{_fpdOptions.ApiKey}:"));
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Basic", credential);
+            }
+
+            var response = await _http.SendAsync(request, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogDebug("FPD NATS returned {Status}", (int)response.StatusCode);
+                return null;
+            }
+
+            var json   = await response.Content.ReadAsStringAsync(ct);
+            var raw    = JsonSerializer.Deserialize<List<FpdNatTrack>>(json, JsonOptions) ?? [];
+
+            var tracks = raw
+                .Where(t => !string.IsNullOrWhiteSpace(t.Ident) && t.Route?.Nodes?.Count > 1)
+                .Select(MapFpd)
+                .ToList();
+
+            _logger.LogInformation("Fetched {Count} NAT tracks from FPD", tracks.Count);
+            return tracks.Count > 0 ? tracks : null;
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("FPD NAT fetch failed: {Message}", ex.Message);
+            return null;
+        }
+    }
+
+    private static NatTrack MapFpd(FpdNatTrack src)
     {
         var east = src.Route?.EastLevels is { Count: > 0 };
         var flightLevels = east
@@ -111,14 +189,32 @@ public sealed class NatService : INatService
         };
     }
 
-    // ── FPD /nav/NATS JSON shapes ──────────────────────────────────────────────
+    // ── Gander Oceanic /data JSON shapes ──────────────────────────────────────
+
+    private sealed class GanderNatTrack
+    {
+        [JsonPropertyName("id")]           public string?              Id           { get; set; }
+        [JsonPropertyName("tmi")]          public string?              Tmi          { get; set; }
+        [JsonPropertyName("route")]        public List<GanderNatPoint>? Route       { get; set; }
+        [JsonPropertyName("flightLevels")] public List<int>?           FlightLevels { get; set; }
+        [JsonPropertyName("direction")]    public int                  Direction    { get; set; }
+    }
+
+    private sealed class GanderNatPoint
+    {
+        [JsonPropertyName("name")]      public string? Name      { get; set; }
+        [JsonPropertyName("latitude")]  public double  Latitude  { get; set; }
+        [JsonPropertyName("longitude")] public double  Longitude { get; set; }
+    }
+
+    // ── FPD /nav/NATS JSON shapes ─────────────────────────────────────────────
 
     private sealed class FpdNatTrack
     {
-        [JsonPropertyName("ident")]     public string?       Ident     { get; set; }
-        [JsonPropertyName("route")]     public FpdNatRoute?  Route     { get; set; }
-        [JsonPropertyName("validFrom")] public string?       ValidFrom { get; set; }
-        [JsonPropertyName("validTo")]   public string?       ValidTo   { get; set; }
+        [JsonPropertyName("ident")]     public string?      Ident     { get; set; }
+        [JsonPropertyName("route")]     public FpdNatRoute? Route     { get; set; }
+        [JsonPropertyName("validFrom")] public string?      ValidFrom { get; set; }
+        [JsonPropertyName("validTo")]   public string?      ValidTo   { get; set; }
     }
 
     private sealed class FpdNatRoute

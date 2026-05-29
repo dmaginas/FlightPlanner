@@ -145,6 +145,13 @@ builder.Services.AddHttpClient<IAirspaceService, AirspaceService>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 
+// Airport diagram service — OurAirports runways.csv, cached 24 h
+builder.Services.AddHttpClient<IAirportDiagramService, AirportDiagramService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ─────────────────────────────────────────────────────

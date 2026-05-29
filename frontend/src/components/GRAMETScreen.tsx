@@ -109,8 +109,8 @@ function IsoTherm({ wps, ml, mt }: {
 
 // ── Cloud cover strips ────────────────────────────────────────────────────────
 
-function CloudStrips({ wps, ml, yStart }: {
-  wps: GrametWaypointData[]; ml: number; yStart: number
+function CloudStrips({ wps, ml, yStart, showLabels = true }: {
+  wps: GrametWaypointData[]; ml: number; yStart: number; showLabels?: boolean
 }) {
   return (
     <>
@@ -120,10 +120,12 @@ function CloudStrips({ wps, ml, yStart }: {
         const y = yStart + li * (CLOUD_H + CLOUD_GAP)
         return (
           <g key={layer.label}>
-            <text x={ml - 8} y={y + CLOUD_H / 2 + 3.5} textAnchor="end"
-              fill="rgba(244,247,255,0.28)" fontSize={8} fontFamily="monospace">
-              {layer.label}
-            </text>
+            {showLabels && (
+              <text x={ml - 8} y={y + CLOUD_H / 2 + 3.5} textAnchor="end"
+                fill="rgba(244,247,255,0.28)" fontSize={8} fontFamily="monospace">
+                {layer.label}
+              </text>
+            )}
             {wps.map((wp, wi) => {
               const pct   = wp.levels.find(l => l.pressureHPa === layer.pressureHPa)?.cloudCoverPct ?? 0
               const alpha = (pct / 100) * 0.80
@@ -145,96 +147,89 @@ function CloudStrips({ wps, ml, yStart }: {
 
 // ── Main chart SVG ────────────────────────────────────────────────────────────
 
+interface HoverCell {
+  wp:  GrametWaypointData
+  lvl: { pressureHPa: number; label: string }
+  ld:  { windSpeedKt?: number | null; windDirDeg?: number | null; tempC?: number | null; cloudCoverPct?: number } | undefined
+  x:   number
+  y:   number
+}
+
+function CellTooltip({ h }: { h: HoverCell }) {
+  const wind = h.ld?.windSpeedKt != null && h.ld.windDirDeg != null
+    ? `${h.ld.windDirDeg.toString().padStart(3, '0')}° / ${Math.round(h.ld.windSpeedKt)} kt`
+    : '—'
+  const temp = h.ld?.tempC != null
+    ? `${h.ld.tempC > 0 ? '+' : ''}${h.ld.tempC.toFixed(1)} °C`
+    : '—'
+  const cloud = h.ld?.cloudCoverPct != null ? `${h.ld.cloudCoverPct} %` : '—'
+
+  const flipX = h.x > window.innerWidth  - 220
+  const flipY = h.y > window.innerHeight - 160
+
+  return (
+    <div style={{
+      position: 'fixed',
+      left:  flipX ? h.x - 12 : h.x + 14,
+      top:   flipY ? h.y - 12 : h.y + 14,
+      transform: `translate(${flipX ? '-100%' : '0'}, ${flipY ? '-100%' : '0'})`,
+      zIndex: 9999,
+      pointerEvents: 'none',
+      background: 'rgba(10,14,35,.97)',
+      border: '1px solid rgba(244,247,255,.15)',
+      borderRadius: 8,
+      padding: '10px 14px',
+      minWidth: 170,
+      boxShadow: '0 8px 24px rgba(0,0,0,.5)',
+    }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 13, color: 'var(--text)', marginBottom: 8 }}>
+        {h.wp.id}
+        <span style={{ fontWeight: 400, fontSize: 11, color: 'var(--dim)', marginLeft: 8 }}>
+          {h.lvl.label}
+        </span>
+      </div>
+      {[
+        { label: 'Wind',  value: wind  },
+        { label: 'Temp',  value: temp  },
+        { label: 'Cloud', value: cloud },
+      ].map(row => (
+        <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', gap: 16, fontSize: 12, marginBottom: 4 }}>
+          <span style={{ color: 'var(--dim)' }}>{row.label}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>{row.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function GrametChart({ data, dep, arr }: {
   data: GrametData
   dep: { icao: string } | null
   arr: { icao: string } | null
 }) {
-  const wps   = data.waypoints
-  const n     = wps.length
-  const t     = new Date(data.generatedAt)
-  const hhmm  = `${t.getUTCHours().toString().padStart(2, '0')}:${t.getUTCMinutes().toString().padStart(2, '0')} UTC`
-  const title = `GRAMET  ·  ${dep?.icao ?? '—'} → ${arr?.icao ?? '—'}  ·  ${hhmm}`
+  const [hover, setHover] = useState<HoverCell | null>(null)
+
+  const wps    = data.waypoints
+  const n      = wps.length
+  const t      = new Date(data.generatedAt)
+  const hhmm   = `${t.getUTCHours().toString().padStart(2, '0')}:${t.getUTCMinutes().toString().padStart(2, '0')} UTC`
+  const title  = `GRAMET  ·  ${dep?.icao ?? '—'} → ${arr?.icao ?? '—'}  ·  ${hhmm}`
 
   const mainH  = LEVELS.length * CELL_H
-  const svgW   = MARGIN.left + n * CELL_W + MARGIN.right
   const svgH   = MARGIN.top + mainH + MARGIN.bottom
   const yCloud = MARGIN.top + mainH + 42
+  const leftW  = MARGIN.left
+  const rightW = n * CELL_W + MARGIN.right
 
   return (
-    <div style={{ overflowX: 'auto', width: '100%' }}>
-      <svg width={svgW} height={svgH} style={{ display: 'block' }}>
+    <div style={{ display: 'flex', width: '100%' }}>
+      {hover && <CellTooltip h={hover} />}
 
-        {/* Title */}
-        <text
-          x={MARGIN.left + (n * CELL_W) / 2} y={24}
-          textAnchor="middle"
-          fill="rgba(244,247,255,0.60)" fontSize={12}
-          fontFamily="monospace" fontWeight={600}
-        >
-          {title}
-        </text>
-
-        {/* Cells */}
-        {LEVELS.map((lvl, li) => {
-          const yCell = MARGIN.top + li * CELL_H
-          return wps.map((wp, wi) => {
-            const xCell = MARGIN.left + wi * CELL_W
-            const ld    = wp.levels.find(l => l.pressureHPa === lvl.pressureHPa)
-            const kts   = ld?.windSpeedKt ?? null
-            const dir   = ld?.windDirDeg  ?? null
-            const temp  = ld?.tempC       ?? null
-            const cx    = xCell + CELL_W / 2
-            const cy    = yCell + CELL_H / 2
-
-            return (
-              <g key={`${li}-${wi}`}>
-                <rect
-                  x={xCell + 1} y={yCell + 1}
-                  width={CELL_W - 2} height={CELL_H - 2}
-                  rx={3} fill={kts !== null ? windColor(kts) : '#0d1225'}
-                  stroke="rgba(244,247,255,0.07)" strokeWidth={1}
-                />
-                {kts !== null && (
-                  <text x={xCell + CELL_W - 6} y={yCell + 13} textAnchor="end"
-                    fill="rgba(255,255,255,0.48)" fontSize={9} fontFamily="monospace">
-                    {Math.round(kts)}kt
-                  </text>
-                )}
-                {dir !== null && kts !== null && (
-                  <WindArrow cx={cx} cy={cy - 7} dirDeg={dir} kts={kts} />
-                )}
-                <text x={cx} y={yCell + CELL_H - 9} textAnchor="middle"
-                  fill={temp !== null ? tempColor(temp) : 'rgba(244,247,255,0.25)'}
-                  fontSize={11} fontFamily="monospace" fontWeight={600}>
-                  {temp !== null ? `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°` : '—'}
-                </text>
-              </g>
-            )
-          })
-        })}
-
-        {/* Horizontal grid lines */}
-        {Array.from({ length: LEVELS.length + 1 }, (_, i) => MARGIN.top + i * CELL_H).map((y, i) => (
-          <line key={`h${i}`}
-            x1={MARGIN.left} y1={y} x2={MARGIN.left + n * CELL_W} y2={y}
-            stroke="rgba(244,247,255,0.09)" strokeWidth={1} />
-        ))}
-
-        {/* Vertical grid lines */}
-        {Array.from({ length: n + 1 }, (_, i) => MARGIN.left + i * CELL_W).map((x, i) => (
-          <line key={`v${i}`}
-            x1={x} y1={MARGIN.top} x2={x} y2={MARGIN.top + mainH}
-            stroke="rgba(244,247,255,0.09)" strokeWidth={1} />
-        ))}
-
-        {/* 0°C isotherm */}
-        <IsoTherm wps={wps} ml={MARGIN.left} mt={MARGIN.top} />
-
-        {/* Y-axis labels */}
+      {/* Fixed Y-axis — stays in place while cells scroll */}
+      <svg width={leftW} height={svgH} style={{ flexShrink: 0, display: 'block' }}>
         {LEVELS.map((lvl, li) => (
           <text key={lvl.label}
-            x={MARGIN.left - 10}
+            x={leftW - 10}
             y={MARGIN.top + li * CELL_H + CELL_H / 2 + 4}
             textAnchor="end"
             fill="rgba(244,247,255,0.55)"
@@ -242,33 +237,124 @@ function GrametChart({ data, dep, arr }: {
             {lvl.label}
           </text>
         ))}
-
-        {/* X-axis labels */}
-        {wps.map((wp, wi) => {
-          const cx   = MARGIN.left + wi * CELL_W + CELL_W / 2
-          const yBot = MARGIN.top + mainH
+        {CLOUD_LAYERS.map((layer, li) => {
+          const y = yCloud + li * (CLOUD_H + CLOUD_GAP)
           return (
-            <g key={`x${wi}`}>
-              <text x={cx} y={yBot + 16} textAnchor="middle"
-                fill="rgba(244,247,255,0.85)"
-                fontSize={11} fontFamily="monospace" fontWeight={600}>
-                {wp.id.length > 6 ? wp.id.slice(0, 5) + '…' : wp.id}
-              </text>
-              {wp.distanceNm > 0 && (
-                <text x={cx} y={yBot + 30} textAnchor="middle"
-                  fill="rgba(244,247,255,0.30)"
-                  fontSize={9} fontFamily="monospace">
-                  {Math.round(wp.distanceNm)}nm
-                </text>
-              )}
-            </g>
+            <text key={layer.label}
+              x={leftW - 8} y={y + CLOUD_H / 2 + 3.5}
+              textAnchor="end"
+              fill="rgba(244,247,255,0.28)" fontSize={8} fontFamily="monospace">
+              {layer.label}
+            </text>
           )
         })}
-
-        {/* Cloud cover strips */}
-        <CloudStrips wps={wps} ml={MARGIN.left} yStart={yCloud} />
-
+        <line x1={leftW} y1={MARGIN.top} x2={leftW} y2={MARGIN.top + mainH}
+          stroke="rgba(244,247,255,0.09)" strokeWidth={1} />
       </svg>
+
+      {/* Scrollable cells */}
+      <div style={{ overflowX: 'auto', flex: 1 }}>
+        <svg width={rightW} height={svgH} style={{ display: 'block' }}
+          onMouseLeave={() => setHover(null)}
+        >
+
+          {/* Title */}
+          <text
+            x={(n * CELL_W) / 2} y={24}
+            textAnchor="middle"
+            fill="rgba(244,247,255,0.60)" fontSize={12}
+            fontFamily="monospace" fontWeight={600}
+          >
+            {title}
+          </text>
+
+          {/* Cells */}
+          {LEVELS.map((lvl, li) => {
+            const yCell = MARGIN.top + li * CELL_H
+            return wps.map((wp, wi) => {
+              const xCell = wi * CELL_W
+              const ld    = wp.levels.find(l => l.pressureHPa === lvl.pressureHPa)
+              const kts   = ld?.windSpeedKt ?? null
+              const dir   = ld?.windDirDeg  ?? null
+              const temp  = ld?.tempC       ?? null
+              const cx    = xCell + CELL_W / 2
+              const cy    = yCell + CELL_H / 2
+
+              return (
+                <g key={`${li}-${wi}`}
+                  style={{ cursor: 'crosshair' }}
+                  onMouseMove={(e) => setHover({ wp, lvl, ld, x: e.clientX, y: e.clientY })}
+                  onMouseLeave={() => setHover(null)}
+                >
+                  <rect
+                    x={xCell + 1} y={yCell + 1}
+                    width={CELL_W - 2} height={CELL_H - 2}
+                    rx={3} fill={kts !== null ? windColor(kts) : '#0d1225'}
+                    stroke="rgba(244,247,255,0.07)" strokeWidth={1}
+                  />
+                  {kts !== null && (
+                    <text x={xCell + CELL_W - 6} y={yCell + 13} textAnchor="end"
+                      fill="rgba(255,255,255,0.48)" fontSize={9} fontFamily="monospace">
+                      {Math.round(kts)}kt
+                    </text>
+                  )}
+                  {dir !== null && kts !== null && (
+                    <WindArrow cx={cx} cy={cy - 7} dirDeg={dir} kts={kts} />
+                  )}
+                  <text x={cx} y={yCell + CELL_H - 9} textAnchor="middle"
+                    fill={temp !== null ? tempColor(temp) : 'rgba(244,247,255,0.25)'}
+                    fontSize={11} fontFamily="monospace" fontWeight={600}>
+                    {temp !== null ? `${temp > 0 ? '+' : ''}${temp.toFixed(1)}°` : '—'}
+                  </text>
+                </g>
+              )
+            })
+          })}
+
+          {/* Horizontal grid lines */}
+          {Array.from({ length: LEVELS.length + 1 }, (_, i) => MARGIN.top + i * CELL_H).map((y, i) => (
+            <line key={`h${i}`}
+              x1={0} y1={y} x2={n * CELL_W} y2={y}
+              stroke="rgba(244,247,255,0.09)" strokeWidth={1} />
+          ))}
+
+          {/* Vertical grid lines */}
+          {Array.from({ length: n + 1 }, (_, i) => i * CELL_W).map((x, i) => (
+            <line key={`v${i}`}
+              x1={x} y1={MARGIN.top} x2={x} y2={MARGIN.top + mainH}
+              stroke="rgba(244,247,255,0.09)" strokeWidth={1} />
+          ))}
+
+          {/* 0°C isotherm */}
+          <IsoTherm wps={wps} ml={0} mt={MARGIN.top} />
+
+          {/* X-axis labels */}
+          {wps.map((wp, wi) => {
+            const cx   = wi * CELL_W + CELL_W / 2
+            const yBot = MARGIN.top + mainH
+            return (
+              <g key={`x${wi}`}>
+                <text x={cx} y={yBot + 16} textAnchor="middle"
+                  fill="rgba(244,247,255,0.85)"
+                  fontSize={11} fontFamily="monospace" fontWeight={600}>
+                  {wp.id.length > 6 ? wp.id.slice(0, 5) + '…' : wp.id}
+                </text>
+                {wp.distanceNm > 0 && (
+                  <text x={cx} y={yBot + 30} textAnchor="middle"
+                    fill="rgba(244,247,255,0.30)"
+                    fontSize={9} fontFamily="monospace">
+                    {Math.round(wp.distanceNm)}nm
+                  </text>
+                )}
+              </g>
+            )
+          })}
+
+          {/* Cloud cover strips (labels are in the fixed left SVG) */}
+          <CloudStrips wps={wps} ml={0} yStart={yCloud} showLabels={false} />
+
+        </svg>
+      </div>
     </div>
   )
 }
