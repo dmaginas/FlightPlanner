@@ -3,7 +3,7 @@ using FlightPlanner.Api.NavData;
 
 namespace FlightPlanner.Api.Services;
 
-public sealed class NavDataService : INavDataService
+public sealed class NavDataService : IRouteNavDataService, IMapNavDataService
 {
     private const int MaxAirwaySegs = 2000;
     private const int MaxFixes      = 1000;

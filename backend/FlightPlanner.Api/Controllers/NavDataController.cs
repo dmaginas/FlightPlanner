@@ -14,9 +14,9 @@ namespace FlightPlanner.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class NavDataController : ControllerBase
 {
-    private readonly INavDataService _navDataService;
+    private readonly IMapNavDataService _navDataService;
 
-    public NavDataController(INavDataService navDataService)
+    public NavDataController(IMapNavDataService navDataService)
     {
         _navDataService = navDataService;
     }

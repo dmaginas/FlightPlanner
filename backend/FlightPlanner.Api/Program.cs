@@ -102,7 +102,13 @@ builder.Services.AddHttpClient<IAviationWeatherService, AviationWeatherService>(
 builder.Services.AddMemoryCache();
 
 // NavData airway routing — loads AIRAC 2012 data at startup
-builder.Services.AddSingleton<INavDataService, NavDataService>();
+// Registered as singleton concrete type, then aliased to both interfaces
+builder.Services.AddSingleton<NavDataService>();
+builder.Services.AddSingleton<IRouteNavDataService>(sp => sp.GetRequiredService<NavDataService>());
+builder.Services.AddSingleton<IMapNavDataService>(sp => sp.GetRequiredService<NavDataService>());
+
+// Procedure repository — wraps ProcedureDatabase static class behind an interface
+builder.Services.AddSingleton<IProcedureRepository, ProcedureRepository>();
 
 // Flight Plan Database service — registered with HttpClientFactory
 // ApiKey is intentionally NOT validated at startup so the app can start
@@ -150,20 +156,39 @@ builder.Services.AddHttpClient<IAirspaceService, AirspaceService>(client =>
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
 
-// Airport diagram service — OurAirports runways.csv, cached 24 h
-builder.Services.AddHttpClient<IAirportDiagramService, AirportDiagramService>(client =>
+// Airport diagram service — split into focused providers (SRP)
+builder.Services.AddHttpClient<IRunwayDataProvider, RunwayDataProvider>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
+builder.Services.AddHttpClient<IAtcFrequencyProvider, AtcFrequencyProvider>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+builder.Services.AddSingleton<IIlsDataProvider, IlsDataProvider>();
+builder.Services.AddScoped<IAirportDiagramService, AirportDiagramService>();
 
 // Chart service — FAA d-TPP (US, no key) + ChartFox (worldwide, optional key)
+// Providers are tried in registration order; first non-empty result wins.
 builder.Services.AddSingleton(chartFoxOptions);
-builder.Services.AddHttpClient<IChartService, ChartService>(client =>
+builder.Services.AddHttpClient<FaaChartProvider>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
     client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
 });
+builder.Services.AddHttpClient<ChartFoxProvider>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(60);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+builder.Services.AddTransient<IChartProvider>(sp => sp.GetRequiredService<FaaChartProvider>());
+builder.Services.AddTransient<IChartProvider>(sp => sp.GetRequiredService<ChartFoxProvider>());
+builder.Services.AddTransient<IChartService, ChartService>();
+
+// Route orchestration — encapsulates FPD→navdata→direct→NAT pipeline
+builder.Services.AddScoped<IRouteOrchestrationService, RouteOrchestrationService>();
 
 var app = builder.Build();
 

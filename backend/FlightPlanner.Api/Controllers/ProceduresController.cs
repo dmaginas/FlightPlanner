@@ -10,8 +10,12 @@ namespace FlightPlanner.Api.Controllers;
 [Produces("application/json")]
 public sealed class ProceduresController : ControllerBase
 {
-    private static readonly string DbPath =
-        Path.Combine(AppContext.BaseDirectory, "NavData", "procedures.sqlite");
+    private readonly IProcedureRepository _repository;
+
+    public ProceduresController(IProcedureRepository repository)
+    {
+        _repository = repository;
+    }
 
     /// <summary>
     /// Returns SID and STAR procedures for the given airport ICAO code.
@@ -23,7 +27,7 @@ public sealed class ProceduresController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status503ServiceUnavailable)]
     public IActionResult GetProcedures(string icao)
     {
-        if (!ProcedureDatabase.Exists(DbPath))
+        if (!_repository.IsAvailable)
             return StatusCode(503, new ErrorResponse
             {
                 Error   = "procedures_unavailable",
@@ -31,18 +35,10 @@ public sealed class ProceduresController : ControllerBase
             });
 
         icao = icao.Trim().ToUpperInvariant();
+        var entries = _repository.GetProcedures(icao);
 
-        var entries = ProcedureDatabase.GetProcedures(DbPath, icao);
-
-        var sids = entries
-            .Where(e => e.Type == "SID")
-            .Select(ToDto)
-            .ToList();
-
-        var stars = entries
-            .Where(e => e.Type == "STAR")
-            .Select(ToDto)
-            .ToList();
+        var sids = entries.Where(e => e.Type == "SID").Select(ToDto).ToList();
+        var stars = entries.Where(e => e.Type == "STAR").Select(ToDto).ToList();
 
         return Ok(new ProceduresResponse(sids, stars));
     }

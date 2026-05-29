@@ -2,9 +2,9 @@ using Microsoft.Data.Sqlite;
 
 namespace FlightPlanner.Api.NavData;
 
-internal sealed record ProcFix(string Ident, double? Lat, double? Lon);
+public sealed record ProcFix(string Ident, double? Lat, double? Lon);
 
-internal sealed record ProcedureEntry(
+public sealed record ProcedureEntry(
     string Type,    // "SID" or "STAR"
     string Name,
     string Runway,  // runway ID stripped of "RW" prefix by caller, or ""

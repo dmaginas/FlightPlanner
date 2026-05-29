@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using FlightPlanner.Api.Models;
-using FlightPlanner.Api.NavData;
 using FlightPlanner.Api.Services;
 
 namespace FlightPlanner.Api.Controllers;
@@ -29,20 +28,17 @@ public sealed class RoutesController : ControllerBase
 {
     private static readonly Regex IcaoPattern = new(@"^[A-Z0-9]{4}$", RegexOptions.Compiled);
 
-    private readonly IFlightPlanDatabaseService _fpdService;
-    private readonly INavDataService _navDataService;
-    private readonly INatService _natService;
-    private readonly ILogger<RoutesController> _logger;
+    private readonly IFlightPlanDatabaseService   _fpdService;
+    private readonly IRouteOrchestrationService   _orchestration;
+    private readonly ILogger<RoutesController>    _logger;
 
     public RoutesController(
         IFlightPlanDatabaseService fpdService,
-        INavDataService navDataService,
-        INatService natService,
+        IRouteOrchestrationService orchestration,
         ILogger<RoutesController> logger)
     {
         _fpdService    = fpdService;
-        _navDataService = navDataService;
-        _natService    = natService;
+        _orchestration = orchestration;
         _logger        = logger;
     }
 
@@ -119,29 +115,28 @@ public sealed class RoutesController : ControllerBase
                 Details = "Only routeType=IFR is currently supported.",
             });
 
-        // ── Build route (FPD → navdata → direct) ────────────────────────────
-        FpdErrorKind?  fpdFailKind = null;
-        RouteResponse? response    = null;
-
+        // ── Orchestrate route resolution ─────────────────────────────────────
         try
         {
-            var result = await _fpdService.SearchRoutesAsync(dep, arr, cancellationToken);
-            response = MapToResponse(result, dep, arr, aircraftType, cruisingAltitude);
-        }
-        catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.ConfigurationMissing)
-        {
-            fpdFailKind = ex.Kind;
-            _logger.LogInformation("FPD key not configured — trying navdata for {Dep}→{Arr}", dep, arr);
-        }
-        catch (FlightPlanDatabaseException ex) when (ex.Kind == FpdErrorKind.NoResults)
-        {
-            fpdFailKind = ex.Kind;
-            _logger.LogInformation("FPD no results for {Dep}→{Arr} — trying navdata fallback", dep, arr);
-        }
-        catch (FlightPlanDatabaseException ex)
-        {
-            fpdFailKind = ex.Kind;
-            _logger.LogWarning("FPD error ({Kind}) for {Dep}→{Arr} — trying navdata fallback", ex.Kind, dep, arr);
+            var request = new RouteOrchestrationRequest(dep!, arr!, aircraftType, cruisingAltitude,
+                departureLat, departureLon, destinationLat, destinationLon);
+            var result = await _orchestration.ResolveRouteAsync(request, cancellationToken);
+
+            if (result.IsConfigError)
+                return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+                {
+                    Error   = "configuration_error",
+                    Details = result.ConfigErrorDetail ?? "Route service not configured.",
+                });
+
+            if (result.Response is not null)
+                return Ok(result.Response);
+
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
+            {
+                Error   = "Service unavailable.",
+                Details = "Route calculation failed.",
+            });
         }
         catch (OperationCanceledException)
         {
@@ -151,107 +146,6 @@ public sealed class RoutesController : ControllerBase
                 Details = "The route request was cancelled.",
             });
         }
-
-        // ── NavData fallback ──────────────────────────────────────────────────
-        if (response is null
-            && _navDataService.IsAvailable
-            && departureLat.HasValue && departureLon.HasValue
-            && destinationLat.HasValue && destinationLon.HasValue)
-        {
-            var waypoints = _navDataService.FindRoute(
-                dep, departureLat.Value, departureLon.Value,
-                arr, destinationLat.Value, destinationLon.Value);
-
-            if (waypoints is { Count: >= 2 })
-            {
-                var routeText = string.Join(" ", waypoints
-                    .Where(w => w.Type != "airport").Select(w => w.Id));
-                var warning = fpdFailKind == FpdErrorKind.ConfigurationMissing
-                    ? "Flight Plan Database API key not configured. Route calculated from AIRAC 2012 navdata."
-                    : "External route database unavailable. Route calculated from AIRAC 2012 navdata.";
-
-                response = new RouteResponse
-                {
-                    SelectedRoute = new SelectedRouteDto
-                    {
-                        Departure        = dep,
-                        Destination      = arr,
-                        AircraftType     = aircraftType,
-                        CruisingAltitude = cruisingAltitude,
-                        RouteType        = "IFR",
-                        RouteText        = routeText,
-                        Waypoints        = waypoints,
-                        DistanceNm       = CalculateTotalDistNm(waypoints),
-                        Source           = "navdata-airac2012",
-                    },
-                    Alternatives = [],
-                    Warning      = warning,
-                };
-            }
-            else
-            {
-                _logger.LogWarning("Navdata routing also failed for {Dep}→{Arr}", dep, arr);
-            }
-        }
-
-        // ── Direct-route fallback ─────────────────────────────────────────────
-        if (response is null
-            && departureLat.HasValue && departureLon.HasValue
-            && destinationLat.HasValue && destinationLon.HasValue)
-        {
-            var directWps = new List<WaypointDto>
-            {
-                new() { Id = dep, Lat = departureLat.Value, Lon = departureLon.Value, Type = "airport" },
-                new() { Id = arr, Lat = destinationLat.Value, Lon = destinationLon.Value, Type = "airport" },
-            };
-            _logger.LogInformation("Returning direct route for {Dep}→{Arr}", dep, arr);
-            response = new RouteResponse
-            {
-                SelectedRoute = new SelectedRouteDto
-                {
-                    Departure        = dep,
-                    Destination      = arr,
-                    AircraftType     = aircraftType,
-                    CruisingAltitude = cruisingAltitude,
-                    RouteType        = "IFR",
-                    RouteText        = "DCT",
-                    Waypoints        = directWps,
-                    DistanceNm       = CalculateTotalDistNm(directWps),
-                    Source           = "navdata-airac2012",
-                },
-                Alternatives = [],
-                Warning      = "No airway route found for this city pair. Showing direct route — consider selecting SID/STAR manually.",
-            };
-        }
-
-        // ── Apply NAT track for transatlantic routes, then return ─────────────
-        if (response is not null)
-        {
-            response = await ApplyNatIfNeededAsync(
-                response, departureLon, destinationLon, cruisingAltitude, cancellationToken);
-            return Ok(response);
-        }
-
-        // ── No coordinates provided — return a typed error ────────────────────
-        return fpdFailKind switch
-        {
-            FpdErrorKind.ConfigurationMissing => StatusCode(StatusCodes.Status503ServiceUnavailable,
-                new ErrorResponse
-                {
-                    Error   = "configuration_error",
-                    Details = "The Flight Plan Database API key is not configured on this server.",
-                }),
-            FpdErrorKind.NoResults => NotFound(new ErrorResponse
-                {
-                    Error   = "No routes found.",
-                    Details = $"No IFR routes found between {dep} and {arr}.",
-                }),
-            _ => StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse
-                {
-                    Error   = "Service unavailable.",
-                    Details = "Route calculation failed. Please try again later.",
-                }),
-        };
     }
 
     /// <summary>
@@ -333,65 +227,7 @@ public sealed class RoutesController : ControllerBase
         }
     }
 
-    // ── NAT integration ────────────────────────────────────────────────────────
-
-    private async Task<RouteResponse> ApplyNatIfNeededAsync(
-        RouteResponse response,
-        double? depLon,
-        double? arrLon,
-        int? cruisingAltFt,
-        CancellationToken ct)
-    {
-        if (response.SelectedRoute is null) return response;
-        if (!NatIntegration.IsTransatlantic(depLon, arrLon)) return response;
-
-        try
-        {
-            var natResult = await _natService.FetchTracksAsync(ct);
-            var (natWps, natId, natDist) = NatIntegration.ApplyNatTrack(
-                response.SelectedRoute.Waypoints,
-                depLon!.Value, arrLon!.Value,
-                cruisingAltFt,
-                natResult.Tracks);
-
-            if (natId is null) return response;
-
-            _logger.LogInformation(
-                "Applied NAT {Track} to {Dep}→{Arr} ({Nm:F0} NM)",
-                natId, response.SelectedRoute.Departure, response.SelectedRoute.Destination, natDist);
-
-            return new RouteResponse
-            {
-                SelectedRoute = new SelectedRouteDto
-                {
-                    Id               = response.SelectedRoute.Id,
-                    Departure        = response.SelectedRoute.Departure,
-                    Destination      = response.SelectedRoute.Destination,
-                    AircraftType     = response.SelectedRoute.AircraftType,
-                    CruisingAltitude = response.SelectedRoute.CruisingAltitude,
-                    RouteType        = response.SelectedRoute.RouteType,
-                    RouteText        = response.SelectedRoute.RouteText,
-                    Waypoints        = natWps,
-                    DistanceNm       = natDist,
-                    Source           = response.SelectedRoute.Source,
-                    NatTrackId       = natId,
-                },
-                Alternatives  = response.Alternatives,
-                Warning        = response.Warning,
-            };
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "NAT track application failed — returning route without NAT");
-            return response;
-        }
-    }
-
-    // ── Mapping helpers ────────────────────────────────────────────────────────
+    // ── Mapping helpers (used by GetPlanById) ─────────────────────────────────
 
     private static RouteResponse MapToResponse(
         FpdRouteResult result,
@@ -459,16 +295,4 @@ public sealed class RoutesController : ControllerBase
         "NDB" => "ndb",
         _     => "fix",
     };
-
-    private static double CalculateTotalDistNm(IReadOnlyList<WaypointDto> wps)
-    {
-        double total = 0;
-        for (var i = 1; i < wps.Count; i++)
-        {
-            var p = wps[i - 1]; var c = wps[i];
-            if (p.Lat.HasValue && p.Lon.HasValue && c.Lat.HasValue && c.Lon.HasValue)
-                total += GeoMath.HaversineNm(p.Lat.Value, p.Lon.Value, c.Lat.Value, c.Lon.Value);
-        }
-        return Math.Round(total);
-    }
 }

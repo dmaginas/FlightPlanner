@@ -45,7 +45,7 @@ public sealed class ChartsController : ControllerBase
             var charts = await _service.GetChartsAsync(icao, ct);
             return Ok(new ChartListResponse(icao.ToUpperInvariant(), charts));
         }
-        catch (OperationCanceledException) { return StatusCode(499); }
+        catch (OperationCanceledException) { return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse { Error = "Request cancelled.", Details = "The request was cancelled." }); }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Chart list failed for {Icao}", icao);
@@ -83,7 +83,7 @@ public sealed class ChartsController : ControllerBase
             Response.Headers.Append("Content-Disposition", "inline");
             return File(stream, contentType);
         }
-        catch (OperationCanceledException) { return StatusCode(499); }
+        catch (OperationCanceledException) { return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse { Error = "Request cancelled.", Details = "The request was cancelled." }); }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Chart file failed: source={Source} id={Id}", source, id);

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import type { RouteState } from './types/routeState'
 import TopBar from './components/TopBar.tsx'
 import MainScreen from './components/MainScreen.tsx'
 import SIDScreen from './components/SIDScreen.tsx'
@@ -21,7 +22,7 @@ export default function App() {
   const toggleLayer = useCallback((id: string) => {
     setEnabledLayers(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }, [])
-  const [routeState, setRouteState]   = useState('idle') // idle | loading | ready
+  const [routeState, setRouteState]   = useState<RouteState>('idle')
   const [selectedAircraftType, setSelectedAircraftType] = useState(DEFAULT_AIRCRAFT_TYPE)
   const [cruisingAltitude, setCruisingAltitude] = useState<number | null>(null)
   const [callsign, setCallsign] = useState('')
@@ -35,6 +36,7 @@ export default function App() {
   useEffect(() => {
     let active = true
     async function loadDefaults() {
+      // Developer preset — provides a populated state for local testing; not business logic.
       const [dep, arr] = await Promise.all([getAirport('EDDF'), getAirport('EGLL')])
       if (!active) return
       setDeparture(dep)
@@ -156,9 +158,14 @@ export default function App() {
       setRoute(result.selectedRoute)
       if (result.warning) setRouteWarning(result.warning)
       setRouteState('ready')
-    } catch {
+    } catch (err) {
       setRouteState('ready')
-      setRouteWarning('Could not load the selected alternative route. Please try again.')
+      const isNetwork = err instanceof TypeError && err.message.includes('fetch')
+      setRouteWarning(
+        isNetwork
+          ? 'Cannot reach the server — could not load the selected alternative route.'
+          : 'Could not load the selected alternative route. Please try again.'
+      )
     }
   }
 
