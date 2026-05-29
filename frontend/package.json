@@ -1,6 +1,6 @@
 {
   "name": "flightplanner",
-  "version": "0.8.18",
+  "version": "0.8.19",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
   "dependencies": {
     "jspdf": "^4.2.1",
     "leaflet": "^1.9.4",
+    "pdfjs-dist": "^5.7.284",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1"

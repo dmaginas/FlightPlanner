@@ -1,18 +1,25 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import * as pdfjsLib from 'pdfjs-dist'
+import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
+import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import { fetchCharts, chartFileUrl, type ChartInfo } from '../services/chartService'
+
+// ── PDF.js worker setup ───────────────────────────────────────────────────────
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ChartType = 'ALL' | 'APT' | 'APP' | 'DEP' | 'ARR' | 'REF' | 'OTHER'
 
 const TABS: { key: ChartType; label: string }[] = [
-  { key: 'ALL',   label: 'All'       },
-  { key: 'APP',   label: 'Approach'  },
-  { key: 'DEP',   label: 'SID'       },
-  { key: 'ARR',   label: 'STAR'      },
-  { key: 'APT',   label: 'Airport'   },
-  { key: 'REF',   label: 'Ref'       },
+  { key: 'ALL',   label: 'All'      },
+  { key: 'APP',   label: 'Approach' },
+  { key: 'DEP',   label: 'SID'      },
+  { key: 'ARR',   label: 'STAR'     },
+  { key: 'APT',   label: 'Airport'  },
+  { key: 'REF',   label: 'Ref'      },
 ]
 
 const SOURCE_COLOR: Record<string, string> = {
@@ -20,15 +27,181 @@ const SOURCE_COLOR: Record<string, string> = {
   chartfox: '#a78bfa',
 }
 
+// ── PDF viewer (PDF.js canvas renderer) ──────────────────────────────────────
+
+function PdfViewer({ src }: { src: string }) {
+  const containerRef  = useRef<HTMLDivElement>(null)
+  const canvasRef     = useRef<HTMLCanvasElement>(null)
+  const docRef        = useRef<PDFDocumentProxy | null>(null)
+  const pageRef       = useRef<PDFPageProxy | null>(null)
+  const renderTaskRef = useRef<ReturnType<PDFPageProxy['render']> | null>(null)
+
+  const [numPages,    setNumPages]    = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
+
+  const drawPage = useCallback(async (page: PDFPageProxy) => {
+    const canvas    = canvasRef.current
+    const container = containerRef.current
+    if (!canvas || !container) return
+
+    renderTaskRef.current?.cancel()
+    renderTaskRef.current = null
+
+    const dpr  = window.devicePixelRatio || 1
+    const vp1  = page.getViewport({ scale: 1 })
+    const navH = 40  // page nav bar height
+
+    const fitScale = Math.min(
+      container.clientWidth            / vp1.width,
+      (container.clientHeight - navH)  / vp1.height,
+    ) * 0.97
+
+    // Render at physical pixel resolution for sharp text on HiDPI screens
+    const vp = page.getViewport({ scale: Math.max(0.1, fitScale) * dpr })
+
+    canvas.width  = Math.round(vp.width)
+    canvas.height = Math.round(vp.height)
+    canvas.style.width  = `${Math.round(vp.width  / dpr)}px`
+    canvas.style.height = `${Math.round(vp.height / dpr)}px`
+
+    const task = page.render({ canvas, viewport: vp })
+    renderTaskRef.current = task
+    task.promise.catch(e => {
+      if (e?.name !== 'RenderingCancelledException') console.warn('PDF render:', e)
+    })
+  }, [])
+
+  // Load document when src changes
+  useEffect(() => {
+    setStatus('loading')
+    setNumPages(0)
+    setCurrentPage(1)
+    pageRef.current = null
+
+    let cancelled = false
+    const loadTask = pdfjsLib.getDocument(src)
+
+    loadTask.promise
+      .then(doc => {
+        if (cancelled) { doc.destroy(); return null }
+        docRef.current?.destroy()
+        docRef.current = doc
+        setNumPages(doc.numPages)
+        return doc.getPage(1)
+      })
+      .then(page => {
+        if (!page || cancelled) return
+        pageRef.current = page
+        setStatus('ok')
+        // drawPage is NOT called here — the canvas isn't in the DOM yet.
+        // The effect below fires after React commits the canvas to the DOM.
+      })
+      .catch(() => { if (!cancelled) setStatus('error') })
+
+    return () => {
+      cancelled = true
+      renderTaskRef.current?.cancel()
+    }
+  }, [src, drawPage])
+
+  // Draw once the canvas is in the DOM (status just became 'ok')
+  useEffect(() => {
+    if (status !== 'ok' || !pageRef.current) return
+    drawPage(pageRef.current)
+  }, [status, drawPage])
+
+  // Switch page
+  useEffect(() => {
+    if (currentPage === 1 || !docRef.current) return
+    docRef.current.getPage(currentPage).then(page => {
+      pageRef.current = page
+      drawPage(page)
+    })
+  }, [currentPage, drawPage])
+
+  // Re-render on container resize
+  useEffect(() => {
+    const obs = new ResizeObserver(() => {
+      if (pageRef.current) drawPage(pageRef.current)
+    })
+    if (containerRef.current) obs.observe(containerRef.current)
+    return () => obs.disconnect()
+  }, [drawPage])
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        background: '#080c1e', minHeight: 0, overflow: 'hidden',
+      }}
+    >
+      {status === 'loading' && (
+        <div style={{ color: 'var(--muted)', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            width: 24, height: 24, borderRadius: '50%',
+            border: '2px solid var(--line)', borderTopColor: 'var(--violet)',
+            animation: 'spin 0.8s linear infinite',
+          }} />
+          Loading chart…
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div style={{ color: 'var(--dim)', fontSize: 13 }}>
+          Could not load PDF.
+        </div>
+      )}
+
+      {status === 'ok' && (
+        <>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: 0 }}>
+            <canvas ref={canvasRef} style={{ display: 'block' }} />
+          </div>
+
+          {numPages > 1 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 14,
+              padding: '6px 16px', flexShrink: 0,
+              background: 'rgba(0,0,0,0.45)',
+              borderTop: '1px solid var(--line-2)',
+              width: '100%', justifyContent: 'center',
+            }}>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                style={pageNavStyle}
+              >←</button>
+              <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+                {currentPage} / {numPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                disabled={currentPage === numPages}
+                style={pageNavStyle}
+              >→</button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+const pageNavStyle: React.CSSProperties = {
+  padding: '3px 12px', borderRadius: 6, cursor: 'pointer',
+  background: 'var(--glass)', border: '1px solid var(--line)',
+  color: 'var(--muted)', fontSize: 14,
+}
+
 // ── Chart list panel ──────────────────────────────────────────────────────────
 
 function ChartList({
-  charts,
-  activeTab,
-  selected,
-  onSelect,
+  charts, activeTab, selected, onSelect,
 }: {
-  charts:   ChartInfo[]
+  charts:    ChartInfo[]
   activeTab: ChartType
   selected:  ChartInfo | null
   onSelect:  (c: ChartInfo) => void
@@ -53,9 +226,9 @@ function ChartList({
             onClick={() => onSelect(chart)}
             style={{
               width: '100%', textAlign: 'left', padding: '9px 14px',
-              background: isSelected ? 'rgba(139,124,255,.12)' : 'transparent',
+              background:  isSelected ? 'rgba(139,124,255,.12)' : 'transparent',
               borderBottom: '1px solid var(--line-2)',
-              borderLeft: isSelected ? '2px solid var(--violet)' : '2px solid transparent',
+              borderLeft:  isSelected ? '2px solid var(--violet)' : '2px solid transparent',
               cursor: 'pointer', transition: 'background .1s',
             }}
             onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--glass)' }}
@@ -78,8 +251,7 @@ function ChartList({
               </span>
               <span style={{
                 fontSize: 9, color: 'var(--dim)',
-                background: 'var(--glass)', borderRadius: 3,
-                padding: '1px 4px',
+                background: 'var(--glass)', borderRadius: 3, padding: '1px 4px',
               }}>
                 {chart.type}
               </span>
@@ -91,51 +263,20 @@ function ChartList({
   )
 }
 
-// ── PDF viewer ────────────────────────────────────────────────────────────────
-
-function PdfViewer({ icao, chart }: { icao: string; chart: ChartInfo | null }) {
-  if (!chart) {
-    return (
-      <div style={{
-        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: 'var(--dim)', fontSize: 13,
-      }}>
-        Select a chart to view
-      </div>
-    )
-  }
-
-  const src = chartFileUrl(icao, chart.source, chart.id) + '#view=Fit'
-
-  return (
-    <iframe
-      key={src}
-      src={src}
-      style={{
-        flex: 1, border: 'none', background: '#1a1a2a',
-        minHeight: 0,
-      }}
-      title={chart.name}
-    />
-  )
-}
-
 // ── Modal ─────────────────────────────────────────────────────────────────────
 
 export default function ChartsModal({
-  icao,
-  airportName,
-  onClose,
+  icao, airportName, onClose,
 }: {
   icao:         string
   airportName?: string
   onClose:      () => void
 }) {
-  const [charts,   setCharts]   = useState<ChartInfo[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState<string | null>(null)
+  const [charts,    setCharts]    = useState<ChartInfo[]>([])
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<ChartType>('ALL')
-  const [selected, setSelected] = useState<ChartInfo | null>(null)
+  const [selected,  setSelected]  = useState<ChartInfo | null>(null)
 
   useEffect(() => {
     const ctrl = new AbortController()
@@ -162,8 +303,10 @@ export default function ChartsModal({
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
-  const tabCounts = (tab: ChartType) =>
+  const tabCount = (tab: ChartType) =>
     tab === 'ALL' ? charts.length : charts.filter(c => c.type === tab).length
+
+  const pdfSrc = selected ? chartFileUrl(icao, selected.source, selected.id) : null
 
   const modalW = Math.min(960, window.innerWidth - 24)
   const listW  = 240
@@ -192,9 +335,7 @@ export default function ChartsModal({
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '13px 18px',
-          borderBottom: '1px solid var(--line-2)',
-          flexShrink: 0,
+          padding: '13px 18px', borderBottom: '1px solid var(--line-2)', flexShrink: 0,
         }}>
           <div>
             <div style={{
@@ -216,9 +357,7 @@ export default function ChartsModal({
               borderRadius: 8, padding: '5px 10px',
               fontSize: 12, color: 'var(--muted)', cursor: 'pointer',
             }}
-          >
-            ✕
-          </button>
+          >✕</button>
         </div>
 
         {/* Tab bar */}
@@ -228,7 +367,7 @@ export default function ChartsModal({
             borderBottom: '1px solid var(--line-2)',
             overflowX: 'auto', flexShrink: 0,
           }}>
-            {TABS.filter(t => t.key === 'ALL' || tabCounts(t.key) > 0).map(t => (
+            {TABS.filter(t => t.key === 'ALL' || tabCount(t.key) > 0).map(t => (
               <button
                 key={t.key}
                 onClick={() => setActiveTab(t.key)}
@@ -236,18 +375,15 @@ export default function ChartsModal({
                   padding: '4px 10px', borderRadius: 6, cursor: 'pointer',
                   fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
                   background: activeTab === t.key ? 'rgba(139,124,255,.15)' : 'transparent',
-                  border: activeTab === t.key ? '1px solid rgba(139,124,255,.35)' : '1px solid transparent',
-                  color: activeTab === t.key ? 'var(--violet)' : 'var(--dim)',
+                  border:     activeTab === t.key ? '1px solid rgba(139,124,255,.35)' : '1px solid transparent',
+                  color:      activeTab === t.key ? 'var(--violet)' : 'var(--dim)',
                   transition: 'all .15s',
                 }}
               >
                 {t.label}
-                {tabCounts(t.key) > 0 && (
-                  <span style={{
-                    marginLeft: 5, fontSize: 9,
-                    color: activeTab === t.key ? 'var(--violet)' : 'var(--dim)',
-                  }}>
-                    {tabCounts(t.key)}
+                {tabCount(t.key) > 0 && (
+                  <span style={{ marginLeft: 5, fontSize: 9, color: activeTab === t.key ? 'var(--violet)' : 'var(--dim)' }}>
+                    {tabCount(t.key)}
                   </span>
                 )}
               </button>
@@ -295,7 +431,13 @@ export default function ChartsModal({
             </div>
 
             {/* PDF viewer */}
-            <PdfViewer icao={icao} chart={selected} />
+            {pdfSrc ? (
+              <PdfViewer src={pdfSrc} />
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dim)', fontSize: 13 }}>
+                Select a chart to view
+              </div>
+            )}
           </div>
         )}
       </div>
