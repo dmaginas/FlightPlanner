@@ -14,9 +14,25 @@ export interface RunwayInfo {
   closed:   boolean
 }
 
+export interface IlsInfo {
+  runwayIdent:  string
+  ilsIdent:     string
+  frequencyMhz: number
+  category:     string
+  bearingDeg:   number
+}
+
+export interface AtcFrequency {
+  type:         string
+  description:  string
+  frequencyMhz: number
+}
+
 export interface AirportDiagramData {
-  icao:    string
-  runways: RunwayInfo[]
+  icao:           string
+  runways:        RunwayInfo[]
+  ilsApproaches:  IlsInfo[]
+  atcFrequencies: AtcFrequency[]
 }
 
 export async function fetchAirportDiagram(

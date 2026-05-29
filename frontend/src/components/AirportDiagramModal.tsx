@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { fetchAirportDiagram, type RunwayInfo, type AirportDiagramData } from '../services/airportDiagramService'
+import {
+  fetchAirportDiagram,
+  type RunwayInfo,
+  type IlsInfo,
+  type AtcFrequency,
+  type AirportDiagramData,
+} from '../services/airportDiagramService'
 
 // ── Projection helpers ────────────────────────────────────────────────────────
 
@@ -93,48 +99,27 @@ function DiagramSvg({ runways }: { runways: RunwayInfo[] }) {
         const nx  = dx / len   // unit vector along runway
         const ny  = dy / len
 
-        // Width in SVG pixels, proportional to real-world width
         const widthPx = Math.max(4, (rwy.widthFt * 0.3048) * scale)
-
-        // Label offset: push away from runway end along the axis
         const LOFF = 13
 
         const { fill, stroke } = surfaceColor(rwy.surface, rwy.closed)
 
         return (
           <g key={i}>
-            {/* Dark surround (for contrast on edges) */}
             <line x1={x1} y1={y1} x2={x2} y2={y2}
               stroke="rgba(0,0,0,0.6)"
               strokeWidth={widthPx + 6}
               strokeLinecap="square" />
-            {/* Runway fill */}
             <line x1={x1} y1={y1} x2={x2} y2={y2}
               stroke={fill}
               strokeWidth={widthPx}
               strokeLinecap="square" />
-            {/* Edge lines */}
-            <line x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={stroke}
-              strokeWidth={widthPx}
-              strokeLinecap="square"
-              fill="none"
-              style={{ paintOrder: 'stroke', strokeOpacity: 0, fill: 'none' }}
-            />
-            <line x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={stroke}
-              strokeWidth={widthPx}
-              strokeLinecap="square"
-              strokeOpacity={0}
-            />
-            {/* Outline (just the border) */}
             <line x1={x1} y1={y1} x2={x2} y2={y2}
               stroke={stroke}
               strokeWidth={widthPx - 1}
               strokeLinecap="square"
               fill="none"
             />
-            {/* Centerline */}
             {!rwy.closed && (
               <line x1={x1} y1={y1} x2={x2} y2={y2}
                 stroke="rgba(244,247,255,0.10)"
@@ -142,7 +127,6 @@ function DiagramSvg({ runways }: { runways: RunwayInfo[] }) {
                 strokeDasharray="10 7"
                 strokeLinecap="butt" />
             )}
-            {/* LE designator */}
             <text
               x={x1 - nx * LOFF} y={y1 - ny * LOFF}
               textAnchor="middle" dominantBaseline="middle"
@@ -152,7 +136,6 @@ function DiagramSvg({ runways }: { runways: RunwayInfo[] }) {
             >
               {rwy.leIdent || '—'}
             </text>
-            {/* HE designator */}
             <text
               x={x2 + nx * LOFF} y={y2 + ny * LOFF}
               textAnchor="middle" dominantBaseline="middle"
@@ -171,37 +154,115 @@ function DiagramSvg({ runways }: { runways: RunwayInfo[] }) {
 
 // ── Runway info table ─────────────────────────────────────────────────────────
 
-function RunwayTable({ runways }: { runways: RunwayInfo[] }) {
+function ilsForEnd(ils: IlsInfo[], ident: string): IlsInfo | undefined {
+  return ils.find(i => i.runwayIdent.toUpperCase() === ident.toUpperCase())
+}
+
+function IlsTag({ ils }: { ils: IlsInfo }) {
+  return (
+    <span style={{
+      fontSize: 10, fontFamily: 'var(--font-mono)',
+      color: '#7dd3fc', background: 'rgba(125,211,252,0.08)',
+      border: '1px solid rgba(125,211,252,0.20)',
+      borderRadius: 4, padding: '1px 5px',
+      whiteSpace: 'nowrap',
+    }}>
+      {ils.ilsIdent} {ils.frequencyMhz.toFixed(2)} · {ils.category}
+    </span>
+  )
+}
+
+function RunwayTable({ runways, ils }: { runways: RunwayInfo[]; ils: IlsInfo[] }) {
   return (
     <div style={{ padding: '10px 20px 16px' }}>
-      {runways.map((rwy, i) => (
-        <div key={i} style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '5px 0',
-          borderBottom: i < runways.length - 1 ? '1px solid var(--line-2)' : 'none',
-          opacity: rwy.closed ? 0.45 : 1,
-        }}>
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
-            color: 'var(--text)', minWidth: 64,
+      {runways.map((rwy, i) => {
+        const leIls = ilsForEnd(ils, rwy.leIdent)
+        const heIls = ilsForEnd(ils, rwy.heIdent)
+        return (
+          <div key={i} style={{
+            padding: '7px 0',
+            borderBottom: i < runways.length - 1 ? '1px solid var(--line-2)' : 'none',
+            opacity: rwy.closed ? 0.45 : 1,
           }}>
-            {rwy.leIdent}/{rwy.heIdent}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-            {rwy.lengthFt > 0 ? `${rwy.lengthFt.toLocaleString()} ft` : '—'}
-          </span>
-          {rwy.widthFt > 0 && (
-            <span style={{ fontSize: 11, color: 'var(--dim)' }}>
-              × {rwy.widthFt} ft
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700,
+                color: 'var(--text)', minWidth: 64,
+              }}>
+                {rwy.leIdent}/{rwy.heIdent}
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+                {rwy.lengthFt > 0 ? `${rwy.lengthFt.toLocaleString()} ft` : '—'}
+              </span>
+              {rwy.widthFt > 0 && (
+                <span style={{ fontSize: 11, color: 'var(--dim)' }}>
+                  × {rwy.widthFt} ft
+                </span>
+              )}
+              <span style={{ fontSize: 11, color: 'var(--dim)', marginLeft: 'auto' }}>
+                {rwy.surface}
+                {rwy.lighted ? ' · lit' : ''}
+                {rwy.closed  ? ' · CLOSED' : ''}
+              </span>
+            </div>
+            {(leIls || heIls) && (
+              <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                {leIls && <IlsTag ils={leIls} />}
+                {heIls && <IlsTag ils={heIls} />}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── ATC frequencies ───────────────────────────────────────────────────────────
+
+const ATC_ORDER = ['ATIS', 'TWR', 'GND', 'APP', 'DEP', 'CTAF', 'UNIC', 'UNICOM', 'AFIS', 'INFO', 'RDO']
+
+const ATC_COLOR: Record<string, string> = {
+  ATIS: '#a78bfa', TWR: '#f87171', GND: '#4ade80',
+  APP: '#fb923c', DEP: '#fbbf24', CTAF: '#60a5fa',
+  UNIC: '#60a5fa', UNICOM: '#60a5fa',
+}
+
+function AtcSection({ atc }: { atc: AtcFrequency[] }) {
+  if (atc.length === 0) return null
+
+  const sorted = [...atc].sort((a, b) => {
+    const ai = ATC_ORDER.indexOf(a.type)
+    const bi = ATC_ORDER.indexOf(b.type)
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+  })
+
+  return (
+    <div style={{
+      padding: '10px 20px 16px',
+      borderTop: '1px solid var(--line-2)',
+    }}>
+      <div style={{
+        fontSize: 10, fontWeight: 600, letterSpacing: '0.08em',
+        color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 8,
+      }}>
+        ATC Frequencies
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 14px' }}>
+        {sorted.map((f, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)',
+              color: ATC_COLOR[f.type] ?? 'var(--muted)',
+            }}>
+              {f.type}
             </span>
-          )}
-          <span style={{ fontSize: 11, color: 'var(--dim)', marginLeft: 'auto' }}>
-            {rwy.surface}
-            {rwy.lighted ? ' · lit' : ''}
-            {rwy.closed  ? ' · CLOSED' : ''}
-          </span>
-        </div>
-      ))}
+            <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>
+              {f.frequencyMhz.toFixed(3)}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -238,7 +299,6 @@ export default function AirportDiagramModal({
     return () => ctrl.abort()
   }, [icao])
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handler)
@@ -261,6 +321,8 @@ export default function AirportDiagramModal({
           borderRadius: 16,
           overflow: 'hidden',
           width: Math.min(SVG_SIZE, window.innerWidth - 32),
+          maxHeight: 'calc(100vh - 40px)',
+          overflowY: 'auto',
           boxShadow: '0 32px 80px rgba(0,0,0,.85)',
         }}
         onClick={e => e.stopPropagation()}
@@ -319,8 +381,9 @@ export default function AirportDiagramModal({
           <>
             <DiagramSvg runways={data.runways} />
             <div style={{ borderTop: '1px solid var(--line-2)' }}>
-              <RunwayTable runways={data.runways} />
+              <RunwayTable runways={data.runways} ils={data.ilsApproaches} />
             </div>
+            <AtcSection atc={data.atcFrequencies} />
           </>
         )}
       </div>

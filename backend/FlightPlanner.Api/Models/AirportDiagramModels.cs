@@ -14,7 +14,23 @@ public sealed record RunwayDto(
     bool   Closed
 );
 
+public sealed record IlsDto(
+    string RunwayIdent,
+    string IlsIdent,
+    double FrequencyMhz,
+    string Category,
+    double BearingDeg
+);
+
+public sealed record AtcFrequencyDto(
+    string Type,
+    string Description,
+    double FrequencyMhz
+);
+
 public sealed record AirportDiagramResponse(
-    string          Icao,
-    List<RunwayDto> Runways
+    string                 Icao,
+    List<RunwayDto>        Runways,
+    List<IlsDto>           IlsApproaches,
+    List<AtcFrequencyDto>  AtcFrequencies
 );

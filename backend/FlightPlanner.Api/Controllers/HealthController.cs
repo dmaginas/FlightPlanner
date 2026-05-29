@@ -76,6 +76,14 @@ public sealed class HealthController : ControllerBase
                 Note       = "Airport search — API key configured in frontend (.env)",
                 KeyRequired = false,
             },
+            new()
+            {
+                Key        = "our_airports",
+                Name       = "OurAirports",
+                Status     = "no_key_required",
+                Note       = "Airport diagrams & ATC frequencies — no API key required",
+                KeyRequired = false,
+            },
         };
 
         return Ok(new HealthResponse
