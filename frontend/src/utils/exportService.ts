@@ -56,10 +56,25 @@ function utcNow(): string {
   return d.toUTCString().replace(' GMT', 'Z')
 }
 
-function triggerDownload(content: string, filename: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
+type FilePickerType = { description: string; accept: Record<string, string[]> }
+
+async function saveAs(blob: Blob, filename: string, types: FilePickerType[]): Promise<void> {
+  if ('showSaveFilePicker' in window) {
+    try {
+      const handle = await (window as unknown as {
+        showSaveFilePicker(o: { suggestedName: string; types: FilePickerType[] }): Promise<FileSystemFileHandle>
+      }).showSaveFilePicker({ suggestedName: filename, types })
+      const writable = await handle.createWritable()
+      await writable.write(blob)
+      await writable.close()
+      return
+    } catch (e) {
+      if ((e as { name?: string })?.name === 'AbortError') return
+      // Other errors (e.g. security policy) — fall through to anchor fallback
+    }
+  }
+  const url = URL.createObjectURL(blob)
+  const a   = document.createElement('a')
   a.href     = url
   a.download = filename
   document.body.appendChild(a)
@@ -272,20 +287,16 @@ export async function exportOFP(data: ExportData): Promise<void> {
     doc.text(`Page ${p} / ${totalPages}  —  ${departure.icao}→${arrival.icao}  —  FlightPlanner`, W / 2, 293, { align: 'center' })
   }
 
-  const blob = doc.output('blob')
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href     = url
-  a.download = `OFP_${departure.icao}_${arrival.icao}.pdf`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  await saveAs(
+    doc.output('blob'),
+    `OFP_${departure.icao}_${arrival.icao}.pdf`,
+    [{ description: 'PDF Document', accept: { 'application/pdf': ['.pdf'] } }],
+  )
 }
 
 // ── Google Earth KML ───────────────────────────────────────────────────────────
 
-export function exportKml(data: ExportData): void {
+export async function exportKml(data: ExportData): Promise<void> {
   const { departure, arrival, alternate, route } = data
 
   const cruiseAltM = ((data.aircraftProfile?.preferredCruiseAltitudeFt ?? 35000) * 0.3048).toFixed(0)
@@ -392,7 +403,11 @@ export function exportKml(data: ExportData): void {
   </Document>
 </kml>`
 
-  triggerDownload(kml, `${departure.icao}_${arrival.icao}.kml`, 'application/vnd.google-earth.kml+xml')
+  await saveAs(
+    new Blob([kml], { type: 'application/vnd.google-earth.kml+xml' }),
+    `${departure.icao}_${arrival.icao}.kml`,
+    [{ description: 'Google Earth KML', accept: { 'application/vnd.google-earth.kml+xml': ['.kml'] } }],
+  )
 }
 
 // ── MSFS .pln ──────────────────────────────────────────────────────────────────
@@ -413,7 +428,7 @@ function msfsWaypointType(type?: string): string {
   }
 }
 
-export function exportMsfsPln(data: ExportData): void {
+export async function exportMsfsPln(data: ExportData): Promise<void> {
   const { departure, arrival, alternate, route } = data
 
   const cruiseAltFt = (route as unknown as { cruisingAltitude?: number }).cruisingAltitude
@@ -473,5 +488,9 @@ ${waypointXml}${alternateXml}
     </FlightPlan.FlightPlan>
 </SimBase.Document>`
 
-  triggerDownload(xml, `${departure.icao}_${arrival.icao}.pln`, 'application/xml')
+  await saveAs(
+    new Blob([xml], { type: 'application/xml' }),
+    `${departure.icao}_${arrival.icao}.pln`,
+    [{ description: 'MSFS Flight Plan', accept: { 'application/xml': ['.pln'] } }],
+  )
 }
