@@ -106,7 +106,16 @@ export default function App() {
       const fallback = computeLocalFallback(departure, arrival, aircraftProfile)
       setRoute(fallback)
       setRouteState('ready')
-      setRouteWarning('External IFR route lookup failed. Showing locally calculated fallback route.')
+      let fallbackMsg = 'Route lookup failed — showing locally calculated fallback route.'
+      if (error instanceof RouteServiceError) {
+        if (error.kind === 'external_api_failure')
+          fallbackMsg = 'Flight Plan Database is currently unavailable — showing locally calculated fallback route.'
+        else if (error.kind === 'not_found')
+          fallbackMsg = 'No routes found in Flight Plan Database — showing locally calculated fallback route.'
+        else if (error.kind === 'network')
+          fallbackMsg = 'Cannot reach the FlightPlanner backend — showing locally calculated fallback route.'
+      }
+      setRouteWarning(fallbackMsg)
     }
   }
 
@@ -184,6 +193,7 @@ export default function App() {
           onArrivalChange={handleArrivalChange}
           onAlternateChange={handleAlternateChange}
           onCalculate={handleCalculate}
+          onRetry={handleCalculate}
           onNavigate={setScreen}
           onSIDChange={setSelectedSID}
           onSTARChange={setSelectedSTAR}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { checkRouteConflicts, CONFLICT_ZONES } from '../data/conflictZones'
 import FlightInput    from './FlightInput.tsx'
 import WeatherPanel   from './WeatherPanel.tsx'
@@ -14,7 +14,7 @@ import { useWindowWidth } from '../hooks/useWindowWidth.ts'
 export default function MainScreen({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
-  onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
+  onAlternateChange, onCalculate, onRetry, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
   onSelectAlternative, enabledLayers, onToggleLayer,
 }) {
   const width    = useWindowWidth()
@@ -24,7 +24,7 @@ export default function MainScreen({
   if (isNarrow) return <NarrowLayout {...{
     departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
     cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
-    onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
+    onAlternateChange, onCalculate, onRetry, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
     onSelectAlternative, enabledLayers, onToggleLayer,
   }} />
 
@@ -75,6 +75,7 @@ export default function MainScreen({
         <NotificationBar
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
+          onRetry={onRetry}
           route={route}
           alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
@@ -209,7 +210,7 @@ export default function MainScreen({
 function NarrowLayout({
   departure, arrival, alternate, route, selectedSID, selectedSTAR, routeState, selectedAircraftProfile,
   cruisingAltitude, callsign, onAircraftChange, onAltitudeChange, onCallsignChange, onDepartureChange, onArrivalChange,
-  onAlternateChange, onCalculate, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
+  onAlternateChange, onCalculate, onRetry, onNavigate, onSIDChange, onSTARChange, routeWarning, routeConfigError, alternatives,
   onSelectAlternative, enabledLayers, onToggleLayer,
 }) {
   return (
@@ -249,6 +250,7 @@ function NarrowLayout({
         <NotificationBar
           routeWarning={routeWarning}
           routeConfigError={routeConfigError}
+          onRetry={onRetry}
           route={route}
           alternate={alternate}
           selectedAircraftProfile={selectedAircraftProfile}
@@ -330,8 +332,13 @@ function NarrowLayout({
 
 // ── Notification bar (above map) ───────────────────────────────────────────────
 
-function NotificationBar({ routeWarning, routeConfigError, route, alternate, selectedAircraftProfile }) {
+function NotificationBar({ routeWarning, routeConfigError, onRetry, route, alternate, selectedAircraftProfile }) {
   const [expanded, setExpanded] = useState(false)
+
+  // Auto-expand when a route warning appears so Retry is immediately visible
+  useEffect(() => {
+    if (routeWarning) setExpanded(true)
+  }, [routeWarning])
 
   const routeNm = route?.routeDistanceNm ?? route?.waypoints?.[route.waypoints.length - 1]?.distCum
   const rangeExceeded = route && selectedAircraftProfile && routeNm && routeNm > selectedAircraftProfile.maxRangeNm
@@ -342,7 +349,7 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
     [route?.waypoints],
   )
 
-  type Msg = { kind: 'error' | 'warn'; text: string }
+  type Msg = { kind: 'error' | 'warn'; text: string; retryable?: boolean }
   const msgs: Msg[] = [
     { kind: 'error', text: 'Flight simulation only — routes must not be used for real-world navigation.' },
     { kind: 'warn',  text: 'METAR/TAF data is for flight simulation only and must not be used for real-world aviation decisions.' },
@@ -350,7 +357,7 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
   if (routeConfigError)
     msgs.push({ kind: 'error', text: `Server configuration error — ${routeConfigError}` })
   if (routeWarning && !routeConfigError)
-    msgs.push({ kind: 'warn', text: routeWarning })
+    msgs.push({ kind: 'warn', text: routeWarning, retryable: true })
   if (rangeExceeded)
     msgs.push({ kind: 'warn', text: `Route distance (${routeNm.toLocaleString()} NM) exceeds the approximate range of ${selectedAircraftProfile.icaoCode} (${selectedAircraftProfile.maxRangeNm.toLocaleString()} NM).` })
   if (route && !alternate)
@@ -389,6 +396,7 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
         <span style={{ fontSize: 11, color: 'var(--muted)', flex: 1 }}>
           {n} {n === 1 ? 'notice' : 'notices'}
           {hasError && <span style={{ color: 'var(--red)', marginLeft: 6 }}>· configuration error</span>}
+          {routeWarning && !hasError && <span style={{ color: 'var(--amber)', marginLeft: 6 }}>· route fallback active</span>}
         </span>
         <span style={{
           color: 'var(--dim)', fontSize: 10,
@@ -416,7 +424,22 @@ function NotificationBar({ routeWarning, routeConfigError, route, alternate, sel
               <span style={{ color: msg.kind === 'error' ? 'var(--red)' : 'var(--amber)', flexShrink: 0, fontSize: 12, marginTop: 1 }}>
                 {msg.kind === 'error' ? '⊗' : '⚡'}
               </span>
-              <span>{msg.text}</span>
+              <span style={{ flex: 1 }}>{msg.text}</span>
+              {msg.retryable && onRetry && (
+                <button
+                  onClick={onRetry}
+                  style={{
+                    flexShrink: 0, alignSelf: 'center',
+                    padding: '2px 9px', borderRadius: 5,
+                    background: 'rgba(255,180,80,.15)',
+                    border: '1px solid rgba(255,180,80,.4)',
+                    color: 'var(--amber)', fontSize: 10, fontWeight: 600,
+                    cursor: 'pointer', letterSpacing: '0.04em',
+                  }}
+                >
+                  Retry
+                </button>
+              )}
             </div>
           ))}
         </div>
