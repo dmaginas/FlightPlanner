@@ -22,6 +22,45 @@ Use [semantic versioning](https://semver.org): `MAJOR.MINOR.PATCH`
 
 **The project language is English.** All source code, UI strings, comments, variable names, log messages, error messages, and API responses must be in English. Conversation with the user may be in any language, but everything written into the codebase must be English.
 
+## Code Quality Principles
+
+### SOLID
+
+- **Single Responsibility** — every class, service, and component has exactly one reason to change. Controllers only route and map HTTP; services only call external APIs; components only render UI.
+- **Open/Closed** — extend behaviour by adding new implementations (e.g. a new `ExportStrategy`, a new service), not by modifying existing ones.
+- **Liskov Substitution** — implementations must be fully substitutable for their interface/base type without breaking callers. Do not narrow preconditions or widen postconditions.
+- **Interface Segregation** — keep interfaces small and focused. A service interface exposes only the methods its callers actually need; don't bundle unrelated operations.
+- **Dependency Inversion** — depend on abstractions, not concretions. Backend services are injected via their interface (`IChartService`, `INotamService`, …). React components receive data and callbacks as props rather than importing singletons.
+
+### Clean Code (Robert C. Martin)
+
+**Naming**
+- Names must reveal intent. A name that requires a comment is a bad name.
+- Use searchable, pronounceable names. Avoid encodings, prefixes, and noise words (`data`, `info`, `manager`).
+- Functions are verbs (`fetchRoute`, `drawPage`). Classes and types are nouns (`ChartService`, `RouteResult`).
+
+**Functions**
+- Functions do one thing. If a function does more than its name says, extract the extra behaviour.
+- Keep functions short. The ideal size is visible without scrolling.
+- No side effects — a function named `get…` must not mutate state.
+- Prefer fewer arguments. More than two or three arguments is a signal to introduce a parameter object.
+
+**Comments**
+- Don't add comments that restate what the code already says.
+- A comment is warranted only when it explains *why*, not *what* — a hidden constraint, a non-obvious invariant, or a workaround for an external bug.
+- Obsolete comments are worse than no comments; delete them when the code changes.
+
+**Error Handling**
+- Use typed exceptions / typed error kinds; never swallow errors silently.
+- Error handling is a separate concern — don't mix business logic with catch blocks.
+- Return meaningful error information so callers can react appropriately.
+
+**Structure**
+- The Newspaper Metaphor: high-level concepts at the top of a file, details further down.
+- Keep related code close together; unrelated code far apart.
+- No dead code. Remove unused functions, variables, and imports immediately.
+- The Boy Scout Rule: leave every file slightly cleaner than you found it.
+
 ## Commands
 
 ### Frontend (React + TypeScript + Vite)
