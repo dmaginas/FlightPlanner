@@ -29,18 +29,22 @@ const SOURCE_COLOR: Record<string, string> = {
 
 // ── PDF viewer (PDF.js canvas renderer) ──────────────────────────────────────
 
-function PdfViewer({ src }: { src: string }) {
+const TOOLBAR_H = 42
+
+function PdfViewer({ src, chartName }: { src: string; chartName: string }) {
   const containerRef  = useRef<HTMLDivElement>(null)
   const canvasRef     = useRef<HTMLCanvasElement>(null)
   const docRef        = useRef<PDFDocumentProxy | null>(null)
   const pageRef       = useRef<PDFPageProxy | null>(null)
   const renderTaskRef = useRef<ReturnType<PDFPageProxy['render']> | null>(null)
+  const zoomRef       = useRef(1.0)
 
   const [numPages,    setNumPages]    = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
-  const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading')
+  const [status,      setStatus]      = useState<'loading' | 'ok' | 'error'>('loading')
+  const [zoomLevel,   setZoomLevel]   = useState(1.0)
 
-  const drawPage = useCallback(async (page: PDFPageProxy) => {
+  const drawPage = useCallback((page: PDFPageProxy) => {
     const canvas    = canvasRef.current
     const container = containerRef.current
     if (!canvas || !container) return
@@ -50,15 +54,14 @@ function PdfViewer({ src }: { src: string }) {
 
     const dpr  = window.devicePixelRatio || 1
     const vp1  = page.getViewport({ scale: 1 })
-    const navH = 40  // page nav bar height
 
     const fitScale = Math.min(
       container.clientWidth            / vp1.width,
-      (container.clientHeight - navH)  / vp1.height,
+      (container.clientHeight - TOOLBAR_H) / vp1.height,
     ) * 0.97
 
-    // Render at physical pixel resolution for sharp text on HiDPI screens
-    const vp = page.getViewport({ scale: Math.max(0.1, fitScale) * dpr })
+    const scale = Math.max(0.05, fitScale * zoomRef.current)
+    const vp    = page.getViewport({ scale: scale * dpr })
 
     canvas.width  = Math.round(vp.width)
     canvas.height = Math.round(vp.height)
@@ -72,11 +75,13 @@ function PdfViewer({ src }: { src: string }) {
     })
   }, [])
 
-  // Load document when src changes
+  // Load document
   useEffect(() => {
     setStatus('loading')
     setNumPages(0)
     setCurrentPage(1)
+    setZoomLevel(1.0)
+    zoomRef.current = 1.0
     pageRef.current = null
 
     let cancelled = false
@@ -94,8 +99,7 @@ function PdfViewer({ src }: { src: string }) {
         if (!page || cancelled) return
         pageRef.current = page
         setStatus('ok')
-        // drawPage is NOT called here — the canvas isn't in the DOM yet.
-        // The effect below fires after React commits the canvas to the DOM.
+        // drawPage called by the effect below, after React commits the canvas
       })
       .catch(() => { if (!cancelled) setStatus('error') })
 
@@ -103,13 +107,19 @@ function PdfViewer({ src }: { src: string }) {
       cancelled = true
       renderTaskRef.current?.cancel()
     }
-  }, [src, drawPage])
+  }, [src])
 
-  // Draw once the canvas is in the DOM (status just became 'ok')
+  // Draw after canvas enters the DOM
   useEffect(() => {
     if (status !== 'ok' || !pageRef.current) return
     drawPage(pageRef.current)
   }, [status, drawPage])
+
+  // Redraw on zoom change
+  useEffect(() => {
+    zoomRef.current = zoomLevel
+    if (status === 'ok' && pageRef.current) drawPage(pageRef.current)
+  }, [zoomLevel, status, drawPage])
 
   // Switch page
   useEffect(() => {
@@ -120,7 +130,7 @@ function PdfViewer({ src }: { src: string }) {
     })
   }, [currentPage, drawPage])
 
-  // Re-render on container resize
+  // Redraw on container resize
   useEffect(() => {
     const obs = new ResizeObserver(() => {
       if (pageRef.current) drawPage(pageRef.current)
@@ -129,71 +139,92 @@ function PdfViewer({ src }: { src: string }) {
     return () => obs.disconnect()
   }, [drawPage])
 
+  const zoomIn    = () => setZoomLevel(z => Math.min(+(z * 1.3).toFixed(3), 8))
+  const zoomOut   = () => setZoomLevel(z => Math.max(+(z / 1.3).toFixed(3), 0.15))
+  const zoomReset = () => setZoomLevel(1.0)
+
+  const zoomed      = zoomLevel > 1.02
+  const downloadName = chartName.replace(/[^\w\-. ]/g, '_') + '.pdf'
+
   return (
-    <div
-      ref={containerRef}
-      style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        background: '#080c1e', minHeight: 0, overflow: 'hidden',
-      }}
-    >
-      {status === 'loading' && (
-        <div style={{ color: 'var(--muted)', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div style={{
-            width: 24, height: 24, borderRadius: '50%',
-            border: '2px solid var(--line)', borderTopColor: 'var(--violet)',
-            animation: 'spin 0.8s linear infinite',
-          }} />
-          Loading chart…
-        </div>
-      )}
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#080c1e', minHeight: 0, overflow: 'hidden' }}>
 
-      {status === 'error' && (
-        <div style={{ color: 'var(--dim)', fontSize: 13 }}>
-          Could not load PDF.
-        </div>
-      )}
-
-      {status === 'ok' && (
-        <>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: 0 }}>
-            <canvas ref={canvasRef} style={{ display: 'block' }} />
+      {/* Canvas area — scrollable when zoomed in */}
+      <div
+        ref={containerRef}
+        style={{
+          flex: 1, minHeight: 0,
+          overflow: zoomed ? 'auto' : 'hidden',
+          display: 'flex',
+          alignItems:     zoomed ? 'flex-start' : 'center',
+          justifyContent: zoomed ? 'flex-start' : 'center',
+          padding: zoomed ? 12 : 0,
+        }}
+      >
+        {status === 'loading' && (
+          <div style={{ color: 'var(--muted)', fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid var(--line)', borderTopColor: 'var(--violet)', animation: 'spin 0.8s linear infinite' }} />
+            Loading chart…
           </div>
+        )}
+        {status === 'error' && (
+          <div style={{ color: 'var(--dim)', fontSize: 13 }}>Could not load PDF.</div>
+        )}
+        {status === 'ok' && <canvas ref={canvasRef} style={{ display: 'block', flexShrink: 0 }} />}
+      </div>
 
+      {/* Toolbar */}
+      {status === 'ok' && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          padding: '0 12px', height: TOOLBAR_H, flexShrink: 0,
+          background: 'rgba(0,0,0,0.5)', borderTop: '1px solid var(--line-2)',
+        }}>
+          {/* Zoom */}
+          <button onClick={zoomOut}   disabled={zoomLevel <= 0.16} style={tbBtn} title="Zoom out">−</button>
+          <button onClick={zoomReset} style={{ ...tbBtn, minWidth: 46, fontSize: 10 }} title="Fit page">
+            {Math.round(zoomLevel * 100)}%
+          </button>
+          <button onClick={zoomIn}    disabled={zoomLevel >= 7.9}  style={tbBtn} title="Zoom in">+</button>
+
+          {/* Page nav (multi-page charts) */}
           {numPages > 1 && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '6px 16px', flexShrink: 0,
-              background: 'rgba(0,0,0,0.45)',
-              borderTop: '1px solid var(--line-2)',
-              width: '100%', justifyContent: 'center',
-            }}>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                style={pageNavStyle}
-              >←</button>
-              <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>
+            <>
+              <div style={{ width: 1, height: 20, background: 'var(--line-2)', margin: '0 6px' }} />
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={tbBtn}>←</button>
+              <span style={{ fontSize: 10, color: 'var(--muted)', fontFamily: 'var(--font-mono)', minWidth: 44, textAlign: 'center' }}>
                 {currentPage} / {numPages}
               </span>
-              <button
-                onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                disabled={currentPage === numPages}
-                style={pageNavStyle}
-              >→</button>
-            </div>
+              <button onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))} disabled={currentPage === numPages} style={tbBtn}>→</button>
+            </>
           )}
-        </>
+
+          <div style={{ flex: 1 }} />
+
+          {/* Download */}
+          <a
+            href={src}
+            download={downloadName}
+            onClick={e => e.stopPropagation()}
+            style={{
+              ...tbBtn,
+              textDecoration: 'none', display: 'inline-flex',
+              alignItems: 'center', gap: 4, padding: '3px 10px',
+            }}
+            title="Download PDF"
+          >
+            ↓ PDF
+          </a>
+        </div>
       )}
     </div>
   )
 }
 
-const pageNavStyle: React.CSSProperties = {
-  padding: '3px 12px', borderRadius: 6, cursor: 'pointer',
+const tbBtn: React.CSSProperties = {
+  padding: '3px 8px', borderRadius: 5, cursor: 'pointer',
   background: 'var(--glass)', border: '1px solid var(--line)',
-  color: 'var(--muted)', fontSize: 14,
+  color: 'var(--muted)', fontSize: 13, lineHeight: 1.4, flexShrink: 0,
 }
 
 // ── Chart list panel ──────────────────────────────────────────────────────────
@@ -432,7 +463,7 @@ export default function ChartsModal({
 
             {/* PDF viewer */}
             {pdfSrc ? (
-              <PdfViewer src={pdfSrc} />
+              <PdfViewer src={pdfSrc} chartName={selected!.name} />
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dim)', fontSize: 13 }}>
                 Select a chart to view
