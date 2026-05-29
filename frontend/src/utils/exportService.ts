@@ -283,6 +283,118 @@ export async function exportOFP(data: ExportData): Promise<void> {
   URL.revokeObjectURL(url)
 }
 
+// ── Google Earth KML ───────────────────────────────────────────────────────────
+
+export function exportKml(data: ExportData): void {
+  const { departure, arrival, alternate, route } = data
+
+  const cruiseAltM = ((data.aircraftProfile?.preferredCruiseAltitudeFt ?? 35000) * 0.3048).toFixed(0)
+
+  // KML coords: lon,lat,alt (metres)
+  const wpCoords = route.waypoints
+    .filter(wp => wp.lat != null && wp.lon != null)
+    .map(wp => `${wp.lon!.toFixed(6)},${wp.lat!.toFixed(6)},${cruiseAltM}`)
+    .join('\n              ')
+
+  const escape = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+  function waypointStyle(type?: string): string {
+    if (type === 'airport') return '#airport'
+    if (type === 'vor')     return '#vor'
+    if (type === 'ndb')     return '#ndb'
+    return '#fix'
+  }
+
+  function waypointPlacemark(wp: typeof route.waypoints[number], label: string): string {
+    if (wp.lat == null || wp.lon == null) return ''
+    return `
+    <Placemark>
+      <name>${escape(label)}</name>
+      <styleUrl>${waypointStyle(wp.type)}</styleUrl>
+      <Point>
+        <altitudeMode>absolute</altitudeMode>
+        <coordinates>${wp.lon.toFixed(6)},${wp.lat.toFixed(6)},${cruiseAltM}</coordinates>
+      </Point>
+    </Placemark>`
+  }
+
+  const waypointPlacemarks = route.waypoints
+    .map(wp => waypointPlacemark(wp, wp.id))
+    .filter(Boolean)
+    .join('')
+
+  const alternatePlacemark = alternate
+    ? `
+    <Placemark>
+      <name>${escape(alternate.icao)}${alternate.name ? ' — ' + escape(alternate.name) : ''} (ALT)</name>
+      <styleUrl>#airport</styleUrl>
+      <Point>
+        <altitudeMode>clampToGround</altitudeMode>
+        <coordinates>${alternate.lon.toFixed(6)},${alternate.lat.toFixed(6)},0</coordinates>
+      </Point>
+    </Placemark>`
+    : ''
+
+  const totalNm = route.routeDistanceNm
+    ?? route.waypoints[route.waypoints.length - 1]?.distCum
+    ?? 0
+
+  const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${escape(departure.icao)} → ${escape(arrival.icao)}</name>
+    <description>${escape(departure.name ?? departure.icao)} to ${escape(arrival.name ?? arrival.icao)}${totalNm ? ' — ' + Math.round(totalNm) + ' NM' : ''}</description>
+
+    <!-- Styles -->
+    <Style id="route">
+      <LineStyle><color>ffff7800</color><width>3</width></LineStyle>
+    </Style>
+    <Style id="airport">
+      <IconStyle><color>ff0000ff</color><scale>1.2</scale>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/airports.png</href></Icon>
+      </IconStyle>
+      <LabelStyle><scale>0.9</scale></LabelStyle>
+    </Style>
+    <Style id="vor">
+      <IconStyle><color>ff00aaff</color><scale>0.9</scale>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+      </IconStyle>
+      <LabelStyle><scale>0.75</scale></LabelStyle>
+    </Style>
+    <Style id="ndb">
+      <IconStyle><color>ff00ddaa</color><scale>0.8</scale>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+      </IconStyle>
+      <LabelStyle><scale>0.75</scale></LabelStyle>
+    </Style>
+    <Style id="fix">
+      <IconStyle><color>ffffffff</color><scale>0.6</scale>
+        <Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>
+      </IconStyle>
+      <LabelStyle><scale>0.65</scale></LabelStyle>
+    </Style>
+
+    <!-- Route line -->
+    <Placemark>
+      <name>${escape(departure.icao)} → ${escape(arrival.icao)}</name>
+      <styleUrl>#route</styleUrl>
+      <LineString>
+        <altitudeMode>absolute</altitudeMode>
+        <tessellate>1</tessellate>
+        <coordinates>
+              ${wpCoords}
+        </coordinates>
+      </LineString>
+    </Placemark>
+
+    <!-- Waypoints -->${waypointPlacemarks}${alternatePlacemark}
+  </Document>
+</kml>`
+
+  triggerDownload(kml, `${departure.icao}_${arrival.icao}.kml`, 'application/vnd.google-earth.kml+xml')
+}
+
 // ── MSFS .pln ──────────────────────────────────────────────────────────────────
 
 function msfsPosition(lat: number, lon: number, elevFt = 0): string {

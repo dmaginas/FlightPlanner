@@ -1,4 +1,4 @@
-import { exportOFP, exportMsfsPln, type ExportData } from './exportService'
+import { exportOFP, exportMsfsPln, exportKml, type ExportData } from './exportService'
 
 export type { ExportData }
 
@@ -26,7 +26,16 @@ const msfsPlnStrategy: ExportStrategy = {
   async execute(data) { exportMsfsPln(data) },
 }
 
+const googleEarthKmlStrategy: ExportStrategy = {
+  id: 'google-earth-kml',
+  label: 'Google Earth',
+  subtitle: 'KML route file',
+  icon: '🌍',
+  async execute(data) { exportKml(data) },
+}
+
 export const EXPORT_STRATEGIES: ExportStrategy[] = [
   ofpPdfStrategy,
   msfsPlnStrategy,
+  googleEarthKmlStrategy,
 ]
