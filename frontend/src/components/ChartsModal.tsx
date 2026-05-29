@@ -105,7 +105,7 @@ function PdfViewer({ icao, chart }: { icao: string; chart: ChartInfo | null }) {
     )
   }
 
-  const src = chartFileUrl(icao, chart.source, chart.id)
+  const src = chartFileUrl(icao, chart.source, chart.id) + '#view=Fit'
 
   return (
     <iframe
