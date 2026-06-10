@@ -29,7 +29,7 @@ public sealed class ChartService : IChartService
         return [];
     }
 
-    public async Task<(Stream Stream, string ContentType)> GetChartFileAsync(
+    public async Task<ChartFile> GetChartFileAsync(
         string source, string id, CancellationToken ct = default)
     {
         var provider = _providers.FirstOrDefault(p => p.SourceName == source)

@@ -79,9 +79,13 @@ public sealed class ChartsController : ControllerBase
 
         try
         {
-            var (stream, contentType) = await _service.GetChartFileAsync(source, id, ct);
+            var file = await _service.GetChartFileAsync(source, id, ct);
+            if (file is RedirectChartFile redirect)
+                return Redirect(redirect.Url);
+
+            var proxied = (ProxiedChartFile)file;
             Response.Headers.Append("Content-Disposition", "inline");
-            return File(stream, contentType);
+            return File(proxied.Stream, proxied.ContentType);
         }
         catch (OperationCanceledException) { return StatusCode(StatusCodes.Status503ServiceUnavailable, new ErrorResponse { Error = "Request cancelled.", Details = "The request was cancelled." }); }
         catch (Exception ex)

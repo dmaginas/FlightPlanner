@@ -26,6 +26,7 @@ export default function App() {
   const [selectedAircraftType, setSelectedAircraftType] = useState(DEFAULT_AIRCRAFT_TYPE)
   const [cruisingAltitude, setCruisingAltitude] = useState<number | null>(null)
   const [callsign, setCallsign] = useState('')
+  const [chartFoxNotif, setChartFoxNotif] = useState<'connected' | 'error' | null>(null)
 
   // Route state — set by handleCalculate, cleared when airports change
   const [route, setRoute]               = useState(null)
@@ -44,6 +45,18 @@ export default function App() {
     }
     loadDefaults()
     return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const chartfox = params.get('chartfox')
+    if (chartfox === 'connected' || chartfox === 'error') {
+      setChartFoxNotif(chartfox)
+      params.delete('chartfox')
+      const newUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
+      window.history.replaceState(null, '', newUrl)
+      setTimeout(() => setChartFoxNotif(null), 5000)
+    }
   }, [])
 
   // ── Local fallback calculation ──────────────────────────────────────────────
@@ -171,6 +184,21 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {chartFoxNotif && (
+        <div style={{
+          position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)',
+          zIndex: 99999, padding: '10px 20px', borderRadius: 10, fontSize: 13,
+          fontWeight: 600, pointerEvents: 'none',
+          background: chartFoxNotif === 'connected' ? 'rgba(52,211,153,0.15)' : 'rgba(248,113,113,0.15)',
+          border: `1px solid ${chartFoxNotif === 'connected' ? 'rgba(52,211,153,0.4)' : 'rgba(248,113,113,0.4)'}`,
+          color: chartFoxNotif === 'connected' ? '#34d399' : '#f87171',
+        }}>
+          {chartFoxNotif === 'connected'
+            ? 'ChartFox connected — worldwide charts are now available'
+            : 'ChartFox authentication failed — please try again'}
+        </div>
+      )}
+
       <TopBar
         screen={screen}
         onNavigate={setScreen}

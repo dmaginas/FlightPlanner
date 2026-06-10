@@ -3,7 +3,10 @@ import { createPortal } from 'react-dom'
 import * as pdfjsLib from 'pdfjs-dist'
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist'
 import workerSrc from 'pdfjs-dist/build/pdf.worker.mjs?url'
-import { fetchCharts, chartFileUrl, type ChartInfo } from '../services/chartService'
+import {
+  fetchCharts, chartFileUrl, fetchChartFoxStatus, fetchChartFoxAuthUrl,
+  disconnectChartFox, type ChartInfo, type ChartFoxStatus,
+} from '../services/chartService'
 
 // ── PDF.js worker setup ───────────────────────────────────────────────────────
 
@@ -227,6 +230,43 @@ const tbBtn: React.CSSProperties = {
   color: 'var(--muted)', fontSize: 13, lineHeight: 1.4, flexShrink: 0,
 }
 
+// ── External chart viewer ──────────────────────────────────────────────────────
+// ChartFox sources sit behind bot protection that blocks both same-origin proxying
+// and cross-origin embedding, so the backend redirects and the browser opens the
+// PDF itself in a new tab (a real browser is served where a server request is not).
+
+function ExternalChartView({ src, chartName }: { src: string; chartName: string }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#080c1e', minHeight: 0 }}>
+      {/* The browser loads the PDF as a frame navigation (not a JS fetch), so it
+          passes the source's bot protection. Renders inline unless the source
+          forbids framing — the toolbar below is the fallback. */}
+      <iframe
+        src={src}
+        title={chartName}
+        style={{ flex: 1, border: 'none', background: '#fff', minHeight: 0, width: '100%' }}
+      />
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '0 12px', height: TOOLBAR_H, flexShrink: 0,
+        background: 'rgba(0,0,0,0.5)', borderTop: '1px solid var(--line-2)',
+      }}>
+        <span style={{ fontSize: 11, color: 'var(--dim)' }}>
+          Chart not showing? Open it in a new tab:
+        </span>
+        <div style={{ flex: 1 }} />
+        <button
+          onClick={() => window.open(src, '_blank', 'noopener,noreferrer')}
+          style={{ ...tbBtn, padding: '3px 10px' }}
+          title="Open chart in a new tab"
+        >
+          Open ↗
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Chart list panel ──────────────────────────────────────────────────────────
 
 function ChartList({
@@ -303,20 +343,26 @@ export default function ChartsModal({
   airportName?: string
   onClose:      () => void
 }) {
-  const [charts,    setCharts]    = useState<ChartInfo[]>([])
-  const [loading,   setLoading]   = useState(true)
-  const [error,     setError]     = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<ChartType>('ALL')
-  const [selected,  setSelected]  = useState<ChartInfo | null>(null)
+  const [charts,        setCharts]        = useState<ChartInfo[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [error,         setError]         = useState<string | null>(null)
+  const [activeTab,     setActiveTab]     = useState<ChartType>('ALL')
+  const [selected,      setSelected]      = useState<ChartInfo | null>(null)
+  const [chartFoxStatus, setChartFoxStatus] = useState<ChartFoxStatus | null>(null)
+  const [connecting,    setConnecting]    = useState(false)
 
   useEffect(() => {
     const ctrl = new AbortController()
     setLoading(true); setError(null); setCharts([]); setSelected(null)
 
-    fetchCharts(icao, ctrl.signal)
-      .then(d => {
-        setCharts(d.charts)
-        setSelected(d.charts[0] ?? null)
+    Promise.all([
+      fetchCharts(icao, ctrl.signal),
+      fetchChartFoxStatus(ctrl.signal).catch(() => null),
+    ])
+      .then(([chartData, status]) => {
+        setCharts(chartData.charts)
+        setSelected(chartData.charts[0] ?? null)
+        setChartFoxStatus(status)
         setLoading(false)
       })
       .catch(e => {
@@ -327,6 +373,22 @@ export default function ChartsModal({
 
     return () => ctrl.abort()
   }, [icao])
+
+  async function handleConnect() {
+    setConnecting(true)
+    try {
+      const url = await fetchChartFoxAuthUrl()
+      window.location.href = url
+    } catch {
+      setConnecting(false)
+    }
+  }
+
+  async function handleDisconnect() {
+    await disconnectChartFox()
+    setChartFoxStatus(s => s ? { ...s, connected: false } : s)
+    setCharts(prev => prev.filter(c => c.source !== 'chartfox'))
+  }
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -422,6 +484,45 @@ export default function ChartsModal({
           </div>
         )}
 
+        {/* ChartFox connect / disconnect banner */}
+        {!loading && chartFoxStatus?.configured && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 18px', borderBottom: '1px solid var(--line-2)',
+            background: 'rgba(167,139,250,0.06)', flexShrink: 0,
+          }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+              {chartFoxStatus.connected
+                ? 'ChartFox connected — worldwide charts available'
+                : 'Connect ChartFox for worldwide approach charts'}
+            </div>
+            {chartFoxStatus.connected ? (
+              <button
+                onClick={handleDisconnect}
+                style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 5, cursor: 'pointer',
+                  background: 'transparent', border: '1px solid var(--line-2)',
+                  color: 'var(--dim)',
+                }}
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleConnect}
+                disabled={connecting}
+                style={{
+                  fontSize: 11, padding: '3px 10px', borderRadius: 5, cursor: 'pointer',
+                  background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)',
+                  color: 'var(--violet)', fontWeight: 600,
+                }}
+              >
+                {connecting ? 'Redirecting…' : 'Connect ChartFox'}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Body */}
         {loading && (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 14, color: 'var(--muted)', fontSize: 13 }}>
@@ -461,13 +562,17 @@ export default function ChartsModal({
               )}
             </div>
 
-            {/* PDF viewer */}
-            {pdfSrc ? (
-              <PdfViewer src={pdfSrc} chartName={selected!.name} />
-            ) : (
+            {/* Viewer: FAA charts render inline via PDF.js; ChartFox charts open in a
+                new tab — their bot-protected sources block both embedding and
+                same-origin proxying, but serve a real browser directly. */}
+            {!pdfSrc || !selected ? (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--dim)', fontSize: 13 }}>
                 Select a chart to view
               </div>
+            ) : selected.source === 'chartfox' ? (
+              <ExternalChartView src={pdfSrc} chartName={selected.name} />
+            ) : (
+              <PdfViewer src={pdfSrc} chartName={selected.name} />
             )}
           </div>
         )}

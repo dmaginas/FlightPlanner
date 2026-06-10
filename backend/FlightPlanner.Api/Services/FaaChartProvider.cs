@@ -81,7 +81,7 @@ public sealed class FaaChartProvider : IChartProvider
         }
     }
 
-    public async Task<(Stream Stream, string ContentType)> GetFileAsync(string id, CancellationToken ct)
+    public async Task<ChartFile> GetFileAsync(string id, CancellationToken ct)
     {
         // Use cached cycle if available, otherwise fall back to AIRAC table
         var cycle = _cache.TryGetValue(FaaCacheKey, out FaaCacheData? d) && d is not null
@@ -89,7 +89,7 @@ public sealed class FaaChartProvider : IChartProvider
             : GetCurrentAiracCycle();
         var url    = $"https://aeronav.faa.gov/d-tpp/{cycle}/{Uri.EscapeDataString(id)}";
         var stream = await _http.GetStreamAsync(url, ct);
-        return (stream, "application/pdf");
+        return new ProxiedChartFile(stream, "application/pdf");
     }
 
     private async Task<FaaCacheData> LoadFaaMetadataAsync(CancellationToken ct)

@@ -170,9 +170,15 @@ builder.Services.AddHttpClient<IAtcFrequencyProvider, AtcFrequencyProvider>(clie
 builder.Services.AddSingleton<IIlsDataProvider, IlsDataProvider>();
 builder.Services.AddScoped<IAirportDiagramService, AirportDiagramService>();
 
-// Chart service — FAA d-TPP (US, no key) + ChartFox (worldwide, optional key)
+// Chart service — FAA d-TPP (US, no key) + ChartFox (worldwide, OAuth)
 // Providers are tried in registration order; first non-empty result wins.
 builder.Services.AddSingleton(chartFoxOptions);
+builder.Services.AddHttpClient("ChartFoxAuth", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("User-Agent", "FlightPlanner/0.1.0");
+});
+builder.Services.AddSingleton<IChartFoxTokenService, ChartFoxTokenService>();
 builder.Services.AddHttpClient<FaaChartProvider>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(60);
