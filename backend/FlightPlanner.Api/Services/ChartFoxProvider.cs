@@ -13,7 +13,10 @@ namespace FlightPlanner.Api.Services;
 public sealed class ChartFoxProvider : IChartProvider
 {
     private const string ChartFoxCacheKeyPrefix = "chartfox_charts_v1_";
-    private static readonly TimeSpan ChartFoxCacheTtl = TimeSpan.FromHours(12);
+    private static readonly TimeSpan ChartFoxCacheTtl      = TimeSpan.FromHours(12);
+    // "No charts" is cached only briefly so a transient ChartFox error doesn't
+    // hide an airport's charts for the full 12 h.
+    private static readonly TimeSpan EmptyResultCacheTtl   = TimeSpan.FromMinutes(5);
 
     private readonly HttpClient              _http;
     private readonly ChartFoxOptions         _options;
@@ -71,7 +74,7 @@ public sealed class ChartFoxProvider : IChartProvider
             _logger.LogWarning(ex, "ChartFox lookup failed for {Icao}", icao);
         }
 
-        _cache.Set(cacheKey, charts, ChartFoxCacheTtl);
+        _cache.Set(cacheKey, charts, charts.Count > 0 ? ChartFoxCacheTtl : EmptyResultCacheTtl);
         return charts;
     }
 
@@ -88,6 +91,13 @@ public sealed class ChartFoxProvider : IChartProvider
         resp.EnsureSuccessStatusCode();
 
         var detail = await resp.Content.ReadFromJsonAsync<ChartFoxDetailResponse>(cancellationToken: ct);
+
+        // Charts flagged requires_preauth can't be opened from their raw source URL
+        // (it needs ChartFox-side authentication); fall back to ChartFox's own viewer
+        // page, which performs that auth itself.
+        if (detail?.RequiresPreauth == true && !string.IsNullOrWhiteSpace(detail.ViewUrl))
+            return new RedirectChartFile(detail.ViewUrl);
+
         if (string.IsNullOrWhiteSpace(detail?.Url))
             throw new InvalidOperationException("ChartFox returned no download URL.");
 
@@ -136,6 +146,8 @@ public sealed class ChartFoxProvider : IChartProvider
 
     private sealed class ChartFoxDetailResponse
     {
-        [JsonPropertyName("url")] public string? Url { get; init; }
+        [JsonPropertyName("url")]              public string? Url             { get; init; }
+        [JsonPropertyName("view_url")]         public string? ViewUrl         { get; init; }
+        [JsonPropertyName("requires_preauth")] public bool    RequiresPreauth { get; init; }
     }
 }

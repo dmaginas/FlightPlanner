@@ -1,6 +1,7 @@
 using FlightPlanner.Api.NavData;
 using FlightPlanner.Api.Options;
 using FlightPlanner.Api.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.SpaServices.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 
@@ -173,6 +174,15 @@ builder.Services.AddScoped<IAirportDiagramService, AirportDiagramService>();
 // Chart service — FAA d-TPP (US, no key) + ChartFox (worldwide, OAuth)
 // Providers are tried in registration order; first non-empty result wins.
 builder.Services.AddSingleton(chartFoxOptions);
+
+// ChartFox OAuth tokens are kept per browser session (cf_session cookie) and
+// persisted encrypted via Data Protection. Keys live alongside the app so they
+// survive deploys (the deploy script copies into the dir without clearing it).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(AppContext.BaseDirectory, "keys")))
+    .SetApplicationName("FlightPlanner");
+
 builder.Services.AddHttpClient("ChartFoxAuth", client =>
 {
     client.Timeout = TimeSpan.FromSeconds(30);

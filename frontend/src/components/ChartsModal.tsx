@@ -46,6 +46,7 @@ function PdfViewer({ src, chartName }: { src: string; chartName: string }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [status,      setStatus]      = useState<'loading' | 'ok' | 'error'>('loading')
   const [zoomLevel,   setZoomLevel]   = useState(1.0)
+  const [retryNonce,  setRetryNonce]  = useState(0)
 
   const drawPage = useCallback((page: PDFPageProxy) => {
     const canvas    = canvasRef.current
@@ -89,6 +90,7 @@ function PdfViewer({ src, chartName }: { src: string; chartName: string }) {
 
     let cancelled = false
     const loadTask = pdfjsLib.getDocument(src)
+    void retryNonce  // re-run the load when the user hits Retry
 
     loadTask.promise
       .then(doc => {
@@ -110,7 +112,7 @@ function PdfViewer({ src, chartName }: { src: string; chartName: string }) {
       cancelled = true
       renderTaskRef.current?.cancel()
     }
-  }, [src])
+  }, [src, retryNonce])
 
   // Draw after canvas enters the DOM
   useEffect(() => {
@@ -171,7 +173,19 @@ function PdfViewer({ src, chartName }: { src: string; chartName: string }) {
           </div>
         )}
         {status === 'error' && (
-          <div style={{ color: 'var(--dim)', fontSize: 13 }}>Could not load PDF.</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <div style={{ color: 'var(--dim)', fontSize: 13 }}>Could not load PDF.</div>
+            <button
+              onClick={() => setRetryNonce(n => n + 1)}
+              style={{
+                padding: '5px 14px', borderRadius: 6, cursor: 'pointer',
+                background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)',
+                color: 'var(--violet)', fontSize: 12, fontWeight: 600,
+              }}
+            >
+              Retry
+            </button>
+          </div>
         )}
         {status === 'ok' && <canvas ref={canvasRef} style={{ display: 'block', flexShrink: 0 }} />}
       </div>
@@ -266,19 +280,23 @@ function ExternalChartView({ src, chartName }: { src: string; chartName: string 
 // ── Chart list panel ──────────────────────────────────────────────────────────
 
 function ChartList({
-  charts, activeTab, selected, onSelect,
+  charts, activeTab, query, selected, onSelect,
 }: {
   charts:    ChartInfo[]
   activeTab: ChartType
+  query:     string
   selected:  ChartInfo | null
   onSelect:  (c: ChartInfo) => void
 }) {
-  const visible = activeTab === 'ALL' ? charts : charts.filter(c => c.type === activeTab)
+  const term = query.trim().toLowerCase()
+  const visible = charts.filter(c =>
+    (activeTab === 'ALL' || c.type === activeTab) &&
+    (term === '' || c.name.toLowerCase().includes(term)))
 
   if (visible.length === 0) {
     return (
       <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--dim)', fontSize: 12 }}>
-        No {activeTab === 'ALL' ? '' : activeTab + ' '}charts available
+        No charts {term ? 'match your search' : 'available'}
       </div>
     )
   }
@@ -344,12 +362,13 @@ export default function ChartsModal({
   const [error,         setError]         = useState<string | null>(null)
   const [activeTab,     setActiveTab]     = useState<ChartType>('ALL')
   const [selected,      setSelected]      = useState<ChartInfo | null>(null)
+  const [query,         setQuery]         = useState('')
   const [chartFoxStatus, setChartFoxStatus] = useState<ChartFoxStatus | null>(null)
   const [connecting,    setConnecting]    = useState(false)
 
   useEffect(() => {
     const ctrl = new AbortController()
-    setLoading(true); setError(null); setCharts([]); setSelected(null)
+    setLoading(true); setError(null); setCharts([]); setSelected(null); setQuery('')
 
     Promise.all([
       fetchCharts(icao, ctrl.signal),
@@ -549,12 +568,29 @@ export default function ChartsModal({
                   No charts available
                 </div>
               ) : (
-                <ChartList
-                  charts={charts}
-                  activeTab={activeTab}
-                  selected={selected}
-                  onSelect={setSelected}
-                />
+                <>
+                  <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--line-2)', flexShrink: 0 }}>
+                    <input
+                      type="text"
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                      placeholder="Search charts…"
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '6px 9px', borderRadius: 6,
+                        background: 'var(--glass)', border: '1px solid var(--line)',
+                        color: 'var(--text)', fontSize: 11, outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <ChartList
+                    charts={charts}
+                    activeTab={activeTab}
+                    query={query}
+                    selected={selected}
+                    onSelect={setSelected}
+                  />
+                </>
               )}
             </div>
 
