@@ -237,31 +237,27 @@ const tbBtn: React.CSSProperties = {
 
 function ExternalChartView({ src, chartName }: { src: string; chartName: string }) {
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#080c1e', minHeight: 0 }}>
-      {/* The browser loads the PDF as a frame navigation (not a JS fetch), so it
-          passes the source's bot protection. Renders inline unless the source
-          forbids framing — the toolbar below is the fallback. */}
-      <iframe
-        src={src}
-        title={chartName}
-        style={{ flex: 1, border: 'none', background: '#fff', minHeight: 0, width: '100%' }}
-      />
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '0 12px', height: TOOLBAR_H, flexShrink: 0,
-        background: 'rgba(0,0,0,0.5)', borderTop: '1px solid var(--line-2)',
-      }}>
-        <span style={{ fontSize: 11, color: 'var(--dim)' }}>
-          Chart not showing? Open it in a new tab:
-        </span>
-        <div style={{ flex: 1 }} />
-        <button
-          onClick={() => window.open(src, '_blank', 'noopener,noreferrer')}
-          style={{ ...tbBtn, padding: '3px 10px' }}
-          title="Open chart in a new tab"
-        >
-          Open ↗
-        </button>
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', gap: 16,
+      background: '#080c1e', padding: 24, textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 340, lineHeight: 1.5 }}>
+        This chart is hosted by the official source, which blocks embedding.
+        It opens in a new browser tab.
+      </div>
+      <button
+        onClick={() => window.open(src, '_blank', 'noopener,noreferrer')}
+        style={{
+          padding: '9px 18px', borderRadius: 8, cursor: 'pointer',
+          background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)',
+          color: 'var(--violet)', fontWeight: 600, fontSize: 13,
+        }}
+      >
+        Open chart ↗
+      </button>
+      <div style={{ fontSize: 11, color: 'var(--dim)', fontFamily: 'var(--font-mono)' }}>
+        {chartName}
       </div>
     </div>
   )
