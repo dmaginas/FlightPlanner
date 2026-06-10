@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using FlightPlanner.Api.Models;
 using FlightPlanner.Api.Options;
@@ -54,17 +55,15 @@ public sealed class ChartFoxProvider : IChartProvider
             req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             using var resp = await _http.SendAsync(req, HttpCompletionOption.ResponseContentRead, ct);
-            if (resp.IsSuccessStatusCode)
+            if (!resp.IsSuccessStatusCode)
             {
-                var page = await resp.Content.ReadFromJsonAsync<ChartFoxGroupedResponse>(cancellationToken: ct);
-                if (page is not null)
-                    charts.AddRange(page.Data.Values
-                        .SelectMany(group => group)
-                        .Select(c => new ChartDto(c.Id, c.Name, MapChartFoxType(c.Type), "chartfox")));
+                _logger.LogWarning("ChartFox returned {Status} for {Icao}", resp.StatusCode, icao);
             }
             else
             {
-                _logger.LogWarning("ChartFox returned {Status} for {Icao}", resp.StatusCode, icao);
+                await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+                using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+                charts.AddRange(ReadGroupedCharts(doc.RootElement));
             }
         }
         catch (Exception ex)
@@ -115,19 +114,25 @@ public sealed class ChartFoxProvider : IChartProvider
         _      => "OTHER",
     };
 
-    // The /grouped endpoint returns data as an object keyed by chart type
-    // (e.g. "0", "3", "6"), each value a list of charts of that type.
-    private sealed class ChartFoxGroupedResponse
+    // ChartFox's /grouped endpoint returns "data" as an object keyed by chart type
+    // (e.g. "0", "6") when charts exist, but as an empty array ([]) when there are
+    // none. Only the object form carries charts; any other shape means no charts.
+    private static IEnumerable<ChartDto> ReadGroupedCharts(JsonElement root)
     {
-        [JsonPropertyName("data")] public Dictionary<string, List<ChartFoxItem>> Data { get; init; } = new();
+        if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
+            yield break;
+
+        foreach (var group in data.EnumerateObject())
+            foreach (var item in group.Value.EnumerateArray())
+                yield return new ChartDto(
+                    ReadString(item, "id"),
+                    ReadString(item, "name"),
+                    MapChartFoxType(item.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.Number ? t.GetInt32() : 0),
+                    "chartfox");
     }
 
-    private sealed class ChartFoxItem
-    {
-        [JsonPropertyName("id")]   public string Id   { get; init; } = "";
-        [JsonPropertyName("name")] public string Name { get; init; } = "";
-        [JsonPropertyName("type")] public int    Type { get; init; }
-    }
+    private static string ReadString(JsonElement element, string property) =>
+        element.TryGetProperty(property, out var value) ? value.GetString() ?? "" : "";
 
     private sealed class ChartFoxDetailResponse
     {
