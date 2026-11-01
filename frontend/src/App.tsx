@@ -5,7 +5,6 @@ import MainScreen from './components/MainScreen.tsx'
 import SIDScreen from './components/SIDScreen.tsx'
 import STARScreen from './components/STARScreen.tsx'
 import GRAMETScreen from './components/GRAMETScreen.tsx'
-import ApiStatusScreen from './components/ApiStatusScreen.tsx'
 import { getAirport } from './data/airports.ts'
 import { getRoute, generateDynamicRoute } from './data/mockData.ts'
 import { AIRCRAFT_PROFILE_BY_ICAO, DEFAULT_AIRCRAFT_TYPE } from './data/aircraftPerformance.ts'
@@ -272,10 +271,6 @@ export default function App() {
           arrival={arrival}
           onBack={() => setScreen('plan')}
         />
-      )}
-
-      {screen === 'apistatus' && (
-        <ApiStatusScreen onBack={() => setScreen('plan')} />
       )}
     </div>
   )

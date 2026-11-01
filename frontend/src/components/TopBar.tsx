@@ -65,7 +65,6 @@ export default function TopBar({ screen, onNavigate, departure, arrival, selecte
     { id: 'sid',       label: isNarrow ? 'SID'  : 'SID'  + (selectedSID  ? ` · ${selectedSID.name}`  : '') },
     { id: 'star',      label: isNarrow ? 'STAR' : 'STAR' + (selectedSTAR ? ` · ${selectedSTAR.name}` : '') },
     { id: 'gramet',    label: 'GRAMET' },
-    { id: 'apistatus', label: isNarrow ? 'API' : 'API Status' },
   ]
 
   const statusMap = { idle: 'No Route', loading: 'Calculating…', ready: 'Route Ready' }
