@@ -1,11 +1,14 @@
 # Build output
+**/bin/
+**/obj/
+**/.vs/
 publish/
 backend/**/bin/
 backend/**/obj/
 frontend/dist/
 
 # Node
-frontend/node_modules/
+**/node_modules/
 
 # Secrets & local config
 **/*.user
