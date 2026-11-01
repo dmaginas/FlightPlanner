@@ -59,7 +59,7 @@ const backend = rawBackend as ApiBackend
 function resolveBaseUrl(activeBackend: ApiBackend): string {
   if (activeBackend === 'node') {
     const url = nodeBaseUrl ?? 'http://localhost:3001'
-    if (!nodeBaseUrl) {
+    if (nodeBaseUrl === undefined) {
       console.warn(
         '[FlightPlanner] VITE_NODE_API_BASE_URL is not set. ' +
         'Falling back to "http://localhost:3001".',
@@ -70,7 +70,7 @@ function resolveBaseUrl(activeBackend: ApiBackend): string {
 
   // aspnet
   const url = aspNetBaseUrl ?? 'https://localhost:5001'
-  if (!aspNetBaseUrl) {
+  if (aspNetBaseUrl === undefined) {
     console.warn(
       '[FlightPlanner] Neither VITE_ASPNET_API_BASE_URL nor VITE_API_BASE_URL is set. ' +
       'Falling back to "https://localhost:5001".',
